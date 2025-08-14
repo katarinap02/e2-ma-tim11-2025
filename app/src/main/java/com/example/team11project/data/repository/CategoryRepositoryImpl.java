@@ -6,6 +6,7 @@ import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.repository.CategoryRepository;
+import com.example.team11project.domain.repository.RepositoryCallback;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -28,7 +29,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public void addCategory(Category category, CategoryCallback<Void> callback) {
+    public void addCategory(Category category, RepositoryCallback<Void> callback) {
         if (category.getName() == null || category.getName().trim().isEmpty()) {
             callback.onFailure(new Exception("Naziv kategorije ne sme biti prazan."));
             return;
@@ -57,7 +58,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
                     @Override
                     public void onFailure(Exception e) {
-                        // Neuspeh na serveru, prosledi grešku nazad
                         callback.onFailure(e);
                     }
                 });
@@ -65,7 +65,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 }
 
     @Override
-    public void getCategories(String userId, CategoryCallback<List<Category>> callback) {
+    public void getCategories(String userId, RepositoryCallback<List<Category>> callback) {
         // Korak 1: Odmah u pozadini dohvati lokalne podatke i pošalji ih UI-ju
         databaseExecutor.execute(() -> {
             List<Category> localCategories = localDataSource.getAllCategories(userId);
@@ -97,7 +97,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public void updateCategory(Category category, CategoryCallback<Void> callback) {
+    public void updateCategory(Category category, RepositoryCallback<Void> callback) {
 //  Validacija
         if (category.getName() == null || category.getName().trim().isEmpty()) {
             callback.onFailure(new Exception("Naziv kategorije ne sme biti prazan."));
@@ -131,7 +131,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public void deleteCategory(String categoryId, String userId, CategoryCallback<Void> callback) {
+    public void deleteCategory(String categoryId, String userId, RepositoryCallback<Void> callback) {
         databaseExecutor.execute(() -> {
             //Ne dozvoliti brisanje kategorije ako je neki zadatak koristi
             if (localDataSource.isCategoryInUse(categoryId, userId)) {

@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Team11Project</string>
+
+    <string name="categories_screen_title">Moje Kategorije</string>
+    <string name="button_add">Dodaj</string>
+    <string name="button_edit">Izmeni</string>
+    <string name="button_delete">Obriši</string>
+    <string name="category_name_placeholder">Naziv kategorije</string>
+    <string name="add_new_category_title">Dodaj kategoriju</string>
+    <string name="category_npr">Npr. Posao, Trening...</string>
 </resources>

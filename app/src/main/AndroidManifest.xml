@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
@@ -13,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Team11Project"
         tools:targetApi="31">
+        <activity
+            android:name=".presentation.activities.CategoryActivity"
+            android:exported="false" />
         <activity
             android:name=".presentation.activities.MainActivity"
             android:exported="true">
