@@ -34,7 +34,7 @@ public class LocalDataSource {
     //region Category CRUD Methods
 
     /**
-     * Čuva novu kategoriju za određenog korisnika.
+     * CATEGORY DEO BAZE
      */
     public long addCategory(Category category) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -106,13 +106,90 @@ public class LocalDataSource {
         db.close();
         return deletedRows;
     }
+    //provera da li se boja vec koristi
+    public boolean isColorUsed(String color, String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String query = "SELECT COUNT(*) FROM " + AppContract.CategoryEntry.TABLE_NAME +
+                " WHERE " + AppContract.CategoryEntry.COLUMN_NAME_COLOR + " = ? AND " +
+                AppContract.CategoryEntry.COLUMN_NAME_USER_ID + " = ?";
 
-    //endregion
+        Cursor cursor = db.rawQuery(query, new String[]{color, userId});
 
-    //region Task CRUD Methods
+        int count = 0;
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0); // COUNT(*) je uvek na prvom indeksu (0)
+            }
+            cursor.close();
+        }
+        db.close();
+
+        return count > 0;
+    }
+
+    public boolean isCategoryInUse(String categoryId, String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        int count = 0;
+
+        try {
+            // Definišemo upit koji broji koliko zadataka (Task) koristi dati categoryId
+            String sql = "SELECT COUNT(*) FROM " + AppContract.TaskEntry.TABLE_NAME +
+                    " WHERE " + AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+
+            // Prosleđujemo argumente sigurno kao niz stringova da bismo sprečili SQL Injection.
+            String[] selectionArgs = { categoryId, userId };
+
+            cursor = db.rawQuery(sql, selectionArgs);
+
+            // Ako kursor nije null i možemo da se pomerimo na prvi red (koji uvek postoji u COUNT upitu)
+            if (cursor != null && cursor.moveToFirst()) {
+                // Rezultat COUNT(*) upita se uvek nalazi u prvoj koloni (indeks 0).
+                count = cursor.getInt(0);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+        // Ako je broj veći od 0, to znači da je kategorija u upotrebi.
+        return count > 0;
+    }
+
+
+    public int deleteAllCategoriesForUser(String userId) {
+        // Dobijamo instancu baze podataka koja je otvorena za pisanje.
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        try {
+            String selection = AppContract.CategoryEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { userId };
+            // Izvršavamo operaciju brisanja. Metoda vraća broj redova koji su obrisani.
+            deletedRows = db.delete(
+                    AppContract.CategoryEntry.TABLE_NAME, // Naziv tabele
+                    selection,                             // WHERE klauzula
+                    selectionArgs                          // Vrednosti za WHERE klauzulu
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+        return deletedRows;
+    }
+
+
 
     /**
-     * Čuva novi zadatak za određenog korisnika.
+     * TASK DEO
      */
     public long addTask(Task task) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
