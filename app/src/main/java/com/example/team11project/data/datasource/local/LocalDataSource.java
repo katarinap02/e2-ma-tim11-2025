@@ -40,9 +40,15 @@ public class LocalDataSource {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = categoryToContentValues(category);
 
-        long newRowId = db.insert(AppContract.CategoryEntry.TABLE_NAME, null, values);
+        long newRowId = db.insertWithOnConflict(
+                AppContract.CategoryEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE);
         db.close();
         return newRowId;
+
+
     }
 
     /**
@@ -195,9 +201,14 @@ public class LocalDataSource {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = taskToContentValues(task);
 
-        long newRowId = db.insert(AppContract.TaskEntry.TABLE_NAME, null, values);
+        long result = db.insertWithOnConflict(
+                AppContract.TaskEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE
+        );
         db.close();
-        return newRowId;
+        return result;
     }
 
     /**
@@ -268,6 +279,7 @@ public class LocalDataSource {
 
     private ContentValues categoryToContentValues(Category category) {
         ContentValues values = new ContentValues();
+        values.put(AppContract.CategoryEntry._ID, category.getId());
         values.put(AppContract.CategoryEntry.COLUMN_NAME_USER_ID, category.getUserId());
         values.put(AppContract.CategoryEntry.COLUMN_NAME_NAME, category.getName());
         values.put(AppContract.CategoryEntry.COLUMN_NAME_COLOR, category.getColor());
@@ -276,7 +288,7 @@ public class LocalDataSource {
 
     private Category cursorToCategory(Cursor cursor) {
         Category category = new Category();
-        category.setId(String.valueOf(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.CategoryEntry._ID))));
+        category.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.CategoryEntry._ID)));
         category.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.CategoryEntry.COLUMN_NAME_USER_ID)));
         category.setName(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.CategoryEntry.COLUMN_NAME_NAME)));
         category.setColor(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.CategoryEntry.COLUMN_NAME_COLOR)));
@@ -286,7 +298,7 @@ public class LocalDataSource {
     private Task cursorToTask(Cursor cursor) {
         Task task = new Task();
 
-        task.setId(String.valueOf(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry._ID))));
+        task.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry._ID)));
         task.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_USER_ID)));
         task.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_TITLE)));
         task.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION)));
@@ -314,6 +326,7 @@ public class LocalDataSource {
 
     private ContentValues taskToContentValues(Task task) {
         ContentValues values = new ContentValues();
+        values.put(AppContract.TaskEntry._ID, task.getId());
         values.put(AppContract.TaskEntry.COLUMN_NAME_USER_ID, task.getUserId());
         values.put(AppContract.TaskEntry.COLUMN_NAME_TITLE, task.getTitle());
         values.put(AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION, task.getDescription());

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="category_colors">
+        <item>@color/picker_red</item>
+        <item>@color/picker_pink</item>
+        <item>@color/picker_purple</item>
+        <item>@color/picker_indigo</item>
+        <item>@color/picker_blue</item>
+        <item>@color/picker_teal</item>
+        <item>@color/picker_green</item>
+        <item>@color/picker_lime</item>
+        <item>@color/picker_yellow</item>
+        <item>@color/picker_orange</item>
+        <item>@color/picker_brown</item>
+        <item>@color/picker_grey</item>
+        <item>@color/picker_red_light</item>
+        <item>@color/picker_pink_light</item>
+        <item>@color/picker_purple_light</item>
+        <item>@color/picker_deep_purple</item>
+        <item>@color/picker_indigo_light</item>
+        <item>@color/picker_blue_light</item>
+        <item>@color/picker_light_blue</item>
+        <item>@color/picker_cyan</item>
+        <item>@color/picker_teal_light</item>
+        <item>@color/picker_green_light</item>
+        <item>@color/picker_light_green</item>
+        <item>@color/picker_lime_light</item>
+        <item>@color/picker_yellow_light</item>
+        <item>@color/picker_amber</item>
+        <item>@color/picker_orange_light</item>
+        <item>@color/picker_deep_orange</item>
+        <item>@color/picker_brown_light</item>
+        <item>@color/picker_blue_grey</item>
+        <item>@color/picker_red_dark</item>
+        <item>@color/picker_pink_dark</item>
+        <item>@color/picker_purple_dark</item>
+        <item>@color/picker_deep_purple_dark</item>
+        <item>@color/picker_indigo_dark</item>
+        <item>@color/picker_blue_dark</item>
+        <item>@color/picker_light_blue_dark</item>
+        <item>@color/picker_cyan_dark</item>
+        <item>@color/picker_teal_dark</item>
+        <item>@color/picker_green_dark</item>
+        <item>@color/picker_light_green_dark</item>
+        <item>@color/picker_lime_dark</item>
+        <item>@color/picker_yellow_dark</item>
+        <item>@color/picker_amber_dark</item>
+        <item>@color/picker_orange_dark</item>
+        <item>@color/picker_deep_orange_dark</item>
+        <item>@color/picker_brown_dark</item>
+        <item>@color/picker_grey_dark</item>
+    </array>
+</resources>

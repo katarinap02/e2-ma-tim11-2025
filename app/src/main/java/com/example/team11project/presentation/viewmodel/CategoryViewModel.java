@@ -136,6 +136,7 @@ public class CategoryViewModel extends ViewModel {
         });
     }
 
+    // sluzi da bismo mogli da napravimo ViewModel konstruktor sa parametrima
     public static class Factory implements ViewModelProvider.Factory {
         private final Application application;
 

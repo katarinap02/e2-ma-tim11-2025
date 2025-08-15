@@ -14,7 +14,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String SQL_CREATE_CATEGORIES_TABLE =
             "CREATE TABLE " + AppContract.CategoryEntry.TABLE_NAME + " (" +
-                    AppContract.CategoryEntry._ID + " INTEGER PRIMARY KEY," +
+                    AppContract.CategoryEntry._ID + " TEXT PRIMARY KEY," +
                     AppContract.CategoryEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," + // Dodato
                     AppContract.CategoryEntry.COLUMN_NAME_NAME + " TEXT NOT NULL," +
                     AppContract.CategoryEntry.COLUMN_NAME_COLOR + " TEXT NOT NULL," +
@@ -27,7 +27,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // SQL komanda za kreiranje tabele za zadatke
     private static final String SQL_CREATE_TASKS_TABLE =
             "CREATE TABLE " + AppContract.TaskEntry.TABLE_NAME + " (" +
-                    AppContract.TaskEntry._ID + " INTEGER PRIMARY KEY," +
+                    AppContract.TaskEntry._ID + " TEXT PRIMARY KEY," +
                     AppContract.TaskEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," + // Dodato
                     AppContract.TaskEntry.COLUMN_NAME_TITLE + " TEXT NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +

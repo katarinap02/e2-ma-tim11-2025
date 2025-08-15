@@ -8,12 +8,12 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/category_name_placeholder"
+        android:text="@string/edit_category_name"
         android:textColor="@color/text_primary"
         android:textSize="16sp" />
 
     <EditText
-        android:id="@+id/edit_text_category_name"
+        android:id="@+id/edit_text_category_name_edit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -25,11 +25,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="@string/category_choose"
+        android:text="Izaberi novu boju"
         android:textColor="@color/text_primary"
         android:textSize="16sp" />
 
-    <!-- NOVI DEO SA SCROLL-OM -->
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -37,10 +36,10 @@
         android:scrollbars="none">
 
         <LinearLayout
-            android:id="@+id/color_picker_layout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
+            android:id="@+id/color_picker_layout_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" />
 
     </HorizontalScrollView>
 
