@@ -133,6 +133,28 @@ public class LocalDataSource {
         return count > 0;
     }
 
+    public boolean isColorUsedUpdate(String color, String userId, String categoryIdToIgnore) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        int count = 0;
+        String query = "SELECT COUNT(*) FROM " + AppContract.CategoryEntry.TABLE_NAME +
+                " WHERE " + AppContract.CategoryEntry.COLUMN_NAME_COLOR + " = ? AND " +
+                AppContract.CategoryEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.CategoryEntry._ID + " != ?";
+
+        String[] selectionArgs = { color, userId, categoryIdToIgnore };
+        cursor = db.rawQuery(query, selectionArgs);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0); // COUNT(*) je uvek na prvom indeksu (0)
+            }
+            cursor.close();
+        }
+        db.close();
+
+        return count > 0;
+    }
+
     public boolean isCategoryInUse(String categoryId, String userId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = null;

@@ -106,7 +106,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
         databaseExecutor.execute(() -> {
             // Da li novu boju već koristi druga kategorija
-            if (localDataSource.isColorUsed(category.getColor(), category.getUserId())) {
+            if (localDataSource.isColorUsedUpdate(category.getColor(), category.getUserId(), category.getId())) {
                 callback.onFailure(new Exception("Izabrana boja se već koristi."));
                 return;
             }

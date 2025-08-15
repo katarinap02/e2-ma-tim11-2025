@@ -353,7 +353,7 @@ public class CategoryActivity extends AppCompatActivity implements CategoryAdapt
             List<Category> currentCategories = viewModel.categories.getValue();
             if (currentCategories != null) {
                 for (Category cat : currentCategories) {
-                    if (!cat.getId().equals(categoryToEdit.getId()) && cat.getColor().equalsIgnoreCase(selectedColor)) {
+                    if (cat.getColor().equalsIgnoreCase(selectedColor) && !cat.getId().equals(categoryToEdit.getId())) {
                         Toast.makeText(this, "Ova boja se već koristi. Izaberite drugu.", Toast.LENGTH_LONG).show();
                         return;
                     }
