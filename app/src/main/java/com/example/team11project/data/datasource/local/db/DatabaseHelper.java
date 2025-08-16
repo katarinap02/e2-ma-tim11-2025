@@ -36,7 +36,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL + " INTEGER," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_UNIT + " TEXT," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_START_DATE + " INTEGER," +
-
+                    AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE + "INTEGER" +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_END_DATE + " INTEGER," +
                     AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " INTEGER NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_DIFFICULTY + " TEXT NOT NULL," +

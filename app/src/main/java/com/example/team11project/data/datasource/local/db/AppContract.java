@@ -24,6 +24,8 @@ public final class AppContract {
         public static final String COLUMN_NAME_RECURRENCE_START_DATE = "recurrence_start_date";
         public static final String COLUMN_NAME_RECURRENCE_END_DATE = "recurrence_end_date";
         public static final String COLUMN_NAME_EXECUTION_TIME = "execution_time";
+
+        public static final String COLUMN_NAME_COMPLETION_DATE = "completion_date";
         public static final String COLUMN_NAME_DIFFICULTY = "difficulty";
         public static final String COLUMN_NAME_IMPORTANCE = "importance";
         public static final String COLUMN_NAME_STATUS = "status";

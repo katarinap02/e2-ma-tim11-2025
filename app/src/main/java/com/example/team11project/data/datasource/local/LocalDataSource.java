@@ -297,6 +297,28 @@ public class LocalDataSource {
         return deletedRows;
     }
 
+    public int deleteAllTasksForUser(String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        try {
+            String selection = AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { userId };
+            deletedRows = db.delete(
+                    AppContract.TaskEntry.TABLE_NAME, // Naziv tabele
+                    selection,                             // WHERE klauzula
+                    selectionArgs                          // Vrednosti za WHERE klauzulu
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+        return deletedRows;
+    }
+
 
 
     private ContentValues categoryToContentValues(Category category) {
@@ -329,12 +351,16 @@ public class LocalDataSource {
         task.setRecurrenceInterval(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL)));
         task.setExecutionTime(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME))));
 
+
         if (!cursor.isNull(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_UNIT))) {
             task.setRecurrenceUnit(RecurrenceUnit.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_UNIT))));
         }
         if (!cursor.isNull(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_START_DATE))) {
             task.setRecurrenceStartDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_START_DATE))));
         }
+        if (!cursor.isNull(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE)))
+        {task.setCompletionDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE))));}
+
         if (!cursor.isNull(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_END_DATE))) {
             task.setRecurrenceEndDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_END_DATE))));
         }
@@ -363,6 +389,9 @@ public class LocalDataSource {
         }
         if (task.getRecurrenceStartDate() != null) {
             values.put(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_START_DATE, task.getRecurrenceStartDate().getTime());
+        }
+        if (task.getCompletionDate() != null) {
+            values.put(AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE, task.getCompletionDate().getTime());
         }
         if (task.getRecurrenceEndDate() != null) {
             values.put(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_END_DATE, task.getRecurrenceEndDate().getTime());

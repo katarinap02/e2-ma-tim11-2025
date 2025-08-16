@@ -69,7 +69,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         // Korak 1: Odmah u pozadini dohvati lokalne podatke i pošalji ih UI-ju
         databaseExecutor.execute(() -> {
             List<Category> localCategories = localDataSource.getAllCategories(userId);
-            callback.onSuccess(localCategories); // Odmah prikazujemo šta imamo
         });
 
         // Korak 2: Pokreni sinhronizaciju sa Firebase-a

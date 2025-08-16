@@ -2,6 +2,7 @@
     <string name="app_name">Team11Project</string>
 
     <string name="categories_screen_title">Moje Kategorije</string>
+    <string name="tasks_add_title">Dodaj kategoriju</string>
     <string name="button_add">Dodaj</string>
     <string name="button_edit">Izmeni</string>
     <string name="button_delete">Obriši</string>
@@ -13,5 +14,35 @@
     <string name="edit_category_title">Izmenite kategoriju</string>
     <string name="save_changes">Sačuvaj izmene</string>
     <string name="cancel">Otkaži</string>
+    <string name="task_title">Naziv zadatka</string>
+    <string name="task_description">Opis zadatka</string>
+    <string name="task_time">Vreme izvrsavanja</string>
+    <string name="task_hardness">Tezina zadatka</string>
+    <string name="task_important">Bitnost zadatka</string>
     <string name="delete_confirm_message">Da li ste sigurni da želite da obrišete \'%1$s\'?</string>
+
+    <string name="category">Kategorija</string>
+    <string name="task_recurring">Ponavljajući zadatak</string>
+    <string name="recurrence_interval_hint">Interval ponavljanja (npr. 2)</string>
+    <string name="recurrence_every">Ponavlja se svakog</string>
+    <string name="recurrence_day">Dana</string>
+    <string name="recurrence_week">Nedelje</string>
+    <string name="recurrence_start_date">Datum početka</string>
+    <string name="recurrence_end_date">Datum završetka</string>
+    <string name="recurrence_time_hint">Vreme početka</string>
+    <string name="execution_time">Vreme izvršenja</string>
+
+    <!-- Težina -->
+    <string name="task_very_easy">Veoma lak (1 XP)</string>
+    <string name="task_easy">Lak (3 XP)</string>
+    <string name="task_hard">Težak (7 XP)</string>
+    <string name="task_extreme">Ekstremno težak (20 XP)</string>
+
+    <!-- Bitnost -->
+    <string name="task_normal">Normalan (1 XP)</string>
+    <string name="task_important_3xp">Važan (3 XP)</string>
+    <string name="task_very_important_10xp">Veoma važan (10 XP)</string>
+    <string name="task_special_100xp">Specijalan (100 XP)</string>
+
+
 </resources>

@@ -17,13 +17,16 @@ public class Task {
     private TaskDifficulty difficulty;
     private TaskImportance importance;
     private Date executionTime; //vreme izvrsenja zadatka
+
+    private Date completionDate; //kada je zadatak oznacen kao zavrsen
     private TaskStatus status;
 
     public Task() {}
 
-    public Task(TaskStatus status, Date executionTime, TaskImportance importance, TaskDifficulty difficulty, Date recurrenceEndDate, Date recurrenceStartDate, RecurrenceUnit recurrenceUnit, int recurrenceInterval, String categoryId, String userId, boolean isRecurring, String description, String title, String id) {
+    public Task(TaskStatus status, Date executionTime, Date completionDate, TaskImportance importance, TaskDifficulty difficulty, Date recurrenceEndDate, Date recurrenceStartDate, RecurrenceUnit recurrenceUnit, int recurrenceInterval, String categoryId, String userId, boolean isRecurring, String description, String title, String id) {
         this.status = status;
         this.executionTime = executionTime;
+        this.completionDate = completionDate;
         this.importance = importance;
         this.difficulty = difficulty;
         this.recurrenceEndDate = recurrenceEndDate;
@@ -148,6 +151,14 @@ public class Task {
 
     public void setStatus(TaskStatus status) {
         this.status = status;
+    }
+
+    public Date getCompletionDate() {
+        return completionDate;
+    }
+
+    public void setCompletionDate(Date completionDate) {
+        this.completionDate = completionDate;
     }
 
     public int getCalculatedXp() {

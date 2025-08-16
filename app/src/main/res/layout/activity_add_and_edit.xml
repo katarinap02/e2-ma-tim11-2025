@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".presentation.activities.AddAndEditActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="@string/tasks_add_title" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Naziv i Opis zadatka -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_task_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/task_title"
+                    android:inputType="textCapSentences" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_task_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/task_description"
+                    android:minLines="3"
+                    android:gravity="top"
+                    android:inputType="textMultiLine|textCapSentences" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Kategorija -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/category" android:layout_marginTop="16dp" android:labelFor="@+id/spinner_category"/>
+            <Spinner
+                android:id="@+id/spinner_category"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp" />
+
+            <!-- Učestalost -->
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_recurring"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:layout_marginTop="16dp"
+                android:text="@string/task_recurring"
+                android:textSize="16sp"/>
+
+            <!-- Kontejner za opcije ponavljanja (početno sakriven) -->
+            <LinearLayout
+                android:id="@+id/layout_recurring_options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                tools:visibility="visible">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edit_text_recurrence_interval"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/recurrence_interval_hint"
+                        android:inputType="number"
+                        android:text="1"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/recurrence_every"
+                    android:layout_marginTop="8dp"/>
+                <RadioGroup
+                    android:id="@+id/radio_group_recurrence_unit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <RadioButton android:id="@+id/radio_day" android:checked="true" android:text="@string/recurrence_day" />
+                    <RadioButton android:id="@+id/radio_week" android:text="@string/recurrence_week" android:layout_marginStart="16dp"/>
+                </RadioGroup>
+
+                <EditText
+                    android:id="@+id/edit_text_recurrence_start"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/recurrence_start_date"
+                    android:minHeight="48dp"
+                    android:focusable="false" />
+                <EditText
+                    android:id="@+id/edit_text_recurrence_end"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/recurrence_end_date"
+                    android:minHeight="48dp"
+                    android:focusable="false" />
+                <EditText
+                    android:id="@+id/edit_text_recurrence_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/recurrence_time_hint"
+                    android:minHeight="48dp"
+                    android:focusable="false" />
+            </LinearLayout>
+
+            <!-- Kontejner za jednokratno Vreme izvršenja -->
+            <LinearLayout
+                android:id="@+id/layout_execution_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/execution_time" android:layout_marginTop="16dp" android:labelFor="@+id/edit_text_execution_time"/>
+                <EditText
+                    android:id="@+id/edit_text_execution_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/task_time"
+                    android:minHeight="48dp"
+                    android:focusable="false" />
+            </LinearLayout>
+
+            <!-- Težina -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/task_hardness" android:layout_marginTop="16dp"/>
+            <RadioGroup
+                android:id="@+id/radio_group_difficulty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <RadioButton android:id="@+id/radio_very_easy" android:text="@string/task_very_easy" />
+                <RadioButton android:id="@+id/radio_easy" android:checked="true" android:text="@string/task_easy" />
+                <RadioButton android:id="@+id/radio_hard" android:text="@string/task_hard" />
+                <RadioButton android:id="@+id/radio_extreme" android:text="@string/task_extreme" />
+            </RadioGroup>
+
+            <!-- Bitnost -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/task_important" android:layout_marginTop="16dp"/>
+            <RadioGroup
+                android:id="@+id/radio_group_importance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <RadioButton android:id="@+id/radio_normal" android:checked="true" android:text="@string/task_normal" />
+                <RadioButton android:id="@+id/radio_important" android:text="@string/task_important_3xp" />
+                <RadioButton android:id="@+id/radio_very_important" android:text="@string/task_very_important_10xp" />
+                <RadioButton android:id="@+id/radio_special" android:text="@string/task_special_100xp" />
+            </RadioGroup>
+
+            <!-- Dugme za čuvanje -->
+            <Button
+                android:id="@+id/button_save_task"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:minHeight="56dp"
+                android:text="@string/button_add" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <ProgressBar
+        android:id="@+id/progress_bar_add_task"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
