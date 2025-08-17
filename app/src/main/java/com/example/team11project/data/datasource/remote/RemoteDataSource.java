@@ -1,14 +1,19 @@
 package com.example.team11project.data.datasource.remote;
 import androidx.annotation.NonNull;
 
+import com.example.team11project.domain.model.User;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,6 +124,63 @@ public class RemoteDataSource {
     }
 
 
+    public void addUser(User user, final DataSourceCallback<String> callback) {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
 
+        auth.createUserWithEmailAndPassword(user.getMail(), user.getPassword())
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser firebaseUser = auth.getCurrentUser();
+                        if (firebaseUser != null) {
+                            String uid = firebaseUser.getUid();
+                            user.setId(uid);
 
+                            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                    .setDisplayName(user.getUsername())
+                                    .build();
+                            firebaseUser.updateProfile(profileUpdates)
+                                    .addOnCompleteListener(profileTask -> {
+                                        firebaseUser.sendEmailVerification()
+                                                .addOnCompleteListener(verificationTask -> {
+                                                    if (verificationTask.isSuccessful()) {
+                                                        db.collection(USERS_COLLECTION)
+                                                                .document(uid)
+                                                                .set(user)
+                                                                .addOnSuccessListener(aVoid -> callback.onSuccess(uid))
+                                                                .addOnFailureListener(callback::onFailure);
+                                                    } else {
+                                                        callback.onFailure(verificationTask.getException());
+                                                        firebaseUser.delete();
+                                                    }
+                                                });
+                                    });
+                        } else {
+                            callback.onFailure(new Exception("FirebaseUser je null nakon kreiranja."));
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
     }
+
+    public void refreshUserVerificationStatus(User user, DataSourceCallback<Void> callback) {
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser != null) {
+            firebaseUser.reload().addOnCompleteListener(task -> {
+                if (firebaseUser.isEmailVerified()) {
+                    user.setVerified(true);
+                    db.collection(USERS_COLLECTION)
+                            .document(user.getId())
+                            .set(user, SetOptions.merge())
+                            .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                            .addOnFailureListener(callback::onFailure);
+                } else {
+                    callback.onFailure(new Exception("User email not verified yet"));
+                }
+            });
+        } else {
+            callback.onFailure(new Exception("FirebaseUser is null"));
+        }
+    }
+
+}

@@ -57,6 +57,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_CATEGORIES_TABLE);
         db.execSQL(SQL_CREATE_TASKS_TABLE);
+        db.execSQL(SQL_CREATE_USERS_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -66,6 +67,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_TASKS_TABLE);
         db.execSQL(SQL_DELETE_CATEGORIES_TABLE);
+        db.execSQL("DROP TABLE IF EXISTS users");
         onCreate(db);
     }
 
@@ -74,4 +76,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         onUpgrade(db, oldVersion, newVersion);
     }
+
+
+    private static final String SQL_CREATE_USERS_TABLE =
+            "CREATE TABLE " + AppContract.UserEntry.TABLE_NAME + " (" +
+                    AppContract.UserEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.UserEntry.COLUMN_USERNAME + " TEXT NOT NULL," +
+                    AppContract.UserEntry.COLUMN_EMAIL + " TEXT NOT NULL," +
+                    AppContract.UserEntry.COLUMN_PASSWORD + " TEXT NOT NULL," +
+                    AppContract.UserEntry.COLUMN_AVATAR + " TEXT," +
+                    AppContract.UserEntry.COLUMN_VERIFIED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
+                    ")";
+
 }

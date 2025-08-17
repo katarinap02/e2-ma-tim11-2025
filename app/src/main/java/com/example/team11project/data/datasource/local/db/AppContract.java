@@ -32,4 +32,19 @@ public final class AppContract {
 
     }
 
+    public static class UserEntry implements BaseColumns {
+        public static final String TABLE_NAME = "users";
+
+        public static final String _ID = "id";
+        public static final String COLUMN_EMAIL = "email";
+        public static final String COLUMN_USERNAME = "username";
+        public static final String COLUMN_PASSWORD = "password";
+        public static final String COLUMN_AVATAR = "avatar";
+        public static final String COLUMN_VERIFIED = "isVerified";
+        //
+    }
+
+
+
+
     }
