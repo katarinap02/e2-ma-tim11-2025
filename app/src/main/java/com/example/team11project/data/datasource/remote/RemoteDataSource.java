@@ -1,4 +1,7 @@
 package com.example.team11project.data.datasource.remote;
+import android.content.SharedPreferences;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.example.team11project.domain.model.User;
@@ -9,6 +12,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
@@ -127,7 +131,7 @@ public class RemoteDataSource {
     public void addUser(User user, final DataSourceCallback<String> callback) {
         FirebaseAuth auth = FirebaseAuth.getInstance();
 
-        auth.createUserWithEmailAndPassword(user.getMail(), user.getPassword())
+        auth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser firebaseUser = auth.getCurrentUser();
@@ -163,7 +167,7 @@ public class RemoteDataSource {
                 });
     }
 
-    public void refreshUserVerificationStatus(User user, DataSourceCallback<Void> callback) {
+    public void refreshUserVerificationStatus(User user, final DataSourceCallback<Void> callback) {
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
             firebaseUser.reload().addOnCompleteListener(task -> {
@@ -181,6 +185,44 @@ public class RemoteDataSource {
         } else {
             callback.onFailure(new Exception("FirebaseUser is null"));
         }
+    }
+
+    public void login(String email, String password, final DataSourceCallback<User> callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Log.d("LoginDebug", "Searching for email: '" + email + "'");
+
+        db.collection("users")
+                .whereEqualTo("email", email)
+                .get()
+                .addOnCompleteListener(task -> {
+                    Log.d("LoginDebug", "Documents found: " + task.getResult().size());
+
+                    if(task.getResult().isEmpty()){
+                        callback.onFailure(new Exception("Korisnik ne postoji"));
+                    }
+
+                    DocumentSnapshot document = task.getResult().getDocuments().get(0);
+                    User user = document.toObject(User.class);
+
+                    if (!user.getPassword().equals(password)) {
+                        callback.onFailure(new Exception("Pogresna lozinka"));
+                        return;
+                    }
+
+                    refreshUserVerificationStatus(user, new DataSourceCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callback.onSuccess(user);
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            callback.onFailure(new Exception("Morate prvo da aktivirate nalog putem linka u mejlu"));
+                        }
+                    });
+                });
+
     }
 
 }

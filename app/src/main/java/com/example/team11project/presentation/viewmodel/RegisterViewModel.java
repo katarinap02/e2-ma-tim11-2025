@@ -20,9 +20,10 @@ import java.util.List;
 public class RegisterViewModel extends ViewModel {
 
     private final UserRepository userRepository;
-
     private final MutableLiveData<List<User>> _users = new MutableLiveData<>();
     private final MutableLiveData<String> _error = new MutableLiveData<>();
+    private final MutableLiveData<User> _user = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> _isLoading = new MutableLiveData<>();
 
     public RegisterViewModel(UserRepository userRepository){
         this.userRepository = userRepository;
@@ -36,12 +37,19 @@ public class RegisterViewModel extends ViewModel {
         return _error;
     }
 
-    public void registerUser(String username, String password, String mail, String avatar){
+    public LiveData<User> getUser(){
+        return _user;
+    }
+
+    public LiveData<Boolean> isLoading() {
+        return _isLoading;
+    }
+    public void registerUser(String username, String password, String email, String avatar){
         User user = new User();
 
         user.setUsername(username);
         user.setPassword(password);
-        user.setMail(mail);
+        user.setEmail(email);
         user.setAvatar(avatar);
 
         userRepository.addUser(user, new RepositoryCallback<Void>() {
@@ -62,6 +70,24 @@ public class RegisterViewModel extends ViewModel {
             }
         });
 
+    }
+
+    public void login(String email, String password){
+        _isLoading.setValue(true);
+
+        userRepository.login(email, password, new RepositoryCallback<User>() {
+            @Override
+            public void onSuccess(User result) {
+                _isLoading.postValue(false);
+                _user.postValue(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                _isLoading.postValue(false);
+                _error.postValue(e.getMessage());
+            }
+        });
     }
 
     public static class Factory implements ViewModelProvider.Factory {

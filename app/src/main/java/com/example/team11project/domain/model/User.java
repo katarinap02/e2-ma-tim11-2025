@@ -3,17 +3,17 @@ package com.example.team11project.domain.model;
 public class User {
     private String id;
     private String username;
-    private String mail;
+    private String email;
     private String password;
     private String avatar;
     private boolean isVerified;
 
     public User(){}
 
-    public User(String id, String username, String mail, String password, String avatar, boolean isVerified){
+    public User(String id, String username, String email, String password, String avatar, boolean isVerified){
         this.id = id;
         this.username = username;
-        this.mail = mail;
+        this.email = email;
         this.password = password;
         this.avatar = avatar;
         this.isVerified = isVerified;
@@ -35,12 +35,12 @@ public class User {
         this.username = username;
     }
 
-    public String getMail() {
-        return mail;
+    public String getEmail() {
+        return email;
     }
 
-    public void setMail(String mail) {
-        this.mail = mail;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {

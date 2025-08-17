@@ -419,11 +419,45 @@ public class LocalDataSource {
         return newRowId;
     }
 
+    public User getUserByMail(String email) {
+        User user = null;
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.UserEntry.COLUMN_EMAIL + " = ?";
+        String[] selectionArgs = { email };
+
+        Cursor cursor = db.query(
+                AppContract.UserEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+
+        if(cursor.moveToFirst()) {
+            String id = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry._ID));
+            String emailDb = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_EMAIL));
+            String password = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_PASSWORD));
+            String username = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_USERNAME));
+            String avatar = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_AVATAR));
+            int isVerifiedInt = cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_VERIFIED));
+            boolean isVerified = isVerifiedInt != 0;
+
+            user = new User(id, username, emailDb, password, avatar, isVerified);
+        }
+
+        cursor.close();
+        db.close();
+        return user;
+    }
+
     private ContentValues userToContentValues(User user) {
         ContentValues values = new ContentValues();
         values.put(AppContract.UserEntry._ID, user.getId());
         values.put(AppContract.UserEntry.COLUMN_USERNAME, user.getUsername());
-        values.put(AppContract.UserEntry.COLUMN_EMAIL, user.getMail());
+        values.put(AppContract.UserEntry.COLUMN_EMAIL, user.getEmail());
         values.put(AppContract.UserEntry.COLUMN_PASSWORD, user.getPassword());
         values.put(AppContract.UserEntry.COLUMN_AVATAR, user.getAvatar());
         values.put(AppContract.UserEntry.COLUMN_VERIFIED, user.getVerified());
