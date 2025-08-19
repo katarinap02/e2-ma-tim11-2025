@@ -13,7 +13,6 @@ import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
@@ -34,7 +33,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class AddAndEditActivity extends AppCompatActivity {
+public class AddAndEditActivity extends BaseActivity {
 
     private TaskViewModel viewModel;
 
@@ -61,6 +60,8 @@ public class AddAndEditActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_and_edit);
+
+        setupNavbar();
 
         // Inicijalizacija ViewModel-a preko fabrike
         TaskViewModel.Factory factory = new TaskViewModel.Factory(getApplication());

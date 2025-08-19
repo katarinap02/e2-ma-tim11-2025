@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CategoryActivity extends AppCompatActivity implements CategoryAdapter.OnCategoryClickListener{
+public class CategoryActivity extends BaseActivity implements CategoryAdapter.OnCategoryClickListener{
 
     private CategoryViewModel viewModel;
     private CategoryAdapter categoryAdapter;
@@ -48,6 +48,8 @@ public class CategoryActivity extends AppCompatActivity implements CategoryAdapt
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_category);
+
+        setupNavbar();
 
         toolbar = findViewById(R.id.toolbar);
         recyclerView = findViewById(R.id.categories_recycler_view);
