@@ -20,7 +20,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RemoteDataSource {
 
@@ -147,16 +149,42 @@ public class RemoteDataSource {
                                         firebaseUser.sendEmailVerification()
                                                 .addOnCompleteListener(verificationTask -> {
                                                     if (verificationTask.isSuccessful()) {
+                                                        // Upis korisnika
                                                         db.collection(USERS_COLLECTION)
                                                                 .document(uid)
                                                                 .set(user)
-                                                                .addOnSuccessListener(aVoid -> callback.onSuccess(uid))
+                                                                .addOnSuccessListener(aVoid -> {
+                                                                    // Kreiranje LevelInfo subcollection za novog korisnika
+                                                                    Map<String, Object> levelInfoMap = new HashMap<>();
+                                                                    levelInfoMap.put("level", 0);
+                                                                    levelInfoMap.put("xp", 0);
+                                                                    levelInfoMap.put("xpForNextLevel", 200);
+                                                                    levelInfoMap.put("xpTaskImportance", 0);
+                                                                    levelInfoMap.put("xpTaskDifficulty", 0);
+                                                                    levelInfoMap.put("pp", 0);
+                                                                    levelInfoMap.put("title", "Novi");
+
+                                                                    db.collection(USERS_COLLECTION)
+                                                                            .document(uid)
+                                                                            .collection("levelInfo")
+                                                                            .document("level1") // možeš koristiti i UUID ako želiš
+                                                                            .set(levelInfoMap)
+                                                                            .addOnSuccessListener(aVoid2 -> {
+                                                                                Log.d("Firebase", "LevelInfo kreiran za usera");
+                                                                                callback.onSuccess(uid);
+                                                                            })
+                                                                            .addOnFailureListener(e -> {
+                                                                                Log.e("Firebase", "Greska pri kreiranju LevelInfo", e);
+                                                                                callback.onFailure(e);
+                                                                            });
+                                                                })
                                                                 .addOnFailureListener(callback::onFailure);
+
                                                     } else {
-                                                        callback.onFailure(verificationTask.getException());
-                                                        firebaseUser.delete();
-                                                    }
-                                                });
+                                                            callback.onFailure(verificationTask.getException());
+                                                            firebaseUser.delete();
+                                                        }
+                                                    });
                                     });
                         } else {
                             callback.onFailure(new Exception("FirebaseUser je null nakon kreiranja."));

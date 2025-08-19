@@ -88,4 +88,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_VERIFIED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
                     ")";
 
+    private static final String SQL_CREATE_LEVELINFO_TABLE =
+            "CREATE TABLE " + AppContract.LevelInfoEntry.TABLE_NAME + " (" +
+                    AppContract.LevelInfoEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.LevelInfoEntry.COLUMN_LEVEL + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP_FOR_NEXT_LEVEL + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP_TASK_IMPORTANCE + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_PP + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_TITLE + " TEXT NOT NULL" +
+                    "FOREIGN KEY(" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +
+                    AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
+                    ")";
+
+
 }

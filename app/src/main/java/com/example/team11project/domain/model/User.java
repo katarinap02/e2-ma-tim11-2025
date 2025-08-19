@@ -1,5 +1,7 @@
 package com.example.team11project.domain.model;
 
+import java.util.logging.Level;
+
 public class User {
     private String id;
     private String username;
@@ -66,4 +68,5 @@ public class User {
     public void setVerified(boolean verified) {
         isVerified = verified;
     }
+
 }
