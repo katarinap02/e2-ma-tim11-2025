@@ -13,6 +13,7 @@ import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
 import com.example.team11project.domain.model.TaskStatus;
+import com.example.team11project.domain.model.User;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -402,5 +403,67 @@ public class LocalDataSource {
         values.put(AppContract.TaskEntry.COLUMN_NAME_STATUS, task.getStatus().name());
         return values;
     }
+
+    public long addUser(User user) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = userToContentValues(user);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.UserEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE
+        );
+
+        db.close();
+        return newRowId;
+    }
+
+    public User getUserByMail(String email) {
+        User user = null;
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.UserEntry.COLUMN_EMAIL + " = ?";
+        String[] selectionArgs = { email };
+
+        Cursor cursor = db.query(
+                AppContract.UserEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+
+        if(cursor.moveToFirst()) {
+            String id = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry._ID));
+            String emailDb = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_EMAIL));
+            String password = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_PASSWORD));
+            String username = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_USERNAME));
+            String avatar = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_AVATAR));
+            int isVerifiedInt = cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_VERIFIED));
+            boolean isVerified = isVerifiedInt != 0;
+
+            user = new User(id, username, emailDb, password, avatar, isVerified);
+        }
+
+        cursor.close();
+        db.close();
+        return user;
+    }
+
+    private ContentValues userToContentValues(User user) {
+        ContentValues values = new ContentValues();
+        values.put(AppContract.UserEntry._ID, user.getId());
+        values.put(AppContract.UserEntry.COLUMN_USERNAME, user.getUsername());
+        values.put(AppContract.UserEntry.COLUMN_EMAIL, user.getEmail());
+        values.put(AppContract.UserEntry.COLUMN_PASSWORD, user.getPassword());
+        values.put(AppContract.UserEntry.COLUMN_AVATAR, user.getAvatar());
+        values.put(AppContract.UserEntry.COLUMN_VERIFIED, user.getVerified());
+
+        return values;
+    }
+
 
 }
