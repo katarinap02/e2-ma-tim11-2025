@@ -7,6 +7,9 @@
     android:background="#F5F5F5"
     tools:context=".presentation.activities.CategoryActivity">
 
+    <include
+        layout="@layout/navbar"/>
+
     <!-- 1. AppBar na vrhu ekrana za naslov -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar_layout"

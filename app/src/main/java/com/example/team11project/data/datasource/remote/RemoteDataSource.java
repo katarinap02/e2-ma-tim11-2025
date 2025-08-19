@@ -200,6 +200,7 @@ public class RemoteDataSource {
 
                     if(task.getResult().isEmpty()){
                         callback.onFailure(new Exception("Korisnik ne postoji"));
+                        return;
                     }
 
                     DocumentSnapshot document = task.getResult().getDocuments().get(0);
