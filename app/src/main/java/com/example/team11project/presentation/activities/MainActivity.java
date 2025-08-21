@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Intent intent;
             if (sessionToken != null) {
-                intent = new Intent(MainActivity.this, AddAndEditActivity.class);
+                intent = new Intent(MainActivity.this, HomeScreenActivity.class);
             } else {
                 intent = new Intent(MainActivity.this, LoginActivity.class);
             }
