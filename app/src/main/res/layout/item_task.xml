@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardUseCompatPadding="true"
+    app:cardCornerRadius="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Obojena linija koja predstavlja boju kategorije -->
+        <View
+            android:id="@+id/view_category_color"
+            android:layout_width="6dp"
+            android:layout_height="match_parent"
+            android:background="@color/purple_500"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/text_view_task_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Naziv zadatka"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"/>
+
+            <TextView
+                android:id="@+id/text_view_execution_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="20. Avg 2025, 15:00"
+                android:drawableStart="@drawable/ic_time"
+                android:drawablePadding="4dp"
+                app:drawableTint="@color/text_secondary"/>
+
+            <TextView
+                android:id="@+id/text_view_xp_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Vrednost: 23 XP"
+                android:drawableStart="@drawable/ic_xp"
+                android:drawablePadding="4dp"
+                app:drawableTint="@color/picker_amber"/>
+
+        </LinearLayout>
+
+        <!-- Dugme za brzo označavanje kao "urađeno" -->
+        <ImageButton
+            android:id="@+id/button_complete_task"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_check"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="16dp"
+            android:layout_gravity="center_vertical"/>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
