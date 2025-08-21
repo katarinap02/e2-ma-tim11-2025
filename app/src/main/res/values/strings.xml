@@ -2,7 +2,7 @@
     <string name="app_name">Team11Project</string>
 
     <string name="categories_screen_title">Moje Kategorije</string>
-    <string name="tasks_add_title">Dodaj kategoriju</string>
+    <string name="tasks_add_title">Dodaj nov zadatak</string>
     <string name="button_add">Dodaj</string>
     <string name="button_edit">Izmeni</string>
     <string name="button_delete">Obriši</string>
@@ -44,5 +44,6 @@
     <string name="task_very_important_10xp">Veoma važan (10 XP)</string>
     <string name="task_special_100xp">Specijalan (100 XP)</string>
 
+    <string name="action_home_title">Pocetna strana</string>
 
 </resources>
