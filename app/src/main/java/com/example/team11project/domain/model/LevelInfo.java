@@ -7,12 +7,12 @@ public class LevelInfo {
     private int xpForNextLevel;
     private int xpTaskImportance;
     private int xpTaskDifficulty;
-    private String title;
+    private UserTitle title;
     private int pp;
 
     public LevelInfo(){}
 
-    public LevelInfo(int level, int xpForNextLevel, int xp, int xpTaskImportance, int xpTaskDifficulty, String title, int pp) {
+    public LevelInfo(int level, int xpForNextLevel, int xp, int xpTaskImportance, int xpTaskDifficulty, UserTitle title, int pp) {
         this.xpForNextLevel = xpForNextLevel;
         this.level = level;
         this.xp = xp;
@@ -62,11 +62,11 @@ public class LevelInfo {
         this.xpTaskDifficulty = xpTaskDifficulty;
     }
 
-    public String getTitle() {
+    public UserTitle getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
+    public void setTitle(UserTitle title) {
         this.title = title;
     }
 

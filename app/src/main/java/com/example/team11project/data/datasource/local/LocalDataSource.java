@@ -421,6 +421,19 @@ public class LocalDataSource {
     }
 
 
+
+    public void updateLevelInfo(LevelInfo levelInfo, String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = levelInfoToContentValues(levelInfo);
+
+        db.update(
+                "levelInfo",     // ime tabele
+                values,          // kolone i vrednosti
+                "userId = ?",    // where clause
+                new String[]{userId} // where args
+        );
+    }
+
     private ContentValues userToContentValues(User user) {
         ContentValues values = new ContentValues();
         values.put(AppContract.UserEntry._ID, user.getId());
@@ -442,7 +455,7 @@ public class LocalDataSource {
         values.put(AppContract.LevelInfoEntry.COLUMN_XP_TASK_IMPORTANCE, levelInfo.getXpTaskImportance());
         values.put(AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY, levelInfo.getXpTaskDifficulty());
         values.put(AppContract.LevelInfoEntry.COLUMN_PP, levelInfo.getPp());
-        values.put(AppContract.LevelInfoEntry.COLUMN_TITLE, levelInfo.getTitle());
+        values.put(AppContract.LevelInfoEntry.COLUMN_TITLE, levelInfo.getTitle().name());
 
         return values;
     }
