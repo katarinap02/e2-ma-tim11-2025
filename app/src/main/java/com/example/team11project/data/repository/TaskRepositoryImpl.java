@@ -85,6 +85,22 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     @Override
+    public void getTaskById(String taskId, String userId, RepositoryCallback<Task> callback) {
+        databaseExecutor.execute(() -> {
+            try {
+                Task task = localDataSource.getTaskById(taskId, userId);
+                if (task != null) {
+                    callback.onSuccess(task);
+                } else {
+                    callback.onFailure(new Exception("Zadatak nije pronađen."));
+                }
+            } catch (Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
     public void updateTask(Task task, RepositoryCallback<Void> callback) {
         if (task.getId() == null || task.getId().trim().isEmpty()) {
             callback.onFailure(new Exception("Zadatak nema ID i ne može biti ažuriran."));
@@ -137,4 +153,6 @@ public class TaskRepositoryImpl implements TaskRepository {
             }
         });
     }
+
+
 }

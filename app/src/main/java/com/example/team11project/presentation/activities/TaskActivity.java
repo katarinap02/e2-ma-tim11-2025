@@ -1,7 +1,10 @@
 package com.example.team11project.presentation.activities;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,12 +30,26 @@ public class TaskActivity extends BaseActivity {
     private ViewPagerAdapter viewPagerAdapter;
 
     private boolean isInitialLoad = true;
-    private final String currentUserId = "12345678";
+    private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task);
+
+        //deo za usera
+        SharedPreferences prefs = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("userId", null);
+
+        if (currentUserId == null) {
+            // Ako ID ne postoji, to znači da korisnik nije ulogovan.
+            Toast.makeText(this, "Greška: Korisnik nije pronađen. Molimo ulogujte se.", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         setupUI();
         setSupportActionBar(findViewById(R.id.toolbar_tasks));
 

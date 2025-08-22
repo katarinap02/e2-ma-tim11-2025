@@ -1,5 +1,8 @@
 package com.example.team11project.presentation.fragments;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -19,6 +22,8 @@ import com.example.team11project.R;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.presentation.activities.LoginActivity;
+import com.example.team11project.presentation.activities.TaskDetailActivity;
 import com.example.team11project.presentation.adapters.TaskAdapter;
 import com.example.team11project.presentation.viewmodel.TaskViewModel;
 import com.google.android.material.chip.ChipGroup;
@@ -38,7 +43,7 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
     private ProgressBar progressBar;
 
     private List<Task> originalTasks = new ArrayList<>();
-    private final String currentUserId = "12345678";
+    private String currentUserId;
 
     private ChipGroup chipGroupFilter; // Nova promenljiva za filter
     private enum TaskFilter { ALL, SINGLE, RECURRING }
@@ -57,6 +62,21 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        //deo za usera
+        SharedPreferences prefs = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("userId", null);
+
+        if (currentUserId == null) {
+            Toast.makeText(getContext(), "Greška: Korisnik nije pronađen. Molimo ulogujte se.", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(getActivity(), LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            if (getActivity() != null) {
+                getActivity().finish();
+            }
+            return;
+        }
 
         recyclerView = view.findViewById(R.id.recycler_view_task_list);
         progressBar = view.findViewById(R.id.progress_bar_list);
@@ -110,8 +130,9 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
     //
     @Override
     public void onTaskClick(Task task) {
-        // TODO: Otvori TaskDetailActivity i prosledi ID zadatka
-        Toast.makeText(getContext(), "Otvori detalje za: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(getActivity(), TaskDetailActivity.class);
+        intent.putExtra("TASK_ID", task.getId());
+        startActivity(intent);
     }
 
     @Override

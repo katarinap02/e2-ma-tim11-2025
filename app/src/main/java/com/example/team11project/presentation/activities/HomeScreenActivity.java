@@ -27,5 +27,11 @@ public class HomeScreenActivity extends BaseActivity {
             startActivity(intent);
         });
 
+        Button btnCategories = findViewById(R.id.btnCategories);
+        btnCategories.setOnClickListener(v -> {
+            Intent intent = new Intent(this, CategoryActivity.class);
+            startActivity(intent);
+        });
+
     }
 }

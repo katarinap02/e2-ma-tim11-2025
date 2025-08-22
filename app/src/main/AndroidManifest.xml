@@ -15,11 +15,14 @@
         android:theme="@style/Theme.Team11Project"
         tools:targetApi="31">
         <activity
+            android:name=".presentation.activities.TaskDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.activities.TaskActivity"
             android:exported="false" />
         <activity
-        android:name=".presentation.activities.HomeScreenActivity"
-        android:exported="false" />
+            android:name=".presentation.activities.HomeScreenActivity"
+            android:exported="false" />
         <activity
             android:name=".presentation.activities.LoginActivity"
             android:exported="false" />

@@ -215,6 +215,24 @@ public class LocalDataSource {
         return deletedRows;
     }
 
+    public Category getCategoryById(String categoryId, String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        Category category = null;
+        try {
+            String selection = AppContract.CategoryEntry._ID + " = ? AND " + AppContract.CategoryEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { categoryId, userId };
+            cursor = db.query(AppContract.CategoryEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                category = cursorToCategory(cursor);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return category;
+    }
+
 
 
     /**
@@ -318,6 +336,36 @@ public class LocalDataSource {
             }
         }
         return deletedRows;
+    }
+
+    // U data/datasource/local/LocalDataSource.java
+
+    public Task getTaskById(String taskId, String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        Task task = null;
+        try {
+            String selection = AppContract.TaskEntry._ID + " = ? AND " + AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { taskId, userId };
+
+            cursor = db.query(
+                    AppContract.TaskEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                task = cursorToTask(cursor);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return task;
     }
 
 

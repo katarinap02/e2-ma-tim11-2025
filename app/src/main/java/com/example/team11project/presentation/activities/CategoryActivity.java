@@ -1,5 +1,8 @@
 package com.example.team11project.presentation.activities;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
@@ -38,7 +41,7 @@ public class CategoryActivity extends BaseActivity implements CategoryAdapter.On
     private ProgressBar progressBar;
     private Button buttonAdd, buttonEdit, buttonDelete;
 
-    private String currentUserId = "12345678";
+    private String currentUserId;
 
     private String selectedColor = null;
 
@@ -48,6 +51,19 @@ public class CategoryActivity extends BaseActivity implements CategoryAdapter.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_category);
+
+        //deo za usera
+        SharedPreferences prefs = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("userId", null);
+
+        if (currentUserId == null) {
+            // Ako ID ne postoji, to znači da korisnik nije ulogovan.
+            Toast.makeText(this, "Greška: Korisnik nije pronađen. Molimo ulogujte se.", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
 
         setupNavbar();
 
