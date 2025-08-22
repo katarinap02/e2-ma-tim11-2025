@@ -33,5 +33,11 @@ public class HomeScreenActivity extends BaseActivity {
             startActivity(intent);
         });
 
+        Button btnLevelInfo = findViewById(R.id.btnLevelInfo);
+        btnLevelInfo.setOnClickListener(v -> {
+            Intent intent = new Intent(this, LevelInfoActivity.class);
+            startActivity(intent);
+        });
+
     }
 }

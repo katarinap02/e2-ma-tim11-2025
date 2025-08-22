@@ -50,6 +50,7 @@
     <string name="profil">Profil</string>
     <string name="dodaj_izmeni_zadatke">Zadaci</string>
     <string name="login">Log in</string>
+    <string name="napredak_kroz_nivoe">Napredak kroz nivoe</string>
 
     <!-- Taskovi -->
     <string name="my_tasks_title">Moji zadaci</string>

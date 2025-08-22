@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import com.example.team11project.data.datasource.local.db.AppContract;
 import com.example.team11project.data.datasource.local.db.DatabaseHelper;
 import com.example.team11project.domain.model.Category;
+import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
@@ -466,38 +467,18 @@ public class LocalDataSource {
         return newRowId;
     }
 
-    public User getUserByMail(String email) {
-        User user = null;
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String selection = AppContract.UserEntry.COLUMN_EMAIL + " = ?";
-        String[] selectionArgs = { email };
 
-        Cursor cursor = db.query(
-                AppContract.UserEntry.TABLE_NAME,
-                null,
-                selection,
-                selectionArgs,
-                null,
-                null,
-                null
+    public void updateLevelInfo(LevelInfo levelInfo, String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = levelInfoToContentValues(levelInfo);
+
+        db.update(
+                "levelInfo",     // ime tabele
+                values,          // kolone i vrednosti
+                "userId = ?",    // where clause
+                new String[]{userId} // where args
         );
-
-        if(cursor.moveToFirst()) {
-            String id = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry._ID));
-            String emailDb = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_EMAIL));
-            String password = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_PASSWORD));
-            String username = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_USERNAME));
-            String avatar = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_AVATAR));
-            int isVerifiedInt = cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_VERIFIED));
-            boolean isVerified = isVerifiedInt != 0;
-
-            user = new User(id, username, emailDb, password, avatar, isVerified);
-        }
-
-        cursor.close();
-        db.close();
-        return user;
     }
 
     private ContentValues userToContentValues(User user) {
@@ -508,6 +489,20 @@ public class LocalDataSource {
         values.put(AppContract.UserEntry.COLUMN_PASSWORD, user.getPassword());
         values.put(AppContract.UserEntry.COLUMN_AVATAR, user.getAvatar());
         values.put(AppContract.UserEntry.COLUMN_VERIFIED, user.getVerified());
+
+        return values;
+    }
+
+    private ContentValues levelInfoToContentValues(LevelInfo levelInfo) {
+        ContentValues values = new ContentValues();
+        values.put(AppContract.LevelInfoEntry._ID, levelInfo.getId()); // UUID ili auto-generated ID
+        values.put(AppContract.LevelInfoEntry.COLUMN_LEVEL, levelInfo.getLevel());
+        values.put(AppContract.LevelInfoEntry.COLUMN_XP, levelInfo.getXp());
+        values.put(AppContract.LevelInfoEntry.COLUMN_XP_FOR_NEXT_LEVEL, levelInfo.getXpForNextLevel());
+        values.put(AppContract.LevelInfoEntry.COLUMN_XP_TASK_IMPORTANCE, levelInfo.getXpTaskImportance());
+        values.put(AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY, levelInfo.getXpTaskDifficulty());
+        values.put(AppContract.LevelInfoEntry.COLUMN_PP, levelInfo.getPp());
+        values.put(AppContract.LevelInfoEntry.COLUMN_TITLE, levelInfo.getTitle().name());
 
         return values;
     }

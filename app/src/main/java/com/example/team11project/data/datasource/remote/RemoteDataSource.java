@@ -4,7 +4,9 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.model.UserTitle;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,7 +22,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RemoteDataSource {
 
@@ -147,16 +151,18 @@ public class RemoteDataSource {
                                         firebaseUser.sendEmailVerification()
                                                 .addOnCompleteListener(verificationTask -> {
                                                     if (verificationTask.isSuccessful()) {
+                                                        // Upis korisnika
+                                                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0));
                                                         db.collection(USERS_COLLECTION)
                                                                 .document(uid)
                                                                 .set(user)
-                                                                .addOnSuccessListener(aVoid -> callback.onSuccess(uid))
                                                                 .addOnFailureListener(callback::onFailure);
+
                                                     } else {
-                                                        callback.onFailure(verificationTask.getException());
-                                                        firebaseUser.delete();
-                                                    }
-                                                });
+                                                            callback.onFailure(verificationTask.getException());
+                                                            firebaseUser.delete();
+                                                        }
+                                                    });
                                     });
                         } else {
                             callback.onFailure(new Exception("FirebaseUser je null nakon kreiranja."));
@@ -231,6 +237,55 @@ public class RemoteDataSource {
                         callback.onFailure(authTask.getException());
                     }
                 });
+    }
+
+    public void updateUser(User user, final DataSourceCallback<Void> callback) {
+        if (user.getId() == null) {
+            callback.onFailure(new Exception("User ID je null, ne može se update-ovati."));
+            return;
+        }
+
+        db.collection(USERS_COLLECTION)
+                .document(user.getId())
+                .set(user, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getUserById(String userId, DataSourceCallback<User> callback) {
+        if (userId == null || userId.isEmpty()) {
+            callback.onFailure(new Exception("User ID je null ili prazan."));
+            return;
+        }
+
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!documentSnapshot.exists()) {
+                        callback.onFailure(new Exception("User ne postoji"));
+                        return;
+                    }
+
+                    User user = documentSnapshot.toObject(User.class);
+
+                    if (user.getLevelInfo() != null) {
+                        String titleStr = documentSnapshot.getString("levelInfo.title");
+                        UserTitle titleEnum;
+                        try {
+                            titleEnum = UserTitle.valueOf(titleStr);
+                        } catch (Exception e) {
+                            titleEnum = UserTitle.POČETNIK; // fallback
+                        }
+                        user.getLevelInfo().setTitle(titleEnum);
+                    } else {
+                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0)); // default LevelInfo
+                    }
+
+                    callback.onSuccess(user);
+                })
+                .addOnFailureListener(callback::onFailure);
+
     }
 
 }

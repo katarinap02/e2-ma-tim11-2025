@@ -1,5 +1,7 @@
 package com.example.team11project.domain.model;
 
+import java.util.logging.Level;
+
 public class User {
     private String id;
     private String username;
@@ -7,6 +9,7 @@ public class User {
     private String password;
     private String avatar;
     private boolean isVerified;
+    private LevelInfo levelInfo;
 
     public User(){}
 
@@ -17,6 +20,7 @@ public class User {
         this.password = password;
         this.avatar = avatar;
         this.isVerified = isVerified;
+        levelInfo = new LevelInfo();
     }
 
     public String getId(){
@@ -65,5 +69,13 @@ public class User {
 
     public void setVerified(boolean verified) {
         isVerified = verified;
+    }
+
+    public LevelInfo getLevelInfo() {
+        return levelInfo;
+    }
+
+    public void setLevelInfo(LevelInfo levelInfo) {
+        this.levelInfo = levelInfo;
     }
 }

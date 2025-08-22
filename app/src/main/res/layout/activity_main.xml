@@ -22,12 +22,12 @@
         android:id="@+id/navBar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:menu="@menu/navbar_menu"
         android:background="?attr/colorPrimary"
-        app:title="Team 11"
+        app:title="Team11Project"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:titleTextColor="@color/white"/>
 
     <!-- NavHostFragment -->
     <FrameLayout

@@ -22,6 +22,9 @@
             android:name=".presentation.activities.TaskActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.activities.LevelInfoActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.activities.HomeScreenActivity"
             android:exported="false" />
         <activity
