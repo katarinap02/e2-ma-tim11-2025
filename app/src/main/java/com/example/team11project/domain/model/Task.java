@@ -161,10 +161,4 @@ public class Task {
         this.completionDate = completionDate;
     }
 
-    public int getCalculatedXp() {
-        if (difficulty == null || importance == null) {
-            return 0;
-        }
-        return difficulty.getXpValue() + importance.getXpValue();
-    }
 }

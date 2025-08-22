@@ -23,7 +23,13 @@ public class HomeScreenActivity extends BaseActivity {
 
         Button btnAddEdit = findViewById(R.id.btnAddEdit);
         btnAddEdit.setOnClickListener(v -> {
-            Intent intent = new Intent(this, AddAndEditActivity.class);
+            Intent intent = new Intent(this, TaskActivity.class);
+            startActivity(intent);
+        });
+
+        Button btnCategories = findViewById(R.id.btnCategories);
+        btnCategories.setOnClickListener(v -> {
+            Intent intent = new Intent(this, CategoryActivity.class);
             startActivity(intent);
         });
 

@@ -216,6 +216,24 @@ public class LocalDataSource {
         return deletedRows;
     }
 
+    public Category getCategoryById(String categoryId, String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        Category category = null;
+        try {
+            String selection = AppContract.CategoryEntry._ID + " = ? AND " + AppContract.CategoryEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { categoryId, userId };
+            cursor = db.query(AppContract.CategoryEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                category = cursorToCategory(cursor);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return category;
+    }
+
 
 
     /**
@@ -321,6 +339,36 @@ public class LocalDataSource {
         return deletedRows;
     }
 
+    // U data/datasource/local/LocalDataSource.java
+
+    public Task getTaskById(String taskId, String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        Task task = null;
+        try {
+            String selection = AppContract.TaskEntry._ID + " = ? AND " + AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { taskId, userId };
+
+            cursor = db.query(
+                    AppContract.TaskEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                task = cursorToTask(cursor);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return task;
+    }
+
 
 
     private ContentValues categoryToContentValues(Category category) {
@@ -348,7 +396,7 @@ public class LocalDataSource {
         task.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_USER_ID)));
         task.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_TITLE)));
         task.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION)));
-        task.setCategoryId(String.valueOf(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID))));
+        task.setCategoryId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID)));
         task.setRecurring(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_IS_RECURRING)) == 1);
         task.setRecurrenceInterval(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL)));
         task.setExecutionTime(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME))));
@@ -380,8 +428,7 @@ public class LocalDataSource {
         values.put(AppContract.TaskEntry.COLUMN_NAME_USER_ID, task.getUserId());
         values.put(AppContract.TaskEntry.COLUMN_NAME_TITLE, task.getTitle());
         values.put(AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION, task.getDescription());
-        // Potencijalna greška ako je categoryId null, ali pretpostavljamo da neće biti
-        values.put(AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID, Long.parseLong(task.getCategoryId()));
+        values.put(AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID, task.getCategoryId());
         values.put(AppContract.TaskEntry.COLUMN_NAME_IS_RECURRING, task.isRecurring() ? 1 : 0);
         values.put(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL, task.getRecurrenceInterval());
         values.put(AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME, task.getExecutionTime() != null ? task.getExecutionTime().getTime() : null);
@@ -458,6 +505,69 @@ public class LocalDataSource {
         values.put(AppContract.LevelInfoEntry.COLUMN_TITLE, levelInfo.getTitle().name());
 
         return values;
+    }
+
+    public int countCompletedTasksByDifficulty(String userId, TaskDifficulty difficulty, Date startDate, Date endDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        int count = 0;
+        try {
+            // SQL upit koji broji zadatke sa datim statusom, težinom i u vremenskom opsegu
+            String sql = "SELECT COUNT(*) FROM " + AppContract.TaskEntry.TABLE_NAME +
+                    " WHERE " + AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_STATUS + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_DIFFICULTY + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE + " BETWEEN ? AND ?";
+
+            // Argumenti za upit. Redosled je važan!
+            String[] selectionArgs = {
+                    userId,
+                    TaskStatus.COMPLETED.name(), // Brojimo samo one koji su zaista ZAVRŠENI
+                    difficulty.name(),
+                    String.valueOf(startDate.getTime()), // Datume konvertujemo u milisekunde (long)
+                    String.valueOf(endDate.getTime())
+            };
+
+            cursor = db.rawQuery(sql, selectionArgs);
+            if (cursor != null && cursor.moveToFirst()) {
+                count = cursor.getInt(0); // Rezultat COUNT(*) je uvek na prvoj poziciji
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return count;
+    }
+
+    public int countCompletedTasksByImportance(String userId, TaskImportance importance, Date startDate, Date endDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        int count = 0;
+        try {
+            // Upit je skoro identičan, samo se menja kolona koja se proverava
+            String sql = "SELECT COUNT(*) FROM " + AppContract.TaskEntry.TABLE_NAME +
+                    " WHERE " + AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_STATUS + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_IMPORTANCE + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE + " BETWEEN ? AND ?";
+
+            String[] selectionArgs = {
+                    userId,
+                    TaskStatus.COMPLETED.name(),
+                    importance.name(),
+                    String.valueOf(startDate.getTime()),
+                    String.valueOf(endDate.getTime())
+            };
+
+            cursor = db.rawQuery(sql, selectionArgs);
+            if (cursor != null && cursor.moveToFirst()) {
+                count = cursor.getInt(0);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return count;
     }
 
 

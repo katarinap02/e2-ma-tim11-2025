@@ -6,9 +6,12 @@ import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskDifficulty;
+import com.example.team11project.domain.model.TaskImportance;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskRepository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,4 +83,76 @@ public class TaskRepositoryImpl implements TaskRepository {
             }
         });
     }
+
+    @Override
+    public void getTaskById(String taskId, String userId, RepositoryCallback<Task> callback) {
+        databaseExecutor.execute(() -> {
+            try {
+                Task task = localDataSource.getTaskById(taskId, userId);
+                if (task != null) {
+                    callback.onSuccess(task);
+                } else {
+                    callback.onFailure(new Exception("Zadatak nije pronađen."));
+                }
+            } catch (Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
+    public void updateTask(Task task, RepositoryCallback<Void> callback) {
+        if (task.getId() == null || task.getId().trim().isEmpty()) {
+            callback.onFailure(new Exception("Zadatak nema ID i ne može biti ažuriran."));
+            return;
+        }
+        if (task.getTitle() == null || task.getTitle().trim().isEmpty()) {
+            callback.onFailure(new Exception("Naziv zadatka ne sme biti prazan."));
+            return;
+        }
+        databaseExecutor.execute(() -> {
+        remoteDataSource.updateTask(task, new RemoteDataSource.DataSourceCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                databaseExecutor.execute(() -> {
+                    localDataSource.updateTask(task);
+                    callback.onSuccess(null);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+
+        });
+    });
+    }
+
+
+    @Override
+    public void countCompletedTasksByDifficulty(String userId, TaskDifficulty difficulty, Date startDate, Date endDate, RepositoryCallback<Integer> callback) {
+        databaseExecutor.execute(() -> {
+            try {
+                int count = localDataSource.countCompletedTasksByDifficulty(userId, difficulty, startDate, endDate);
+                callback.onSuccess(count);
+            } catch (Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
+    public void countCompletedTasksByImportance(String userId, TaskImportance importance, Date startDate, Date endDate, RepositoryCallback<Integer> callback) {
+        databaseExecutor.execute(() -> {
+            try {
+                int count = localDataSource.countCompletedTasksByImportance(userId, importance, startDate, endDate);
+                callback.onSuccess(count);
+            } catch (Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+
 }

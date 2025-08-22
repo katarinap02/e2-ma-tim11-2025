@@ -48,8 +48,18 @@
     <string name="logout">Logout</string>
     <string name="dobrodosli_hs">Dobrodošli na Home Screen</string>
     <string name="profil">Profil</string>
-    <string name="dodaj_izmeni_zadatke">Dodaj/izmeni zadatke</string>
+    <string name="dodaj_izmeni_zadatke">Zadaci</string>
     <string name="login">Log in</string>
     <string name="napredak_kroz_nivoe">Napredak kroz nivoe</string>
+
+    <!-- Taskovi -->
+    <string name="my_tasks_title">Moji zadaci</string>
+    <string name="task_name_placeholder">Naziv zadatka</string>
+    <string name="task_time_placeholder">20. Avg 2025, 15:00</string>
+    <string name="task_xp_value_placeholder">Vrednost: 23 XP</string>
+    <string name="task_xp_value_format">Vrednost: %1$d XP</string>
+    <string name="complete_task_button_description">Dugme da označi zadatak kao završen</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="prikazi_kategorije">Kategorije</string>
 
 </resources>

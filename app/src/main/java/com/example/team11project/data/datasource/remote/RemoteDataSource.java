@@ -194,42 +194,49 @@ public class RemoteDataSource {
     }
 
     public void login(String email, String password, final DataSourceCallback<User> callback) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        FirebaseAuth auth = FirebaseAuth.getInstance();
 
         Log.d("LoginDebug", "Searching for email: '" + email + "'");
 
-        db.collection("users")
-                .whereEqualTo("email", email)
-                .get()
-                .addOnCompleteListener(task -> {
-                    Log.d("LoginDebug", "Documents found: " + task.getResult().size());
+        auth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(authTask -> {
+                    if (authTask.isSuccessful()) {
+                        FirebaseUser firebaseUser = auth.getCurrentUser();
 
-                    if(task.getResult().isEmpty()){
-                        callback.onFailure(new Exception("Korisnik ne postoji"));
-                        return;
-                    }
-
-                    DocumentSnapshot document = task.getResult().getDocuments().get(0);
-                    User user = document.toObject(User.class);
-
-                    if (!user.getPassword().equals(password)) {
-                        callback.onFailure(new Exception("Pogresna lozinka"));
-                        return;
-                    }
-
-                    refreshUserVerificationStatus(user, new DataSourceCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callback.onSuccess(user);
+                        if (firebaseUser == null) {
+                            callback.onFailure(new Exception("Greška prilikom prijave, pokušajte ponovo."));
+                            return;
                         }
 
-                        @Override
-                        public void onFailure(Exception e) {
+                        // 2. Sada proveri da li je email verifikovan
+                        if (firebaseUser.isEmailVerified()) {
+                            // 3. Ako jeste, dohvati ostatak podataka o korisniku iz Firestore baze
+                            db.collection(USERS_COLLECTION)
+                                    .document(firebaseUser.getUid()) // Koristi jedinstveni UID korisnika
+                                    .get()
+                                    .addOnCompleteListener(firestoreTask -> {
+                                        if (firestoreTask.isSuccessful() && firestoreTask.getResult() != null) {
+                                            User user = firestoreTask.getResult().toObject(User.class);
+                                            if (user != null) {
+                                                user.setId(firebaseUser.getUid()); // Osiguraj da je ID postavljen
+                                                callback.onSuccess(user);
+                                            } else {
+                                                callback.onFailure(new Exception("Korisnički podaci nisu pronađeni."));
+                                            }
+                                        } else {
+                                            callback.onFailure(firestoreTask.getException());
+                                        }
+                                    });
+                        } else {
+                            // 4. Ako email NIJE verifikovan, vrati tačnu poruku o grešci
+                            auth.signOut(); // Izloguj korisnika jer nije verifikovan
                             callback.onFailure(new Exception("Morate prvo da aktivirate nalog putem linka u mejlu"));
                         }
-                    });
+                    } else {
+                        // Ako prijava ne uspe (npr. pogrešna lozinka), Firebase će vratiti odgovarajuću grešku
+                        callback.onFailure(authTask.getException());
+                    }
                 });
-
     }
 
     public void updateUser(User user, final DataSourceCallback<Void> callback) {

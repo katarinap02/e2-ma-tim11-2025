@@ -39,6 +39,13 @@
             android:text="@string/dodaj_izmeni_zadatke"
             android:layout_marginBottom="16dp"/>
 
+        <Button
+            android:id="@+id/btnCategories"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/prikazi_kategorije"
+            android:layout_marginBottom="16dp"/>
+
 
         <Button
             android:id="@+id/btnLevelInfo"

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".presentation.activities.TaskDetailActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/navbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_arrow_back" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Kontejner za dugmiće na dnu -->
+    <ScrollView
+        android:id="@+id/scrollView2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_anchor="@+id/scrollView2"
+        app:layout_anchorGravity="center"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Naziv i status -->
+            <TextView
+                android:id="@+id/text_view_detail_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="Naziv zadatka" />
+
+            <TextView
+                android:id="@+id/text_view_detail_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textStyle="italic"
+                tools:text="Status: Aktivan" />
+
+            <!-- Kategorija -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical">
+
+                <View
+                    android:id="@+id/view_detail_category_color"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:background="@drawable/color_circle_background" />
+
+                <TextView
+                    android:id="@+id/text_view_detail_category"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    tools:text="Kategorija: Učenje" />
+            </LinearLayout>
+
+            <!-- Opis -->
+            <TextView
+                android:id="@+id/text_view_detail_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                tools:text="Detaljan opis zadatka..." />
+
+            <!-- Vreme, Težina, Bitnost, XP -->
+            <TextView
+                android:id="@+id/text_view_detail_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                tools:text="Vreme: 20. Avg, 15:00" />
+
+            <TextView
+                android:id="@+id/text_view_detail_difficulty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                tools:text="Težina: Težak (7 XP)" />
+
+            <TextView
+                android:id="@+id/text_view_detail_importance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                tools:text="Bitnost: Važan (3 XP)" />
+
+            <TextView
+                android:id="@+id/text_view_detail_xp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                tools:text="Ukupna vrednost: 10 XP" />
+
+            <!-- Detalji o ponavljanju (sakriveni ako nije ponavljajući) -->
+            <LinearLayout
+                android:id="@+id/layout_detail_recurring"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Ponavljanje:"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/text_view_detail_recurrence_rule"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    tools:text="Svakog 1 dana" />
+
+                <TextView
+                    android:id="@+id/text_view_detail_recurrence_period"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    tools:text="Od 20.08.2025 do 30.08.2025" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:background="@color/white">
+
+        <!-- Glavne akcije -->
+        <Button
+            android:id="@+id/button_detail_complete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Označi kao urađeno"/>
+
+        <!-- Sekundarne akcije -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button android:id="@+id/button_detail_pause" style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="Pauziraj"/>
+
+            <Button android:id="@+id/button_detail_cancel" style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_marginStart="8dp" android:text="Otkaži"/>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_detail_edit"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Izmeni"/>
+
+            <Button
+                android:id="@+id/button_detail_delete"
+                style="?attr/borderlessButtonStyle"
+                android:textColor="?attr/colorError"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Obriši"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

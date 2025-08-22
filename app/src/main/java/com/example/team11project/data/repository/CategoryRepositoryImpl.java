@@ -96,6 +96,22 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
+    public void getCategoryById(String categoryId, String userId, RepositoryCallback<Category> callback) {
+        databaseExecutor.execute(() -> {
+            try {
+                Category category = localDataSource.getCategoryById(categoryId, userId);
+                if (category != null) {
+                    callback.onSuccess(category);
+                } else {
+                    callback.onFailure(new Exception("Kategorija nije pronađena."));
+                }
+            } catch (Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
     public void updateCategory(Category category, RepositoryCallback<Void> callback) {
 //  Validacija
         if (category.getName() == null || category.getName().trim().isEmpty()) {

@@ -25,18 +25,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
     // SQL komanda za kreiranje tabele za zadatke
+    // U DatabaseHelper.java
+
     private static final String SQL_CREATE_TASKS_TABLE =
             "CREATE TABLE " + AppContract.TaskEntry.TABLE_NAME + " (" +
                     AppContract.TaskEntry._ID + " TEXT PRIMARY KEY," +
-                    AppContract.TaskEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," + // Dodato
+                    AppContract.TaskEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_TITLE + " TEXT NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
-                    AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID + " INTEGER," +
+                    AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID + " TEXT," +
+
                     AppContract.TaskEntry.COLUMN_NAME_IS_RECURRING + " INTEGER NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL + " INTEGER," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_UNIT + " TEXT," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_START_DATE + " INTEGER," +
-                    AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE + "INTEGER" +
+                    AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE + " INTEGER," + // Dodat razmak i zarez
+
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_END_DATE + " INTEGER," +
                     AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " INTEGER NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_DIFFICULTY + " TEXT NOT NULL," +

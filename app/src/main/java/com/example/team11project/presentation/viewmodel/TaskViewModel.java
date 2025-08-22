@@ -15,6 +15,7 @@ import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.repository.CategoryRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskRepository;
+import com.example.team11project.domain.usecase.TaskUseCase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,12 @@ public class TaskViewModel extends ViewModel{
     public final LiveData<List<Task>> tasks = _tasks;
     private final MutableLiveData<List<Category>> _categories = new MutableLiveData<>();
     public final LiveData<List<Category>> categories = _categories;
+
+    private final MutableLiveData<Task> _selectedTask = new MutableLiveData<>();
+    public final LiveData<Task> selectedTask = _selectedTask;
+
+    private final MutableLiveData<Category> _selectedTaskCategory = new MutableLiveData<>();
+    public final LiveData<Category> selectedTaskCategory = _selectedTaskCategory;
 
     private final MutableLiveData<String> _error = new MutableLiveData<>();
     public final LiveData<String> error = _error;
@@ -51,14 +58,12 @@ public class TaskViewModel extends ViewModel{
     }
 
     public void loadTasks(String userId) {
-        _isLoading.setValue(true);
-        taskRepository.getTasks(userId, new RepositoryCallback<List<Task>>() {
+        taskRepository.getTasks(userId, new RepositoryCallback<List<Task>>() { // PROVERI DA LI JE getTasksForUser
             @Override
             public void onSuccess(List<Task> result) {
                 _tasks.postValue(result);
                 _isLoading.postValue(false);
             }
-
             @Override
             public void onFailure(Exception e) {
                 _error.postValue(e.getMessage());
@@ -98,6 +103,84 @@ public class TaskViewModel extends ViewModel{
             public void onFailure(Exception e) {
                 _error.postValue(e.getMessage());
                 _isSaving.postValue(false);
+            }
+        });
+    }
+
+    public void completeTask(Task task, String userId)
+    {
+        _isSaving.setValue(true);
+
+        TaskUseCase taskUseCase = new TaskUseCase(taskRepository);
+        taskUseCase.completeTask(task, userId, new RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer earnedXp) {
+                // TODO: Ažuriraj LiveData koji prikazuje poruku o uspehu
+                // npr. _successMessage.postValue("Zadatak završen! + " + earnedXp + " XP");
+
+                // Ponovo učitaj zadatke da se vidi promena statusa
+                loadTasks(userId);
+                _isSaving.postValue(false);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                _error.postValue(e.getMessage());
+                _isSaving.postValue(false);
+            }
+        });
+    }
+
+    public void loadTaskDetails(String taskId, String userId) {
+        _isLoading.setValue(true);
+        taskRepository.getTaskById(taskId, userId, new RepositoryCallback<Task>() {
+            @Override
+            public void onSuccess(Task task) {
+                _selectedTask.postValue(task);
+                // Trazimo kategoriju posle zadatka
+                if (task.getCategoryId() != null) {
+                    categoryRepository.getCategoryById(task.getCategoryId(), userId, new RepositoryCallback<Category>() {
+                        @Override
+                        public void onSuccess(Category category) {
+                            _selectedTaskCategory.postValue(category);
+                            _isLoading.postValue(false);
+                        }
+                        @Override
+                        public void onFailure(Exception e) {
+                            _selectedTaskCategory.postValue(null);
+                            _isLoading.postValue(false);
+                        }
+                    });
+                } else {
+                    _selectedTaskCategory.postValue(null);
+                    _isLoading.postValue(false);
+                }
+            }
+            @Override
+            public void onFailure(Exception e) {
+                _error.postValue(e.getMessage());
+                _isLoading.postValue(false);
+            }
+        });
+    }
+
+    public void loadInitialData(String userId) {
+        _isLoading.setValue(true);
+        _isLoadingCategory.setValue(true);
+
+        categoryRepository.getCategories(userId, new RepositoryCallback<List<Category>>() {
+            @Override
+            public void onSuccess(List<Category> categoryResult) {
+                _categories.postValue(categoryResult);
+                _isLoadingCategory.postValue(false);
+
+                loadTasks(userId);
+            }
+            @Override
+            public void onFailure(Exception e) {
+                _errorCategory.postValue(e.getMessage());
+                _isLoadingCategory.postValue(false);
+                _isLoading.postValue(false); // ugasi i drugi loading
             }
         });
     }
