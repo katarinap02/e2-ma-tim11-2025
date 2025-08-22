@@ -6,28 +6,31 @@ import com.prolificinteractive.materialcalendarview.DayViewFacade;
 import com.prolificinteractive.materialcalendarview.spans.DotSpan;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 //koje dane kalendar da oboji
 public class EventDecorator implements DayViewDecorator {
 
-    private final int color;
-    private final HashSet<CalendarDay> dates;
+    private final CalendarDay date;
+    private final List<Integer> colors;
 
-    public EventDecorator(int color, Collection<CalendarDay> dates) {
-        this.color = color;
-        this.dates = new HashSet<>(dates);
+    public EventDecorator(CalendarDay date, List<Integer> colors) {
+        this.date = date;
+        this.colors = colors;
     }
 
-        @Override
+    @Override
     public boolean shouldDecorate(CalendarDay day) {
-        //da li treba da se oboji
-            return dates.contains(day);
+        // Ukrasi samo ako se dan poklapa sa onim za koji je ovaj dekorator napravljen
+        return date != null && day.equals(date);
     }
 
     @Override
     public void decorate(DayViewFacade view) {
-        //tacka odredjene boje ispod datuma
-        view.addSpan(new DotSpan(8, color));
+        if (colors != null && !colors.isEmpty()) {
+            view.addSpan(new MultiDotSpan(5, colors));
+        }
     }
 }

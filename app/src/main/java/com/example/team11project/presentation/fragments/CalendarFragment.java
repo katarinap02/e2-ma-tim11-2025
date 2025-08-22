@@ -1,6 +1,8 @@
 package com.example.team11project.presentation.fragments;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 
@@ -18,22 +20,21 @@ import android.widget.Toast;
 
 import com.example.team11project.R;
 import com.example.team11project.domain.model.Category;
+import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.presentation.activities.LoginActivity;
 import com.example.team11project.presentation.activities.TaskDetailActivity;
 import com.example.team11project.presentation.adapters.TaskAdapter;
 import com.example.team11project.presentation.view.decorators.EventDecorator;
 import com.example.team11project.presentation.viewmodel.TaskViewModel;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
+import com.prolificinteractive.materialcalendarview.DayViewDecorator;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 
 import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.ZoneId;
 import org.threeten.bp.DateTimeUtils;
-
-import org.threeten.bp.Instant;
-import org.threeten.bp.LocalDate;
-import org.threeten.bp.ZoneId;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,7 +53,9 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
 
     private List<Task> allTasks = new ArrayList<>();
     private Map<String, Category> categoryMap = new HashMap<>();
-    private String currentUserId = "12345678";
+    private String currentUserId;
+
+    private List<Task> allTaskInstances = new ArrayList<>();
 
     public CalendarFragment() {
     }
@@ -66,6 +69,21 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        //deo za usera
+        SharedPreferences prefs = requireContext().getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("userId", null);
+
+        if (currentUserId == null) {
+            Toast.makeText(getContext(), "Greška: Korisnik nije pronađen. Molimo ulogujte se.", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(getActivity(), LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            if (getActivity() != null) {
+                getActivity().finish();
+            }
+            return;
+        }
 
         calendarView = view.findViewById(R.id.calendar_view);
         recyclerView = view.findViewById(R.id.recycler_view_calendar_tasks);
@@ -101,7 +119,11 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
         viewModel.tasks.observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null) {
                 this.allTasks = tasks;
-                updateCalendarDecorators(); // Osveži dekoratore kada stignu zadaci
+
+                // Generiši sve instance i osveži i kalendar i listu
+                generateAllTaskInstances();
+                updateCalendarDecorators();
+
                 // Prikazi zadatke za danas po defaultu
                 filterTasksForDate(CalendarDay.today());
             }
@@ -126,31 +148,43 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
         // Ukloni sve stare dekoratore
         calendarView.removeDecorators();
 
-        // Grupiši datume po bojama kategorija
-        Map<Integer, HashSet<CalendarDay>> eventsByColor = new HashMap<>();
+        HashMap<CalendarDay, List<Integer>> eventsByDay = new HashMap<>();
 
-        for (Task task : allTasks) {
-            if (task.getExecutionTime() == null) continue;
-
-            Category category = categoryMap.get(task.getCategoryId());
+        for (Task taskInstance : allTaskInstances) {
+            if (taskInstance.getExecutionTime() == null) continue;
+            Category category = categoryMap.get(taskInstance.getCategoryId());
             if (category == null) continue;
 
-            int color = Color.parseColor(category.getColor());
-            LocalDate localDate = Instant.ofEpochMilli(task.getExecutionTime().getTime())
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate();
+            LocalDate localDate = Instant.ofEpochMilli(taskInstance.getExecutionTime().getTime())
+                    .atZone(ZoneId.systemDefault()).toLocalDate();
             CalendarDay day = CalendarDay.from(localDate);
 
-            if (!eventsByColor.containsKey(color)) {
-                eventsByColor.put(color, new HashSet<>());
+            int color = Color.parseColor(category.getColor());
+
+            // Proveri da li već imamo listu za ovaj dan
+            if (!eventsByDay.containsKey(day)) {
+                eventsByDay.put(day, new ArrayList<>());
             }
-            eventsByColor.get(color).add(day);
+
+            // Dodaj boju u listu za taj dan (spreči duplikate iste boje)
+            if (!eventsByDay.get(day).contains(color)) {
+                eventsByDay.get(day).add(color);
+            }
         }
 
-        // Kreiraj i dodaj dekorator za svaku boju
-        for (Map.Entry<Integer, HashSet<CalendarDay>> entry : eventsByColor.entrySet()) {
-            calendarView.addDecorator(new EventDecorator(entry.getKey(), entry.getValue()));
+        List<DayViewDecorator> decorators = new ArrayList<>();
+
+        // Prolazimo kroz našu mapu
+        for (Map.Entry<CalendarDay, List<Integer>> entry : eventsByDay.entrySet()) {
+            CalendarDay day = entry.getKey();
+            List<Integer> colors = entry.getValue();
+
+            // Za svaki dan koji ima događaje, kreiramo novi, specifičan dekorator
+            decorators.add(new EventDecorator(day, colors));
         }
+
+        // Na kraju, dodaj sve kreirane dekoratore u kalendar
+        calendarView.addDecorators(decorators);
     }
 
     // Metoda koja filtrira i prikazuje zadatke za selektovani dan
@@ -164,7 +198,7 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
 
         Calendar taskCal = Calendar.getInstance();
 
-        for (Task task : allTasks) {
+        for (Task task : allTaskInstances) {
             if (task.getExecutionTime() == null) continue;
 
             taskCal.setTime(task.getExecutionTime());
@@ -180,12 +214,11 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
         taskAdapter.setTasks(tasksForDay);
     }
 
-
     @Override
     public void onTaskClick(Task task) {
-            Intent intent = new Intent(getActivity(), TaskDetailActivity.class);
-            intent.putExtra("TASK_ID", task.getId());
-            startActivity(intent);
+        Intent intent = new Intent(getActivity(), TaskDetailActivity.class);
+        intent.putExtra("TASK_ID", task.getId());
+        startActivity(intent);
     }
 
     @Override
@@ -193,4 +226,52 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
         Toast.makeText(getContext(), "Završi zadatak (iz kalendara): " + task.getTitle(), Toast.LENGTH_SHORT).show();
         // viewModel.completeTask(task, currentUserId);
     }
-}
+
+    private void generateAllTaskInstances() {
+        allTaskInstances.clear();
+        Calendar cal = Calendar.getInstance();
+
+        for (Task originalTask : allTasks) {
+            if (originalTask.isRecurring()) {
+                // Za ponavljajuće, generiši SVE instance, i prošle i buduće
+                cal.setTime(originalTask.getRecurrenceStartDate());
+                while (!cal.getTime().after(originalTask.getRecurrenceEndDate())) {
+                    allTaskInstances.add(createVirtualTask(originalTask, cal.getTime()));
+
+                    int interval = originalTask.getRecurrenceInterval();
+                    if (originalTask.getRecurrenceUnit() == RecurrenceUnit.DAY) {
+                        cal.add(Calendar.DAY_OF_MONTH, interval);
+                    } else if (originalTask.getRecurrenceUnit() == RecurrenceUnit.WEEK) {
+                        cal.add(Calendar.WEEK_OF_YEAR, interval);
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                // Jednokratne samo dodaj u listu
+                allTaskInstances.add(originalTask);
+            }
+        }
+    }
+
+    private Task createVirtualTask(Task original, Date executionDate) {
+        Task virtual = new Task();
+        virtual.setId(original.getId());
+        virtual.setTitle(original.getTitle());
+        virtual.setDescription(original.getDescription());
+        virtual.setCategoryId(original.getCategoryId());
+        virtual.setDifficulty(original.getDifficulty());
+        virtual.setImportance(original.getImportance());
+        virtual.setStatus(original.getStatus());
+        virtual.setUserId(original.getUserId());
+        virtual.setExecutionTime(executionDate);
+        virtual.setRecurring(true);
+        virtual.setRecurrenceInterval(original.getRecurrenceInterval());
+        virtual.setRecurrenceUnit(original.getRecurrenceUnit());
+        virtual.setRecurrenceStartDate(original.getRecurrenceStartDate());
+        virtual.setRecurrenceEndDate(original.getRecurrenceEndDate());
+
+        return virtual;
+    }
+
+    }
