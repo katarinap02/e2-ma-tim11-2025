@@ -5,6 +5,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.UserTitle;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -32,6 +33,7 @@ public class RemoteDataSource {
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
     private static final String CATEGORIES_COLLECTION = "categories";
+    private static final String INSTANCES_COLLECTION = "task_instances";
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -286,6 +288,25 @@ public class RemoteDataSource {
                 })
                 .addOnFailureListener(callback::onFailure);
 
+    }
+
+    public void addTaskInstance(TaskInstance instance, DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(instance.getUserId())
+                .collection(INSTANCES_COLLECTION)
+                .document(instance.getId())
+                .set(instance)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(instance.getId()))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void getAllTaskInstances(String userId, String originalTaskId, DataSourceCallback<List<TaskInstance>> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(INSTANCES_COLLECTION)
+                .whereEqualTo("originalTaskId", originalTaskId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    // ... logika za parsiranje rezultata u List<TaskInstance> ...
+                });
     }
 
 }

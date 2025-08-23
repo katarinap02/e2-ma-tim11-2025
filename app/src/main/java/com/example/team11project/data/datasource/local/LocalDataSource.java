@@ -13,6 +13,7 @@ import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
+import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
 
@@ -368,6 +369,157 @@ public class LocalDataSource {
             if (db != null && db.isOpen()) db.close();
         }
         return task;
+    }
+
+    // DEO SA TASKINSTANCES
+
+    public long addTaskInstance(TaskInstance instance) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = instanceToContentValues(instance);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.TaskInstanceEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE
+        );
+        db.close();
+        return newRowId;
+    }
+
+    public List<TaskInstance> getAllTaskInstancesForTask(String userId, String originalTaskId) {
+        List<TaskInstance> instances = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            String selection = AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + " = ?";
+            String[] selectionArgs = { userId, originalTaskId };
+
+            cursor = db.query(
+                    AppContract.TaskInstanceEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            while (cursor.moveToNext()) {
+                instances.add(cursorToTaskInstance(cursor));
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return instances;
+    }
+
+    public int updateTaskInstance(TaskInstance instance) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = instanceToContentValues(instance);
+
+        String selection = AppContract.TaskInstanceEntry._ID + " = ?";
+        String[] selectionArgs = { instance.getId() };
+
+        int count = db.update(
+                AppContract.TaskInstanceEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return count;
+    }
+
+    public int deleteTaskInstance(String instanceId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        String selection = AppContract.TaskInstanceEntry._ID + " = ?";
+        String[] selectionArgs = { instanceId };
+
+        int deletedRows = db.delete(
+                AppContract.TaskInstanceEntry.TABLE_NAME,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return deletedRows;
+    }
+
+    public TaskInstance getTaskInstanceById(String instanceId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        TaskInstance instance = null;
+        try {
+            String selection = AppContract.TaskInstanceEntry._ID + " = ?";
+            String[] selectionArgs = { instanceId };
+
+            cursor = db.query(
+                    AppContract.TaskInstanceEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                instance = cursorToTaskInstance(cursor);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return instance;
+    }
+
+    public int deleteAllInstancesForTask(String originalTaskId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        String selection = AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + " = ?";
+        String[] selectionArgs = { originalTaskId };
+
+        int deletedRows = db.delete(
+                AppContract.TaskInstanceEntry.TABLE_NAME,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return deletedRows;
+    }
+
+    private ContentValues instanceToContentValues(TaskInstance instance) {
+        ContentValues values = new ContentValues();
+        values.put(AppContract.TaskInstanceEntry._ID, instance.getId());
+        values.put(AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID, instance.getOriginalTaskId());
+        values.put(AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID, instance.getUserId());
+        values.put(AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE, instance.getOriginalDate().getTime());
+        values.put(AppContract.TaskInstanceEntry.COLUMN_NAME_NEW_STATUS, instance.getNewStatus().name());
+
+        if (instance.getCompletionDate() != null) {
+            values.put(AppContract.TaskInstanceEntry.COLUMN_NAME_COMPLETION_DATE, instance.getCompletionDate().getTime());
+        }
+
+        return values;
+    }
+    private TaskInstance cursorToTaskInstance(Cursor cursor) {
+        TaskInstance instance = new TaskInstance();
+
+        instance.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskInstanceEntry._ID)));
+        instance.setOriginalTaskId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID)));
+        instance.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID)));
+        instance.setOriginalDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE))));
+        instance.setNewStatus(TaskStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskInstanceEntry.COLUMN_NAME_NEW_STATUS))));
+
+        int completionDateIndex = cursor.getColumnIndex(AppContract.TaskInstanceEntry.COLUMN_NAME_COMPLETION_DATE);
+        if (completionDateIndex != -1 && !cursor.isNull(completionDateIndex)) {
+            instance.setCompletionDate(new Date(cursor.getLong(completionDateIndex)));
+        }
+
+        return instance;
     }
 
     private ContentValues categoryToContentValues(Category category) {

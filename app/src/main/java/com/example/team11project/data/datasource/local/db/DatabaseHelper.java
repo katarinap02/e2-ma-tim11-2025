@@ -62,6 +62,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_CATEGORIES_TABLE);
         db.execSQL(SQL_CREATE_TASKS_TABLE);
         db.execSQL(SQL_CREATE_USERS_TABLE);
+        db.execSQL(SQL_CREATE_TASK_INSTANCES_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -71,6 +72,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_TASKS_TABLE);
         db.execSQL(SQL_DELETE_CATEGORIES_TABLE);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.TaskInstanceEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS users");
         onCreate(db);
     }
@@ -105,6 +107,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     "FOREIGN KEY(" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +
                     AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
                     ")";
+
+    private static final String SQL_CREATE_TASK_INSTANCES_TABLE =
+            "CREATE TABLE " + AppContract.TaskInstanceEntry.TABLE_NAME + " (" +
+                    AppContract.TaskInstanceEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE + " INTEGER NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_NEW_STATUS + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_COMPLETION_DATE + " INTEGER," +
+                    "FOREIGN KEY(" + AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + ") REFERENCES " +
+                    AppContract.TaskEntry.TABLE_NAME + "(" + AppContract.TaskEntry._ID + "))";
+
+
+
+
+
 
 
 }
