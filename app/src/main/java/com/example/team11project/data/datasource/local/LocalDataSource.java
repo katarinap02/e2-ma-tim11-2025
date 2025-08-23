@@ -17,6 +17,7 @@ import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -369,8 +370,6 @@ public class LocalDataSource {
         return task;
     }
 
-
-
     private ContentValues categoryToContentValues(Category category) {
         ContentValues values = new ContentValues();
         values.put(AppContract.CategoryEntry._ID, category.getId());
@@ -544,7 +543,6 @@ public class LocalDataSource {
         Cursor cursor = null;
         int count = 0;
         try {
-            // Upit je skoro identičan, samo se menja kolona koja se proverava
             String sql = "SELECT COUNT(*) FROM " + AppContract.TaskEntry.TABLE_NAME +
                     " WHERE " + AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
                     AppContract.TaskEntry.COLUMN_NAME_STATUS + " = ? AND " +

@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -27,6 +29,7 @@ import com.example.team11project.R;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.presentation.viewmodel.TaskViewModel;
 
 import java.text.SimpleDateFormat;
@@ -73,11 +76,12 @@ public class TaskDetailActivity extends BaseActivity {
             finish();
             return;
         }
+        setupUI();
 
         TaskViewModel.Factory factory = new TaskViewModel.Factory(getApplication());
         viewModel = new ViewModelProvider(this, factory).get(TaskViewModel.class);
 
-        setupUI();
+
         setupNavbar();
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -85,8 +89,8 @@ public class TaskDetailActivity extends BaseActivity {
             getSupportActionBar().setTitle("Detalji zadatka");
         }
 
-        setupListeners();
         setupObservers();
+        setupListeners();
         viewModel.loadTaskDetails(taskId, currentUserId);;
     }
 
@@ -111,9 +115,25 @@ public class TaskDetailActivity extends BaseActivity {
     }
 
     private void setupListeners() {
-        btnComplete.setOnClickListener(v -> Toast.makeText(this, "Akcija: Urađeno", Toast.LENGTH_SHORT).show());
-        btnPause.setOnClickListener(v -> Toast.makeText(this, "Akcija: Pauziraj", Toast.LENGTH_SHORT).show());
-        btnCancel.setOnClickListener(v -> Toast.makeText(this, "Akcija: Otkaži", Toast.LENGTH_SHORT).show());
+        btnComplete.setOnClickListener(v -> {
+            if (currentTask != null) {
+                viewModel.completeTask(currentTask, currentUserId);
+            }
+        });
+        btnPause.setOnClickListener(v -> {
+            if (currentTask != null) {
+                // Ako je zadatak pauziran, aktiviraj ga, i obrnuto
+                TaskStatus newStatus = currentTask.getStatus() == TaskStatus.PAUSED ? TaskStatus.ACTIVE : TaskStatus.PAUSED;
+                viewModel.changeTaskStatus(currentTask, newStatus, currentUserId);
+
+            }
+        });
+
+        btnCancel.setOnClickListener(v -> {
+            if (currentTask != null) {
+                viewModel.changeTaskStatus(currentTask, TaskStatus.CANCELED, currentUserId);
+            }
+        });
         btnEdit.setOnClickListener(v-> Toast.makeText(this, "Akcija: Izmeni", Toast.LENGTH_SHORT).show());
         btnDelete.setOnClickListener(v -> showDeleteConfirmationDialog());
     }
@@ -121,7 +141,7 @@ public class TaskDetailActivity extends BaseActivity {
     private void setupObservers() {
         viewModel.selectedTask.observe(this, task -> {
             if (task != null) {
-                currentTask = task;
+                this.currentTask = task;
                 populateTaskData(task);
             } else {
                 Toast.makeText(this, "Zadatak nije pronađen.", Toast.LENGTH_SHORT).show();
@@ -131,6 +151,15 @@ public class TaskDetailActivity extends BaseActivity {
 
         viewModel.selectedTaskCategory.observe(this, category -> {
             populateCategoryData(category);
+        });
+
+        // DEO GDE PISE KOLIKO JE XP NEKO OSVOJIO
+        viewModel.taskCompletedXp.observe(this, earnedXp -> {
+            if (earnedXp > 0) {
+                Toast.makeText(this, "Zadatak završen! Osvojeno: " + earnedXp + " XP", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "Zadatak završen! Dostignut je limit za XP poene za ovu vrstu zadatka.", Toast.LENGTH_LONG).show();
+            }
         });
 
         //ucitavanje i error
@@ -171,6 +200,57 @@ public class TaskDetailActivity extends BaseActivity {
             tvRecurrencePeriod.setText(period);
         } else {
             recurringLayout.setVisibility(View.GONE);
+        }
+
+        // DEO KOJI RADI SA DUGMICIMA
+        // Prvo, resetujmo sve na podrazumevano stanje
+        btnPause.setText("Pauziraj");
+
+        switch (task.getStatus()) {
+            case ACTIVE:
+                // Svi dugmići su aktivni (osim pauziranja za jednokratne)
+                btnComplete.setEnabled(true);
+                btnCancel.setEnabled(true);
+                btnEdit.setEnabled(true);
+                btnDelete.setEnabled(true);
+
+                if (task.isRecurring()) {
+                    btnPause.setVisibility(View.VISIBLE);
+                    btnPause.setEnabled(true);
+                } else {
+                    btnPause.setVisibility(View.GONE);
+                }
+                break;
+
+            case PAUSED:
+                // Samo "Aktiviraj", "Izmeni" i "Obriši" su aktivni
+                btnComplete.setEnabled(false);
+                btnCancel.setEnabled(false);
+                btnEdit.setEnabled(true);
+                btnDelete.setEnabled(true);
+
+                // Dugme "Pauziraj" menja svoju funkciju i tekst
+                btnPause.setVisibility(View.VISIBLE);
+                btnPause.setEnabled(true);
+                btnPause.setText("Aktiviraj"); // Promena teksta
+                break;
+
+            case COMPLETED:
+            case UNCOMPLETED:
+            case CANCELED:
+                // Za sve završne statuse, svi dugmići su onemogućeni
+                btnComplete.setEnabled(false);
+                btnPause.setEnabled(false);
+                btnCancel.setEnabled(false);
+                btnEdit.setEnabled(false);
+                btnDelete.setEnabled(false);
+
+                // Prikazujemo pauziraj/aktiviraj dugme samo ako je zadatak ponavljajući
+                btnPause.setVisibility(task.isRecurring() ? View.VISIBLE : View.GONE);
+
+                // Postavi finalni status na glavno dugme radi jasnoće
+                btnComplete.setText("Zadatak je " + task.getStatus().name().toLowerCase());
+                break;
         }
     }
 

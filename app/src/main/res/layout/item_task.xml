@@ -56,15 +56,5 @@
 
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/button_complete_task"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_check"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="16dp"
-            android:layout_gravity="center_vertical"
-            android:contentDescription="@string/complete_task_button_description"/> <!-- Dodato za pristupačnost -->
-
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

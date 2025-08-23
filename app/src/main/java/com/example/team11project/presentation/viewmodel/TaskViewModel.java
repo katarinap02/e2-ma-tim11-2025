@@ -9,10 +9,13 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.data.repository.CategoryRepositoryImpl;
+import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.repository.CategoryRepository;
+import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.usecase.TaskUseCase;
@@ -23,6 +26,8 @@ import java.util.List;
 public class TaskViewModel extends ViewModel{
     private final TaskRepository taskRepository;
     private final CategoryRepository categoryRepository;
+
+    private final TaskUseCase taskUseCase;
 
     private final MutableLiveData<List<Task>> _tasks = new MutableLiveData<>();
     public final LiveData<List<Task>> tasks = _tasks;
@@ -52,9 +57,14 @@ public class TaskViewModel extends ViewModel{
     private final MutableLiveData<Boolean> _isSaving = new MutableLiveData<>(false);
     public final LiveData<Boolean> isSaving = _isSaving;
 
-    public TaskViewModel(TaskRepository taskRepository, CategoryRepository categoryRepository) {
+    //poruka koliko je xp osvojio
+    private final MutableLiveData<Integer> _taskCompletedXp = new MutableLiveData<>();
+    public final LiveData<Integer> taskCompletedXp = _taskCompletedXp;
+
+    public TaskViewModel(TaskRepository taskRepository, CategoryRepository categoryRepository, TaskUseCase taskUseCase) {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
+        this.taskUseCase = taskUseCase;
     }
 
     public void loadTasks(String userId) {
@@ -107,30 +117,6 @@ public class TaskViewModel extends ViewModel{
         });
     }
 
-    public void completeTask(Task task, String userId)
-    {
-        _isSaving.setValue(true);
-
-        TaskUseCase taskUseCase = new TaskUseCase(taskRepository);
-        taskUseCase.completeTask(task, userId, new RepositoryCallback<Integer>() {
-            @Override
-            public void onSuccess(Integer earnedXp) {
-                // TODO: Ažuriraj LiveData koji prikazuje poruku o uspehu
-                // npr. _successMessage.postValue("Zadatak završen! + " + earnedXp + " XP");
-
-                // Ponovo učitaj zadatke da se vidi promena statusa
-                loadTasks(userId);
-                _isSaving.postValue(false);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                _error.postValue(e.getMessage());
-                _isSaving.postValue(false);
-            }
-        });
-    }
-
     public void loadTaskDetails(String taskId, String userId) {
         _isLoading.setValue(true);
         taskRepository.getTaskById(taskId, userId, new RepositoryCallback<Task>() {
@@ -164,6 +150,118 @@ public class TaskViewModel extends ViewModel{
         });
     }
 
+    // Poziva UseCase za završavanje zadatka
+    public void completeTask(Task task, String userId) {
+        _isSaving.setValue(true);
+        taskUseCase.completeTask(task, userId, new RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer earnedXp) {
+                _isSaving.postValue(false);
+                _taskCompletedXp.postValue(earnedXp);
+
+                _selectedTask.postValue(task);
+
+                List<Task> currentTasks = _tasks.getValue();
+                if (currentTasks != null) {
+                    for (int i = 0; i < currentTasks.size(); i++) {
+                        if (currentTasks.get(i).getId().equals(task.getId())) {
+                            currentTasks.set(i, task);
+                            break;
+                        }
+                    }
+                    _tasks.postValue(currentTasks);
+                }
+            }
+            @Override
+            public void onFailure(Exception e) {
+                _error.postValue(e.getMessage());
+                _isSaving.postValue(false);
+            }
+        });
+    }
+
+    //promene statusa za taskove, uslove dodajemo kasnije
+    public void changeTaskStatus(Task task, TaskStatus newStatus, String userId) {
+
+
+        if(newStatus == TaskStatus.ACTIVE)
+        {
+            taskRepository.activateTask(task, new RepositoryCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    List<Task> currentTasks = _tasks.getValue();
+                    if (currentTasks != null) {
+                        for (int i = 0; i < currentTasks.size(); i++) {
+                            if (currentTasks.get(i).getId().equals(task.getId())) {
+                                // Pronašli smo zadatak, ažurirajmo ga
+                                currentTasks.set(i, task);
+                                break;
+                            }
+                        }
+                        // Javi UI-ju da se lista promenila
+                        _tasks.postValue(currentTasks);
+                    }
+
+                    // Takođe, ažuriraj i selektovani zadatak, ako ga `TaskDetailActivity` posmatra
+                    _selectedTask.postValue(task);
+                }
+                @Override
+                public void onFailure(Exception e) {
+                    _error.postValue(e.getMessage());
+                }
+            });
+        }
+        else if(newStatus == TaskStatus.PAUSED)
+        {
+            taskRepository.pauseTask(task, new RepositoryCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    List<Task> currentTasks = _tasks.getValue();
+                    if (currentTasks != null) {
+                        for (int i = 0; i < currentTasks.size(); i++) {
+                            if (currentTasks.get(i).getId().equals(task.getId())) {
+                                currentTasks.set(i, task);
+                                break;
+                            }
+                        }
+                        _tasks.postValue(currentTasks);
+                    }
+                    _selectedTask.postValue(task);
+                }
+                @Override
+                public void onFailure(Exception e) {
+                    _error.postValue(e.getMessage());
+                }
+            });
+        }
+        else if(newStatus == TaskStatus.CANCELED)
+        {
+            taskRepository.cancelTask(task, new RepositoryCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    List<Task> currentTasks = _tasks.getValue();
+                    if (currentTasks != null) {
+                        for (int i = 0; i < currentTasks.size(); i++) {
+                            if (currentTasks.get(i).getId().equals(task.getId())) {
+                                currentTasks.set(i, task);
+                                break;
+                            }
+                        }
+                        _tasks.postValue(currentTasks);
+                    }
+                    _selectedTask.postValue(task);
+                }
+                @Override
+                public void onFailure(Exception e) {
+                    _error.postValue(e.getMessage());
+                }
+            });
+        }
+
+
+
+    }
+
     public void loadInitialData(String userId) {
         _isLoading.setValue(true);
         _isLoadingCategory.setValue(true);
@@ -192,21 +290,23 @@ public class TaskViewModel extends ViewModel{
 
     public static class Factory implements ViewModelProvider.Factory {
         private final Application application;
-        public Factory(Application application) {
-            this.application = application;
-        }
+        public Factory(Application application) { this.application = application; }
+
         @NonNull
         @Override
         public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
             if (modelClass.isAssignableFrom(TaskViewModel.class)) {
                 try {
                     TaskRepository taskRepo = new TaskRepositoryImpl(application);
+                    LevelInfoRepository levelRepo = new LevelInfoRepositoryImpl(application);
                     CategoryRepository catRepo = new CategoryRepositoryImpl(application);
-                    @SuppressWarnings("unchecked")
-                    T viewModel = (T) modelClass.getConstructor(TaskRepository.class, CategoryRepository.class)
-                            .newInstance(taskRepo, catRepo);
-                    return viewModel;
+                    // Kreiramo i UseCase
+                    TaskUseCase completeUC = new TaskUseCase(taskRepo, levelRepo);
 
+                    @SuppressWarnings("unchecked")
+                    T viewModel = (T) modelClass.getConstructor(TaskRepository.class, CategoryRepository.class, TaskUseCase.class)
+                            .newInstance(taskRepo, catRepo, completeUC);
+                    return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);
                 }

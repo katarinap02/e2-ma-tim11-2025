@@ -91,11 +91,6 @@ public class TaskActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Osveži podatke svaki put kad se vratiš na ovaj ekran,
-        // OSIM pri prvom kreiranju (jer se tada podaci već učitavaju u onCreate).
-        if (!isInitialLoad) {
-            viewModel.loadInitialData(currentUserId);
-        }
-        isInitialLoad = false;
+        viewModel.loadInitialData(currentUserId);
     }
 }

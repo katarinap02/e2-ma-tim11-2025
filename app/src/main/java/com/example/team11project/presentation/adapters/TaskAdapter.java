@@ -28,6 +28,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private Map<String, Category> categoryMap = new HashMap<>();
     private OnTaskClickListener listener;
 
+
+
     // Interfejs za komunikaciju sa Fragmentom/Activity-jem
     public interface OnTaskClickListener {
         void onTaskClick(Task task);
@@ -43,8 +45,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         private final TextView taskTitleText;
         private final TextView executionTimeText;
         private final TextView xpValueText;
-        private final ImageButton completeButton;
         private final Context context; // Potreban za formatiranje datuma
+
+
+
+
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -53,7 +58,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             taskTitleText = itemView.findViewById(R.id.text_view_task_title);
             executionTimeText = itemView.findViewById(R.id.text_view_execution_time);
             xpValueText = itemView.findViewById(R.id.text_view_xp_value);
-            completeButton = itemView.findViewById(R.id.button_complete_task);
         }
 
 
@@ -84,12 +88,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onTaskClick(task);
-            }
-        });
-
-        completeButton.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onCompleteClick(task);
             }
         });
     }

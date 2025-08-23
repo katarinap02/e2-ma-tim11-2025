@@ -8,9 +8,12 @@ import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
+import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskRepository;
 
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -57,23 +60,46 @@ public class TaskRepositoryImpl implements TaskRepository {
 
     @Override
     public void getTasks(String userId, RepositoryCallback<List<Task>> callback) {
-        databaseExecutor.execute(() -> {
-            List<Task> localTasks = localDataSource.getAllTasks(userId);
-        });
 
         // Korak 2: Pokreni sinhronizaciju sa Firebase-a
         remoteDataSource.getAllTasks(userId, new RemoteDataSource.DataSourceCallback<List<Task>>() {
             @Override
             public void onSuccess(List<Task> remoteTasks) {
-                // Dobili smo sveže podatke, sada ih sinhronizuj sa lokalnom bazom
+                // DEO GDE PROVERAVAMO DA LI JE NEKI ZADATAK NEURADJEN
                 databaseExecutor.execute(() -> {
-                    localDataSource.deleteAllTasksForUser(userId);
-                    for (Task cat : remoteTasks) {
-                        localDataSource.addTask(cat);
+                    List<Task> tasksToUpdateOnRemote = new ArrayList<>();
+                    Date now = new Date();
+                    Calendar threeDaysAgo = Calendar.getInstance();
+                    threeDaysAgo.add(Calendar.DAY_OF_YEAR, -3);
+                    threeDaysAgo.set(Calendar.HOUR_OF_DAY, 0); // Početak dana
+
+                    // 1. Prođi kroz sveže podatke i proveri da li je neki istekao
+                    for (Task task : remoteTasks) {
+                        if (task.getStatus() == TaskStatus.ACTIVE &&
+                                task.getExecutionTime().before(threeDaysAgo.getTime())) {
+
+                            // Ako jeste, promeni mu status i dodaj ga u listu za ažuriranje
+                            task.setStatus(TaskStatus.UNCOMPLETED);
+                            tasksToUpdateOnRemote.add(task);
+                        }
                     }
-                    // Nakon sinhronizacije, ponovo pošalji sveže podatke UI-ju
-                    List<Task> freshLocalTasks = localDataSource.getAllTasks(userId);
-                    callback.onSuccess(freshLocalTasks);
+
+                    //Ažuriraj sve istekle zadatke nazad na Firebase
+                    for (Task taskToUpdate : tasksToUpdateOnRemote) {
+                        remoteDataSource.updateTask(taskToUpdate, new RemoteDataSource.DataSourceCallback<Void>() {
+                            @Override public void onSuccess(Void result) { /* Uspeh */ }
+                            @Override public void onFailure(Exception e) { /* Greška, ali nastavljamo */ }
+                        });
+                    }
+                    // sačuvaj je celu u lokalnu bazu.
+                    localDataSource.deleteAllTasksForUser(userId);
+                    for (Task task : remoteTasks) {
+                        localDataSource.addTask(task);
+                    }
+
+
+                    callback.onSuccess(remoteTasks);
+
                 });
             }
 
@@ -127,6 +153,45 @@ public class TaskRepositoryImpl implements TaskRepository {
 
         });
     });
+    }
+
+    @Override
+    public void pauseTask(Task task, RepositoryCallback<Void> callback) {
+        if (task.getStatus() != TaskStatus.ACTIVE) {
+            callback.onFailure(new Exception("Zadatak mora biti aktivan da bi se pauzirao."));
+            return;
+        }
+        if (!task.isRecurring()) {
+            callback.onFailure(new Exception("Samo ponavljajući zadaci se mogu pauzirati."));
+            return;
+        }
+
+        task.setStatus(TaskStatus.PAUSED);
+        updateTask(task, callback);
+    }
+
+    @Override
+    public void activateTask(Task task, RepositoryCallback<Void> callback) {
+        // PRAVILO: Samo pauzirani zadaci se mogu ponovo aktivirati
+        if (task.getStatus() != TaskStatus.PAUSED) {
+            callback.onFailure(new Exception("Zadatak mora biti pauziran da bi se aktivirao."));
+            return;
+        }
+
+        task.setStatus(TaskStatus.ACTIVE);
+        updateTask(task, callback);
+    }
+
+    @Override
+    public void cancelTask(Task task, RepositoryCallback<Void> callback) {
+        // PRAVILO: Samo aktivni zadaci se mogu otkazati
+        if (task.getStatus() != TaskStatus.ACTIVE) {
+            callback.onFailure(new Exception("Samo aktivni zadaci se mogu otkazati."));
+            return;
+        }
+
+        task.setStatus(TaskStatus.CANCELED);
+        updateTask(task, callback);
     }
 
 

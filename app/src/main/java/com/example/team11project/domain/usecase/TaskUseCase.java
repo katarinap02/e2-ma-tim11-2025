@@ -4,6 +4,8 @@ import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
 import com.example.team11project.domain.model.TaskStatus;
+import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskRepository;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -13,12 +15,19 @@ import java.util.Date;
 
 public class TaskUseCase {
     private final TaskRepository taskRepository;
+    private final LevelInfoRepository levelInfoRepository;
 
-    public TaskUseCase(TaskRepository taskRepository) {
+    public TaskUseCase(TaskRepository taskRepository, LevelInfoRepository levelInfoRepository) {
         this.taskRepository = taskRepository;
+        this.levelInfoRepository = levelInfoRepository;
     }
 
     public void completeTask(Task task, String userId, RepositoryCallback<Integer> finalCallback) {
+
+        if (task.getStatus() != TaskStatus.ACTIVE) {
+            finalCallback.onFailure(new Exception("Samo aktivni zadaci se mogu označiti kao završeni."));
+            return;
+        }
 
         // Koristimo AtomicInteger da bismo bezbedno sabirali XP sa različitih thread-ova
         AtomicInteger calculatedXp = new AtomicInteger(0);
@@ -40,8 +49,31 @@ public class TaskUseCase {
                         taskRepository.updateTask(task, new RepositoryCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
-                                // TODO: Ovde treba da pozoveš metodu koja ažurira ukupan XP korisnika
-                                // npr. userRepository.addXpToUser(userId, calculatedXp.get(), ...);
+                                //deo gde dodeljuje useru poene
+                                if (calculatedXp.get() > 0) {
+                                    levelInfoRepository.getUserById(userId, new RepositoryCallback<User>() {
+                                        @Override
+                                        public void onSuccess(User user) {
+                                            levelInfoRepository.addXp(user, calculatedXp.get(), new RepositoryCallback<Void>() {
+                                                @Override
+                                                public void onSuccess(Void unused) {
+                                                    finalCallback.onSuccess(calculatedXp.get());
+                                                }
+                                                @Override
+                                                public void onFailure(Exception e) {
+                                                    finalCallback.onFailure(e);
+                                                }
+                                            });
+                                        }
+                                        @Override
+                                        public void onFailure(Exception e) {
+                                            finalCallback.onFailure(e);
+                                        }
+                                    });
+                                } else {
+                                    // Ako je osvojeno 0 poena, samo javi uspeh bez dodavanja XP
+                                    finalCallback.onSuccess(0);
+                                }
 
                                 finalCallback.onSuccess(calculatedXp.get());
                             }
