@@ -58,6 +58,7 @@ public class LevelInfoRepositoryImpl implements LevelInfoRepository {
         levelInfo.setXpForNextLevel(xpForNextLevel);
         levelInfo.setXp(newXp);
         user.setLevelInfo(levelInfo);
+        levelInfo.setPp(pp);
 
         remoteDataSource.updateUser(user, new RemoteDataSource.DataSourceCallback<Void>() {
             @Override

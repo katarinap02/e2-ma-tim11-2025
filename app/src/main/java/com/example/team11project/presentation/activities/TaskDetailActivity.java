@@ -156,7 +156,7 @@ public class TaskDetailActivity extends BaseActivity {
         // DEO GDE PISE KOLIKO JE XP NEKO OSVOJIO
         viewModel.taskCompletedXp.observe(this, earnedXp -> {
             if (earnedXp > 0) {
-                Toast.makeText(this, "Zadatak završen! Osvojeno: " + earnedXp + " XP", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Zadatak završen! Osvojeno: " + earnedXp + " XP" + ". Proverite svoj napredak.", Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(this, "Zadatak završen! Dostignut je limit za XP poene za ovu vrstu zadatka.", Toast.LENGTH_LONG).show();
             }
