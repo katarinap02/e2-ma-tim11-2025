@@ -64,7 +64,7 @@ public class LevelInfoRepositoryImpl implements LevelInfoRepository {
             @Override
             public void onSuccess(Void unused) {
                 databaseExecutor.execute(() -> {
-                    localDataSource.updateLevelInfo(levelInfo, user.getId());
+                  //  localDataSource.updateLevelInfo(levelInfo, user.getId());
                     callback.onSuccess(null);
                 });
             }
