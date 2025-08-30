@@ -303,6 +303,7 @@ public class TaskViewModel extends ViewModel{
         });
     }
 
+
     //promene statusa za taskove, uslove dodajemo kasnije
     public void changeTaskStatus(Task task, TaskStatus newStatus, String userId, Date instanceDate) {
         // 1. ODMAH ažuriraj UI optimistički
