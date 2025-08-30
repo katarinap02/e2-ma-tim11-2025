@@ -22,6 +22,8 @@ import com.example.team11project.R;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskInstance;
+import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.presentation.activities.LoginActivity;
 import com.example.team11project.presentation.activities.TaskDetailActivity;
 import com.example.team11project.presentation.adapters.TaskAdapter;
@@ -43,6 +45,8 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
     private ProgressBar progressBar;
 
     private List<Task> originalTasks = new ArrayList<>();
+
+    private Map<String, List<TaskInstance>> instancesMap = new HashMap<>();
     private String currentUserId;
 
     private ChipGroup chipGroupFilter; // Nova promenljiva za filter
@@ -108,11 +112,24 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
             }
         });
 
-        // Posmatra zadatke i prosleđuje listu adapteru
         viewModel.tasks.observe(getViewLifecycleOwner(), tasks -> {
             if (tasks != null) {
                 this.originalTasks = tasks;
-                filterAndDisplayTasks();
+                // Pozivamo filtriranje samo ako su i instance stigle
+                if (!instancesMap.isEmpty() || !hasRecurringTasks(tasks)) {
+                    filterAndDisplayTasks();
+                }
+            }
+        });
+
+        // Posmatramo i INSTANCE
+        viewModel.instancesMap.observe(getViewLifecycleOwner(), map -> {
+            if (map != null) {
+                this.instancesMap = map;
+                // Pozivamo filtriranje i kada stignu instance
+                if (!originalTasks.isEmpty()) {
+                    filterAndDisplayTasks();
+                }
             }
         });
 
@@ -127,11 +144,19 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
         viewModel.error.observe(getViewLifecycleOwner(), error -> { /* ... */ });
     }
 
+    private boolean hasRecurringTasks(List<Task> tasks) {
+        for (Task t : tasks) if (t.isRecurring()) return true;
+        return false;
+    }
+
     //
     @Override
     public void onTaskClick(Task task) {
         Intent intent = new Intent(getActivity(), TaskDetailActivity.class);
         intent.putExtra("TASK_ID", task.getId());
+        if (task.getExecutionTime() != null) {
+            intent.putExtra("INSTANCE_DATE", task.getExecutionTime().getTime());
+        }
         startActivity(intent);
     }
 
@@ -147,49 +172,85 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
         List<Task> displayList = new ArrayList<>();
         Date now = new Date();
         Calendar cal = Calendar.getInstance();
+
         for (Task originalTask : originalTasks) {
             if (originalTask.isRecurring()) {
-                // --- LOGIKA ZA PONAVLJAJUĆE ZADATKE ---
                 if (currentFilter == TaskFilter.SINGLE) continue;
-                if (originalTask.getRecurrenceEndDate() != null && !originalTask.getRecurrenceEndDate().after(now)) {
-                    continue;
-                }
 
+                // PRAVILO: Ako je ceo niz pauziran, ne prikazuj nijednu instancu
+                if (originalTask.getStatus() == TaskStatus.PAUSED) continue;
+
+                // Pripremi mapu izuzetaka za ovaj zadatak
+                Map<Date, TaskInstance> exceptions = getExceptionsForTask(originalTask.getId());
+
+                // Generiši instance
                 cal.setTime(originalTask.getRecurrenceStartDate());
-
                 while (!cal.getTime().after(originalTask.getRecurrenceEndDate())) {
-                    if (!cal.getTime().before(getStartOfDay(now))) {
-                        Task virtualTask = createVirtualTask(originalTask, cal.getTime());
-                        displayList.add(virtualTask);
+                    Date instanceDate = cal.getTime();
+
+                    // Prikazujemo samo instance od danas pa nadalje
+                    if (!instanceDate.before(getStartOfDay(now))) {
+                        TaskStatus virtualStatus = determineInstanceStatus(originalTask, instanceDate, exceptions);
+
+                        // PRAVILO: Prikazuj samo instance koje su ACTIVE
+                        if (virtualStatus == TaskStatus.ACTIVE) {
+                            Task virtualTask = createVirtualTask(originalTask, instanceDate);
+                            virtualTask.setStatus(virtualStatus);
+                            displayList.add(virtualTask);
+                        }
                     }
 
                     // Pomeri kalendar na sledeće ponavljanje
                     int interval = originalTask.getRecurrenceInterval();
-                    if (originalTask.getRecurrenceUnit() == RecurrenceUnit.DAY) {
-                        cal.add(Calendar.DAY_OF_MONTH, interval);
-                    } else if (originalTask.getRecurrenceUnit() == RecurrenceUnit.WEEK) {
-                        cal.add(Calendar.WEEK_OF_YEAR, interval);
-                    } else {
-                        break;
-                    }
+                    if (originalTask.getRecurrenceUnit() == RecurrenceUnit.DAY) cal.add(Calendar.DAY_OF_MONTH, interval);
+                    else if (originalTask.getRecurrenceUnit() == RecurrenceUnit.WEEK) cal.add(Calendar.WEEK_OF_YEAR, interval);
+                    else break;
                 }
-
             } else {
-                // --- LOGIKA ZA JEDNOKRATNE ZADATKE ---
+                // LOGIKA ZA JEDNOKRATNE ZADATKE
                 if (currentFilter == TaskFilter.RECURRING) continue;
-                if (originalTask.getExecutionTime() != null && !originalTask.getExecutionTime().before(now)) {
+
+                // PRAVILO: Prikazuj samo jednokratne koji su ACTIVE i u budućnosti
+                if (originalTask.getStatus() == TaskStatus.ACTIVE &&
+                        originalTask.getExecutionTime() != null &&
+                        !originalTask.getExecutionTime().before(now)) {
                     displayList.add(originalTask);
                 }
             }
         }
 
-
         displayList.sort((t1, t2) -> t1.getExecutionTime().compareTo(t2.getExecutionTime()));
-
         taskAdapter.setTasks(displayList);
     }
 
-    private Task createVirtualTask(Task original, Date executionDate) {
+    // Nova pomoćna metoda za lakše dobijanje izuzetaka
+    private Map<Date, TaskInstance> getExceptionsForTask(String taskId) {
+        Map<Date, TaskInstance> exceptionsMap = new HashMap<>();
+        List<TaskInstance> instances = instancesMap.get(taskId);
+        if (instances != null) {
+            for (TaskInstance instance : instances) {
+                exceptionsMap.put(getStartOfDay(instance.getOriginalDate()), instance);
+            }
+        }
+        return exceptionsMap;
+    }
+
+    private TaskStatus determineInstanceStatus(Task originalTask, Date dateOfInstance, Map<Date, TaskInstance> exceptionsMap) {
+        Calendar threeDaysAgo = Calendar.getInstance();
+        threeDaysAgo.add(Calendar.DAY_OF_YEAR, 0);
+        threeDaysAgo.set(Calendar.HOUR_OF_DAY, 0);
+
+        TaskInstance exception = exceptionsMap.get(getStartOfDay(dateOfInstance));
+        if (exception != null) {
+            return exception.getNewStatus();
+        }
+        if (dateOfInstance.before(threeDaysAgo.getTime())) {
+            return TaskStatus.UNCOMPLETED;
+        }
+        return originalTask.getStatus();
+    }
+
+        private Task createVirtualTask(Task original, Date executionDate) {
         Task virtual = new Task();
         virtual.setId(original.getId());
         virtual.setTitle(original.getTitle());

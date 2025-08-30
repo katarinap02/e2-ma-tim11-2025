@@ -74,8 +74,9 @@ public class TaskRepositoryImpl implements TaskRepository {
                     threeDaysAgo.set(Calendar.HOUR_OF_DAY, 0); // Početak dana
 
                     // 1. Prođi kroz sveže podatke i proveri da li je neki istekao
+                    //PROMENILA DA JE OVO SAMO ZA JEDNOKRATNE ZADATKE
                     for (Task task : remoteTasks) {
-                        if (task.getStatus() == TaskStatus.ACTIVE &&
+                        if (!task.isRecurring() && task.getStatus() == TaskStatus.ACTIVE &&
                                 task.getExecutionTime().before(threeDaysAgo.getTime())) {
 
                             // Ako jeste, promeni mu status i dodaj ga u listu za ažuriranje
@@ -179,18 +180,6 @@ public class TaskRepositoryImpl implements TaskRepository {
         }
 
         task.setStatus(TaskStatus.ACTIVE);
-        updateTask(task, callback);
-    }
-
-    @Override
-    public void cancelTask(Task task, RepositoryCallback<Void> callback) {
-        // PRAVILO: Samo aktivni zadaci se mogu otkazati
-        if (task.getStatus() != TaskStatus.ACTIVE) {
-            callback.onFailure(new Exception("Samo aktivni zadaci se mogu otkazati."));
-            return;
-        }
-
-        task.setStatus(TaskStatus.CANCELED);
         updateTask(task, callback);
     }
 

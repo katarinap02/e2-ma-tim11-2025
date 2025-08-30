@@ -290,23 +290,73 @@ public class RemoteDataSource {
 
     }
 
-    public void addTaskInstance(TaskInstance instance, DataSourceCallback<String> callback) {
+    public void addTaskInstance(TaskInstance instance, final DataSourceCallback<String> callback) {
+        if (instance.getUserId() == null) {
+            callback.onFailure(new Exception("UserID je null."));
+            return;
+        }
+
         db.collection(USERS_COLLECTION).document(instance.getUserId())
                 .collection(INSTANCES_COLLECTION)
-                .document(instance.getId())
-                .set(instance)
-                .addOnSuccessListener(aVoid -> callback.onSuccess(instance.getId()))
+                .add(instance)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
-    public void getAllTaskInstances(String userId, String originalTaskId, DataSourceCallback<List<TaskInstance>> callback) {
+    public void getAllTaskInstances(String userId, String originalTaskId, final DataSourceCallback<List<TaskInstance>> callback) {
+        if (userId == null || originalTaskId == null) {
+            callback.onFailure(new Exception("UserID ili OriginalTaskID je null."));
+            return;
+        }
         db.collection(USERS_COLLECTION).document(userId)
                 .collection(INSTANCES_COLLECTION)
                 .whereEqualTo("originalTaskId", originalTaskId)
                 .get()
                 .addOnCompleteListener(task -> {
-                    // ... logika za parsiranje rezultata u List<TaskInstance> ...
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        List<TaskInstance> instances = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            TaskInstance instance = document.toObject(TaskInstance.class);
+                            instance.setId(document.getId());
+                            instances.add(instance);
+                        }
+                        callback.onSuccess(instances);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
                 });
     }
+
+    public void updateTaskInstance(TaskInstance instance, final DataSourceCallback<Void> callback) {
+        if (instance.getUserId() == null || instance.getId() == null) {
+            callback.onFailure(new Exception("UserID ili InstanceID je null."));
+            return;
+        }
+        db.collection(USERS_COLLECTION).document(instance.getUserId())
+                .collection(INSTANCES_COLLECTION)
+                .document(instance.getId())
+                .set(instance, SetOptions.merge()) // Koristi merge da ne prebrišeš polja ako ih ne šalješ sve
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void deleteTaskInstance(String instanceId, String userId, final DataSourceCallback<Void> callback) {
+        if (userId == null || instanceId == null) {
+            callback.onFailure(new Exception("UserID ili InstanceID je null."));
+            return;
+        }
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(INSTANCES_COLLECTION)
+                .document(instanceId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    private CollectionReference getTaskInstanceCollection(String userId) {
+        return db.collection(USERS_COLLECTION).document(userId).collection(INSTANCES_COLLECTION);
+    }
+
+
 
 }

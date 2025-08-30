@@ -22,6 +22,8 @@ import com.example.team11project.R;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskInstance;
+import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.presentation.activities.LoginActivity;
 import com.example.team11project.presentation.activities.TaskDetailActivity;
 import com.example.team11project.presentation.adapters.TaskAdapter;
@@ -56,6 +58,8 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
     private String currentUserId;
 
     private List<Task> allTaskInstances = new ArrayList<>();
+
+    private Map<String, List<TaskInstance>> instancesMap = new HashMap<>();
 
     public CalendarFragment() {
     }
@@ -125,7 +129,17 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
                 updateCalendarDecorators();
 
                 // Prikazi zadatke za danas po defaultu
-                filterTasksForDate(CalendarDay.today());
+               // filterTasksForDate(CalendarDay.today());
+            }
+        });
+
+        // instance
+        viewModel.instancesMap.observe(getViewLifecycleOwner(), map -> {
+            if (map != null) {
+                this.instancesMap = map;
+                // Kada stignu nove instance, takođe osveži prikaz
+                generateAllTaskInstances();
+                updateCalendarDecorators();
             }
         });
     }
@@ -218,6 +232,9 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
     public void onTaskClick(Task task) {
         Intent intent = new Intent(getActivity(), TaskDetailActivity.class);
         intent.putExtra("TASK_ID", task.getId());
+        if (task.getExecutionTime() != null) {
+            intent.putExtra("INSTANCE_DATE", task.getExecutionTime().getTime());
+        }
         startActivity(intent);
     }
 
@@ -230,14 +247,53 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
     private void generateAllTaskInstances() {
         allTaskInstances.clear();
         Calendar cal = Calendar.getInstance();
+        Date now = new Date();
 
+        Calendar threeDaysAgo = Calendar.getInstance();
+        threeDaysAgo.add(Calendar.DAY_OF_YEAR, -3);
+        threeDaysAgo.set(Calendar.HOUR_OF_DAY, 0);
+
+        //pronalazimo koliko ima izuzetaka sa instancama
         for (Task originalTask : allTasks) {
             if (originalTask.isRecurring()) {
-                // Za ponavljajuće, generiši SVE instance, i prošle i buduće
+                Map<Date, TaskInstance> exceptionsForThisTask = new HashMap<>();
+                List<TaskInstance> instances = instancesMap.get(originalTask.getId());
+                if (instances != null) {
+                    for (TaskInstance instance : instances) {
+                        exceptionsForThisTask.put(getStartOfDay(instance.getOriginalDate()), instance);
+                    }
+                }
+
                 cal.setTime(originalTask.getRecurrenceStartDate());
                 while (!cal.getTime().after(originalTask.getRecurrenceEndDate())) {
-                    allTaskInstances.add(createVirtualTask(originalTask, cal.getTime()));
+                    Date instanceDate = cal.getTime();
+                    Task virtualTask = createVirtualTask(originalTask, instanceDate);
+                    // --- HIJERARHIJA PRAVILA ZA ODREĐIVANJE STATUSA ---
 
+                    TaskStatus finalStatus;
+                    TaskInstance exception = exceptionsForThisTask.get(getStartOfDay(instanceDate));
+
+                    // PRAVILO 1: Da li postoji "izuzetak" (COMPLETED ili CANCELED)?
+                    if (exception != null) {
+                        finalStatus = exception.getNewStatus();
+                    }
+                    // PRAVILO 2: Da li je instanca istekla (starija od 3 dana)?
+                    else if (instanceDate.before(threeDaysAgo.getTime())) {
+                        finalStatus = TaskStatus.UNCOMPLETED;
+                    }
+                    // PRAVILO 3: Da li je CEO NIZ pauziran?
+                    else if (originalTask.getStatus() == TaskStatus.PAUSED) {
+                        finalStatus = TaskStatus.PAUSED;
+                    }
+                    // PRAVILO 4: Ako ništa od gore navedenog nije tačno, instanca je aktivna.
+                    else {
+                        finalStatus = TaskStatus.ACTIVE;
+                    }
+
+                    virtualTask.setStatus(finalStatus);
+                    allTaskInstances.add(virtualTask);
+
+                    // Pomeri kalendar na sledeću instancu
                     int interval = originalTask.getRecurrenceInterval();
                     if (originalTask.getRecurrenceUnit() == RecurrenceUnit.DAY) {
                         cal.add(Calendar.DAY_OF_MONTH, interval);
@@ -247,11 +303,18 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
                         break;
                     }
                 }
+
+
             } else {
                 // Jednokratne samo dodaj u listu
                 allTaskInstances.add(originalTask);
             }
         }
+        CalendarDay selectedDay = calendarView.getSelectedDate();
+        if (selectedDay == null) {
+            selectedDay = CalendarDay.today();
+        }
+        filterTasksForDate(selectedDay);
     }
 
     private Task createVirtualTask(Task original, Date executionDate) {
@@ -272,6 +335,18 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
         virtual.setRecurrenceEndDate(original.getRecurrenceEndDate());
 
         return virtual;
+    }
+
+    private Date getStartOfDay(Date date) {
+        if (date == null) return null;
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
     }

@@ -1,13 +1,19 @@
 package com.example.team11project.domain.usecase;
 
+import android.util.Log;
+
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
+import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
+
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.Calendar;
@@ -16,19 +22,34 @@ import java.util.Date;
 public class TaskUseCase {
     private final TaskRepository taskRepository;
     private final LevelInfoRepository levelInfoRepository;
+    private final TaskInstanceRepository taskInstanceRepository;
 
-    public TaskUseCase(TaskRepository taskRepository, LevelInfoRepository levelInfoRepository) {
+    public TaskUseCase(TaskRepository taskRepository, LevelInfoRepository levelInfoRepository, TaskInstanceRepository taskInstanceRepository) {
         this.taskRepository = taskRepository;
         this.levelInfoRepository = levelInfoRepository;
+        this.taskInstanceRepository = taskInstanceRepository;
     }
 
-    public void completeTask(Task task, String userId, RepositoryCallback<Integer> finalCallback) {
-
+    public void completeTask(Task task, String userId, Date instanceDate, RepositoryCallback<Integer> finalCallback) {
         if (task.getStatus() != TaskStatus.ACTIVE) {
             finalCallback.onFailure(new Exception("Samo aktivni zadaci se mogu označiti kao završeni."));
             return;
         }
 
+        if (!task.isRecurring()) {
+            // Regularni zadatak
+            completeRegularTask(task, userId, finalCallback);
+        } else {
+            // Ponavljajući zadatak
+            if (instanceDate == null) {
+                finalCallback.onFailure(new Exception("Datum instance je obavezan za ponavljajuće zadatke."));
+                return;
+            }
+            completeRecurringTask(task, userId, instanceDate, finalCallback);
+        }
+    }
+
+    public void completeRegularTask(Task task, String userId, RepositoryCallback<Integer> finalCallback) {
         // Koristimo AtomicInteger da bismo bezbedno sabirali XP sa različitih thread-ova
         AtomicInteger calculatedXp = new AtomicInteger(0);
 
@@ -49,33 +70,8 @@ public class TaskUseCase {
                         taskRepository.updateTask(task, new RepositoryCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
-                                //deo gde dodeljuje useru poene
-                                if (calculatedXp.get() > 0) {
-                                    levelInfoRepository.getUserById(userId, new RepositoryCallback<User>() {
-                                        @Override
-                                        public void onSuccess(User user) {
-                                            levelInfoRepository.addXp(user, calculatedXp.get(), new RepositoryCallback<Void>() {
-                                                @Override
-                                                public void onSuccess(Void unused) {
-                                                    finalCallback.onSuccess(calculatedXp.get());
-                                                }
-                                                @Override
-                                                public void onFailure(Exception e) {
-                                                    finalCallback.onFailure(e);
-                                                }
-                                            });
-                                        }
-                                        @Override
-                                        public void onFailure(Exception e) {
-                                            finalCallback.onFailure(e);
-                                        }
-                                    });
-                                } else {
-                                    // Ako je osvojeno 0 poena, samo javi uspeh bez dodavanja XP
-                                    finalCallback.onSuccess(0);
-                                }
-
-                                finalCallback.onSuccess(calculatedXp.get());
+                                // Dodeli XP korisniku
+                                addXpToUser(userId, calculatedXp.get(), finalCallback);
                             }
 
                             @Override
@@ -97,6 +93,112 @@ public class TaskUseCase {
                 finalCallback.onFailure(e);
             }
         });
+    }
+
+    private void completeRecurringTask(Task task, String userId, Date instanceDate, RepositoryCallback<Integer> finalCallback) {
+        // Validacija da nije već kompletirana ili otkazana
+        taskInstanceRepository.getTaskInstancesForTask(userId, task.getId(), new RepositoryCallback<List<TaskInstance>>() {
+            @Override
+            public void onSuccess(List<TaskInstance> instances) {
+                Log.d("CompleteTask", "Got " + instances.size() + " existing instances");
+
+                // Proveri da li već postoji izuzetak za dati dan
+                for (TaskInstance instance : instances) {
+                    if (isSameDay(instance.getOriginalDate(), instanceDate)) {
+                        if (instance.getNewStatus() == TaskStatus.COMPLETED ||
+                                instance.getNewStatus() == TaskStatus.CANCELED) {
+                            finalCallback.onFailure(new Exception("Zadatak je već završen ili otkazan za taj datum."));
+                            return; // Prekini operaciju
+                        }
+                    }
+                }
+
+                // Izračunavanje XP za ponavljajući zadatak
+                AtomicInteger calculatedXp = new AtomicInteger(0);
+
+                calculateXpForDifficulty(task, userId, new RepositoryCallback<Integer>() {
+                    @Override
+                    public void onSuccess(Integer difficultyXp) {
+                        calculatedXp.addAndGet(difficultyXp);
+
+                        calculateXpForImportance(task, userId, new RepositoryCallback<Integer>() {
+                            @Override
+                            public void onSuccess(Integer importanceXp) {
+                                calculatedXp.addAndGet(importanceXp);
+
+                                TaskInstance taskInstance = new TaskInstance();
+                                taskInstance.setOriginalTaskId(task.getId());
+                                taskInstance.setUserId(userId);
+                                taskInstance.setNewStatus(TaskStatus.COMPLETED);
+                                taskInstance.setOriginalDate(getStartOfDay(instanceDate));
+                                taskInstance.setCompletionDate(new Date());
+
+                                Log.d("CompleteTask", "TaskInstance created: " + taskInstance.toString());
+
+                                taskInstanceRepository.addTaskInstance(taskInstance, new RepositoryCallback<Void>() {
+                                    @Override
+                                    public void onSuccess(Void unused) {
+                                        // Dodeli XP korisniku
+                                        addXpToUser(userId, calculatedXp.get(), finalCallback);
+                                    }
+
+                                    @Override
+                                    public void onFailure(Exception e) {
+                                        finalCallback.onFailure(e);
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                finalCallback.onFailure(e);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        finalCallback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Greška pri dohvatanju postojećih instanci
+                finalCallback.onFailure(e);
+            }
+        });
+    }
+
+
+    private void addXpToUser(String userId, int xpAmount, RepositoryCallback<Integer> finalCallback) {
+        if (xpAmount > 0) {
+            levelInfoRepository.getUserById(userId, new RepositoryCallback<User>() {
+                @Override
+                public void onSuccess(User user) {
+                    levelInfoRepository.addXp(user, xpAmount, new RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            finalCallback.onSuccess(xpAmount);
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            finalCallback.onFailure(e);
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    finalCallback.onFailure(e);
+                }
+            });
+        } else {
+            // Ako je osvojeno 0 poena, samo javi uspeh bez dodavanja XP
+            finalCallback.onSuccess(0);
+        }
     }
 
 
@@ -251,5 +353,83 @@ public class TaskUseCase {
         int lastDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
         calendar.set(Calendar.DAY_OF_MONTH, lastDay);
         return getEndOfDay(calendar.getTime());
+    }
+
+    public void cancelTask(Task task, String userId, Date instanceDate, RepositoryCallback<Void> finalCallback)
+    {
+        if (task.getStatus() != TaskStatus.ACTIVE) {
+            finalCallback.onFailure(new Exception("Samo aktivni zadaci se mogu otkazati."));
+            return;
+        }
+
+        if(!task.isRecurring())
+        {
+            task.setStatus(TaskStatus.CANCELED);
+            taskRepository.updateTask(task, finalCallback);
+        }
+        else {
+            //validacija da nije vec kompletirana ili otkazana
+            taskInstanceRepository.getTaskInstancesForTask(userId, task.getId(), new RepositoryCallback<List<TaskInstance>>() {
+                        @Override
+                        public void onSuccess(List<TaskInstance> instances) {
+                            Log.d("CancelTask", "Got " + instances.size() + " existing instances");
+
+                            // Korak 2: Proveri da li već postoji izuzetak za dati dan
+                            for (TaskInstance instance : instances) {
+                                if (isSameDay(instance.getOriginalDate(), instanceDate)) {
+                                    if (instance.getNewStatus() == TaskStatus.COMPLETED ||
+                                            instance.getNewStatus() == TaskStatus.CANCELED) {
+
+                                        // Ako je već završen ili otkazan, ne može se ponovo otkazati.
+                                        finalCallback.onFailure(new Exception("Zadatak je već završen ili otkazan."));
+                                        return; // Prekini operaciju
+                                    }
+                                }
+                            }
+
+
+                            TaskInstance taskInstance = new TaskInstance();
+                            taskInstance.setOriginalTaskId(task.getId());
+                            taskInstance.setUserId(userId);
+                            taskInstance.setNewStatus(TaskStatus.CANCELED);
+                            taskInstance.setOriginalDate(getStartOfDay(instanceDate));
+                            taskInstance.setCompletionDate(new Date());
+
+                            Log.d("CancelTask", "TaskInstance created: " + taskInstance.toString());
+
+                            taskInstanceRepository.addTaskInstance(taskInstance, new RepositoryCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void unused) {
+                                    // Javi da je operacija uspešno završena
+                                    finalCallback.onSuccess(null);
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    finalCallback.onFailure(e);
+                                }
+                            });
+                        }
+                @Override
+                public void onFailure(Exception e) {
+                    // Greška pri dohvatanju postojećih instanci
+                    finalCallback.onFailure(e);
+                }
+            });
+        }
+
+    }
+
+    private boolean isSameDay(Date d1, Date d2) {
+        if (d1 == null || d2 == null) {
+            return false;
+        }
+        Calendar c1 = Calendar.getInstance();
+        c1.setTime(d1);
+        Calendar c2 = Calendar.getInstance();
+        c2.setTime(d2);
+
+        return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR) &&
+                c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR);
     }
 }

@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
     public static final String DATABASE_NAME = "MobileApp.db";
 
     public DatabaseHelper(Context context) {
@@ -48,6 +48,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.TaskEntry.COLUMN_NAME_STATUS + " TEXT NOT NULL," +
                     "FOREIGN KEY(" + AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID + ") REFERENCES " +
                     AppContract.CategoryEntry.TABLE_NAME + "(" + AppContract.CategoryEntry._ID + "))";
+    private static final String SQL_CREATE_TASK_INSTANCES_TABLE =
+            "CREATE TABLE " + AppContract.TaskInstanceEntry.TABLE_NAME + " (" +
+                    AppContract.TaskInstanceEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE + " INTEGER NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_NEW_STATUS + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_COMPLETION_DATE + " INTEGER," +
+                    "FOREIGN KEY(" + AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + ") REFERENCES " +
+                    AppContract.TaskEntry.TABLE_NAME + "(" + AppContract.TaskEntry._ID + "))";
 
     // SQL komande za brisanje tabela
     private static final String SQL_DELETE_CATEGORIES_TABLE =
@@ -108,16 +118,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
                     ")";
 
-    private static final String SQL_CREATE_TASK_INSTANCES_TABLE =
-            "CREATE TABLE " + AppContract.TaskInstanceEntry.TABLE_NAME + " (" +
-                    AppContract.TaskInstanceEntry._ID + " TEXT PRIMARY KEY," +
-                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + " TEXT NOT NULL," +
-                    AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
-                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE + " INTEGER NOT NULL," +
-                    AppContract.TaskInstanceEntry.COLUMN_NAME_NEW_STATUS + " TEXT NOT NULL," +
-                    AppContract.TaskInstanceEntry.COLUMN_NAME_COMPLETION_DATE + " INTEGER," +
-                    "FOREIGN KEY(" + AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + ") REFERENCES " +
-                    AppContract.TaskEntry.TABLE_NAME + "(" + AppContract.TaskEntry._ID + "))";
+
 
 
 

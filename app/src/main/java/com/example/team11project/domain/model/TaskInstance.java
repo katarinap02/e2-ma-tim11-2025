@@ -1,8 +1,11 @@
 package com.example.team11project.domain.model;
 
+import com.google.firebase.firestore.PropertyName;
+
 import java.util.Date;
 
 public class TaskInstance {
+    @PropertyName("id")
     private String id;
     private String originalTaskId; // Poveznica na originalni Task (FOREIGN KEY)
     private String userId;
