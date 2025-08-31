@@ -284,14 +284,22 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
                     // PRAVILO 3: Da li je CEO NIZ pauziran?
                     else if (originalTask.getStatus() == TaskStatus.PAUSED) {
                         finalStatus = TaskStatus.PAUSED;
+                    }// PRAVILO 4: Da li je CEO NIZ obrisan?
+                    else if (originalTask.getStatus() == TaskStatus.DELETED) {
+                        finalStatus = TaskStatus.DELETED;
                     }
-                    // PRAVILO 4: Ako ništa od gore navedenog nije tačno, instanca je aktivna.
+                    // PRAVILO 5: Ako ništa od gore navedenog nije tačno, instanca je aktivna.
                     else {
                         finalStatus = TaskStatus.ACTIVE;
                     }
 
                     virtualTask.setStatus(finalStatus);
-                    allTaskInstances.add(virtualTask);
+                    //ne upisuje se u kalendar jedino ako je deleted
+                    if(finalStatus != TaskStatus.DELETED)
+                    {
+                        allTaskInstances.add(virtualTask);
+                    }
+
 
                     // Pomeri kalendar na sledeću instancu
                     int interval = originalTask.getRecurrenceInterval();
@@ -306,8 +314,11 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
 
 
             } else {
-                // Jednokratne samo dodaj u listu
-                allTaskInstances.add(originalTask);
+                if(originalTask.getStatus() != TaskStatus.DELETED)
+                {
+                    allTaskInstances.add(originalTask);
+                }
+
             }
         }
         CalendarDay selectedDay = calendarView.getSelectedDate();
@@ -348,5 +359,7 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
         calendar.set(Calendar.MILLISECOND, 0);
         return calendar.getTime();
     }
+
+
 
     }

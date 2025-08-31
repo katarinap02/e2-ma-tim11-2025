@@ -180,6 +180,8 @@ public class TaskListFragment extends Fragment implements TaskAdapter.OnTaskClic
                 // PRAVILO: Ako je ceo niz pauziran, ne prikazuj nijednu instancu
                 if (originalTask.getStatus() == TaskStatus.PAUSED) continue;
 
+                if(originalTask.getStatus() == TaskStatus.DELETED) continue;
+
                 // Pripremi mapu izuzetaka za ovaj zadatak
                 Map<Date, TaskInstance> exceptions = getExceptionsForTask(originalTask.getId());
 

@@ -172,6 +172,17 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     @Override
+    public void deleteTask(Task task, RepositoryCallback<Void> callback) {
+        if (task.getStatus() != TaskStatus.ACTIVE && task.getStatus() != TaskStatus.PAUSED) {
+            callback.onFailure(new Exception("Zadatak mora biti aktivan ili pauziran da bi se obrisao."));
+            return;
+        }
+
+        task.setStatus(TaskStatus.DELETED);
+        updateTask(task, callback);
+    }
+
+    @Override
     public void activateTask(Task task, RepositoryCallback<Void> callback) {
         // PRAVILO: Samo pauzirani zadaci se mogu ponovo aktivirati
         if (task.getStatus() != TaskStatus.PAUSED) {
@@ -205,6 +216,26 @@ public class TaskRepositoryImpl implements TaskRepository {
             } catch (Exception e) {
                 callback.onFailure(e);
             }
+        });
+    }
+
+    @Override
+    public void deleteTaskFromDatabase(String taskId, String userId, RepositoryCallback<Void> callback) {
+        databaseExecutor.execute(() -> {
+            remoteDataSource.deleteTask(taskId, userId, new RemoteDataSource.DataSourceCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    databaseExecutor.execute(() -> {
+                        localDataSource.deleteTask(taskId, userId);
+                        callback.onSuccess(null);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
         });
     }
 

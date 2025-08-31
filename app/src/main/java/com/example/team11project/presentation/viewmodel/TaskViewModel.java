@@ -371,6 +371,9 @@ public class TaskViewModel extends ViewModel{
 
         // Izvršavanje operacije u bazi
         switch (newStatus) {
+            case DELETED:
+                taskRepository.deleteTask(task, updateCallback);
+                break;
             case ACTIVE:
                 taskRepository.activateTask(task, updateCallback);
                 break;
