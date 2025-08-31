@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
     public static final String DATABASE_NAME = "MobileApp.db";
 
     public DatabaseHelper(Context context) {
@@ -25,18 +25,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
     // SQL komanda za kreiranje tabele za zadatke
+    // U DatabaseHelper.java
+
     private static final String SQL_CREATE_TASKS_TABLE =
             "CREATE TABLE " + AppContract.TaskEntry.TABLE_NAME + " (" +
                     AppContract.TaskEntry._ID + " TEXT PRIMARY KEY," +
-                    AppContract.TaskEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," + // Dodato
+                    AppContract.TaskEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_TITLE + " TEXT NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION + " TEXT," +
-                    AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID + " INTEGER," +
+                    AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID + " TEXT," +
+
                     AppContract.TaskEntry.COLUMN_NAME_IS_RECURRING + " INTEGER NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL + " INTEGER," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_UNIT + " TEXT," +
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_START_DATE + " INTEGER," +
-                    AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE + "INTEGER" +
+                    AppContract.TaskEntry.COLUMN_NAME_COMPLETION_DATE + " INTEGER," + // Dodat razmak i zarez
+
                     AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_END_DATE + " INTEGER," +
                     AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " INTEGER NOT NULL," +
                     AppContract.TaskEntry.COLUMN_NAME_DIFFICULTY + " TEXT NOT NULL," +
@@ -44,6 +48,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.TaskEntry.COLUMN_NAME_STATUS + " TEXT NOT NULL," +
                     "FOREIGN KEY(" + AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID + ") REFERENCES " +
                     AppContract.CategoryEntry.TABLE_NAME + "(" + AppContract.CategoryEntry._ID + "))";
+    private static final String SQL_CREATE_TASK_INSTANCES_TABLE =
+            "CREATE TABLE " + AppContract.TaskInstanceEntry.TABLE_NAME + " (" +
+                    AppContract.TaskInstanceEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE + " INTEGER NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_NEW_STATUS + " TEXT NOT NULL," +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_COMPLETION_DATE + " INTEGER," +
+                    "FOREIGN KEY(" + AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + ") REFERENCES " +
+                    AppContract.TaskEntry.TABLE_NAME + "(" + AppContract.TaskEntry._ID + "))";
 
     // SQL komande za brisanje tabela
     private static final String SQL_DELETE_CATEGORIES_TABLE =
@@ -58,6 +72,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_CATEGORIES_TABLE);
         db.execSQL(SQL_CREATE_TASKS_TABLE);
         db.execSQL(SQL_CREATE_USERS_TABLE);
+        db.execSQL(SQL_CREATE_TASK_INSTANCES_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -67,6 +82,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_TASKS_TABLE);
         db.execSQL(SQL_DELETE_CATEGORIES_TABLE);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.TaskInstanceEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS users");
         onCreate(db);
     }
@@ -87,5 +103,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_AVATAR + " TEXT," +
                     AppContract.UserEntry.COLUMN_VERIFIED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
                     ")";
+
+    private static final String SQL_CREATE_LEVELINFO_TABLE =
+            "CREATE TABLE " + AppContract.LevelInfoEntry.TABLE_NAME + " (" +
+                    AppContract.LevelInfoEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.LevelInfoEntry.COLUMN_LEVEL + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP_FOR_NEXT_LEVEL + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP_TASK_IMPORTANCE + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_PP + " INTEGER NOT NULL," +
+                    AppContract.LevelInfoEntry.COLUMN_TITLE + " TEXT NOT NULL" +
+                    "FOREIGN KEY(" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +
+                    AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
+                    ")";
+
+
+
+
+
+
+
+
 
 }

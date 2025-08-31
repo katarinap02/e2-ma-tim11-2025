@@ -45,6 +45,29 @@ public final class AppContract {
     }
 
 
+    public static class LevelInfoEntry implements BaseColumns {
+        public static final String TABLE_NAME = "level_info";
 
-
+        public static final String _ID = "id";
+        public static final String COLUMN_LEVEL = "level";
+        public static final String COLUMN_XP = "xp";
+        public static final String COLUMN_XP_FOR_NEXT_LEVEL = "xp_for_next_level";
+        public static final String COLUMN_XP_TASK_IMPORTANCE = "xp_task_importance";
+        public static final String COLUMN_XP_TASK_DIFFICULTY = "xp_task_difficulty";
+        public static final String COLUMN_PP = "pp";
+        public static final String COLUMN_TITLE = "title";
+        public static final String COLUMN_USER_ID = "user_id";
     }
+
+        public static class TaskInstanceEntry implements BaseColumns {
+            public static final String TABLE_NAME = "task_instances";
+            public static final String COLUMN_NAME_ORIGINAL_TASK_ID = "original_task_id";
+            public static final String COLUMN_NAME_USER_ID = "user_id";
+            public static final String COLUMN_NAME_ORIGINAL_DATE = "original_date";
+            public static final String COLUMN_NAME_NEW_STATUS = "new_status";
+            public static final String COLUMN_NAME_COMPLETION_DATE = "completion_date";
+        }
+
+
+
+}

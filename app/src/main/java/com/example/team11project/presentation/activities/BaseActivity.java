@@ -31,6 +31,15 @@ public abstract class BaseActivity extends AppCompatActivity {
             finish();
             return true;
         }
+        else if (item.getItemId() == R.id.action_home) {
+            // Ako je kliknuta "Home" ikonica
+            Intent intent = new Intent(this, HomeScreenActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+            return true;
+
+        }
+
         return super.onOptionsItemSelected(item);
     }
 

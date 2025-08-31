@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -18,7 +19,13 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.team11project.R;
+import com.example.team11project.domain.model.UserTitle;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+//        addLevelInfoToExistingUsers();
 
 
         SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
@@ -49,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Intent intent;
             if (sessionToken != null) {
-                intent = new Intent(MainActivity.this, AddAndEditActivity.class);
+                intent = new Intent(MainActivity.this, HomeScreenActivity.class);
             } else {
                 intent = new Intent(MainActivity.this, LoginActivity.class);
             }
@@ -57,5 +65,29 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }, 4000);
         
+    }
+
+
+    private void addLevelInfoToExistingUsers() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("users")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Map<String, Object> levelInfoMap = new HashMap<>();
+                        levelInfoMap.put("level", 0);
+                        levelInfoMap.put("xp", 0);
+                        levelInfoMap.put("xpForNextLevel", 200);
+                        levelInfoMap.put("xpTaskImportance", 0);
+                        levelInfoMap.put("xpTaskDifficulty", 0);
+                        levelInfoMap.put("pp", 0);
+                        levelInfoMap.put("title", UserTitle.POČETNIK.name());
+
+                        db.collection("users")
+                                .document(doc.getId())
+                                .update("levelInfo", levelInfoMap); // dodaje polje bez brisanja ostalih
+                    }
+                });
+
     }
 }

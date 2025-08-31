@@ -4,7 +4,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.model.UserTitle;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,7 +23,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RemoteDataSource {
 
@@ -28,6 +33,7 @@ public class RemoteDataSource {
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
     private static final String CATEGORIES_COLLECTION = "categories";
+    private static final String INSTANCES_COLLECTION = "task_instances";
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -147,16 +153,18 @@ public class RemoteDataSource {
                                         firebaseUser.sendEmailVerification()
                                                 .addOnCompleteListener(verificationTask -> {
                                                     if (verificationTask.isSuccessful()) {
+                                                        // Upis korisnika
+                                                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0));
                                                         db.collection(USERS_COLLECTION)
                                                                 .document(uid)
                                                                 .set(user)
-                                                                .addOnSuccessListener(aVoid -> callback.onSuccess(uid))
                                                                 .addOnFailureListener(callback::onFailure);
+
                                                     } else {
-                                                        callback.onFailure(verificationTask.getException());
-                                                        firebaseUser.delete();
-                                                    }
-                                                });
+                                                            callback.onFailure(verificationTask.getException());
+                                                            firebaseUser.delete();
+                                                        }
+                                                    });
                                     });
                         } else {
                             callback.onFailure(new Exception("FirebaseUser je null nakon kreiranja."));
@@ -188,42 +196,167 @@ public class RemoteDataSource {
     }
 
     public void login(String email, String password, final DataSourceCallback<User> callback) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        FirebaseAuth auth = FirebaseAuth.getInstance();
 
         Log.d("LoginDebug", "Searching for email: '" + email + "'");
 
-        db.collection("users")
-                .whereEqualTo("email", email)
-                .get()
-                .addOnCompleteListener(task -> {
-                    Log.d("LoginDebug", "Documents found: " + task.getResult().size());
+        auth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(authTask -> {
+                    if (authTask.isSuccessful()) {
+                        FirebaseUser firebaseUser = auth.getCurrentUser();
 
-                    if(task.getResult().isEmpty()){
-                        callback.onFailure(new Exception("Korisnik ne postoji"));
-                        return;
-                    }
-
-                    DocumentSnapshot document = task.getResult().getDocuments().get(0);
-                    User user = document.toObject(User.class);
-
-                    if (!user.getPassword().equals(password)) {
-                        callback.onFailure(new Exception("Pogresna lozinka"));
-                        return;
-                    }
-
-                    refreshUserVerificationStatus(user, new DataSourceCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callback.onSuccess(user);
+                        if (firebaseUser == null) {
+                            callback.onFailure(new Exception("Greška prilikom prijave, pokušajte ponovo."));
+                            return;
                         }
 
-                        @Override
-                        public void onFailure(Exception e) {
+                        // 2. Sada proveri da li je email verifikovan
+                        if (firebaseUser.isEmailVerified()) {
+                            // 3. Ako jeste, dohvati ostatak podataka o korisniku iz Firestore baze
+                            db.collection(USERS_COLLECTION)
+                                    .document(firebaseUser.getUid()) // Koristi jedinstveni UID korisnika
+                                    .get()
+                                    .addOnCompleteListener(firestoreTask -> {
+                                        if (firestoreTask.isSuccessful() && firestoreTask.getResult() != null) {
+                                            User user = firestoreTask.getResult().toObject(User.class);
+                                            if (user != null) {
+                                                user.setId(firebaseUser.getUid()); // Osiguraj da je ID postavljen
+                                                callback.onSuccess(user);
+                                            } else {
+                                                callback.onFailure(new Exception("Korisnički podaci nisu pronađeni."));
+                                            }
+                                        } else {
+                                            callback.onFailure(firestoreTask.getException());
+                                        }
+                                    });
+                        } else {
+                            // 4. Ako email NIJE verifikovan, vrati tačnu poruku o grešci
+                            auth.signOut(); // Izloguj korisnika jer nije verifikovan
                             callback.onFailure(new Exception("Morate prvo da aktivirate nalog putem linka u mejlu"));
                         }
-                    });
+                    } else {
+                        // Ako prijava ne uspe (npr. pogrešna lozinka), Firebase će vratiti odgovarajuću grešku
+                        callback.onFailure(authTask.getException());
+                    }
                 });
+    }
+
+    public void updateUser(User user, final DataSourceCallback<Void> callback) {
+        if (user.getId() == null) {
+            callback.onFailure(new Exception("User ID je null, ne može se update-ovati."));
+            return;
+        }
+
+        db.collection(USERS_COLLECTION)
+                .document(user.getId())
+                .set(user, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getUserById(String userId, DataSourceCallback<User> callback) {
+        if (userId == null || userId.isEmpty()) {
+            callback.onFailure(new Exception("User ID je null ili prazan."));
+            return;
+        }
+
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!documentSnapshot.exists()) {
+                        callback.onFailure(new Exception("User ne postoji"));
+                        return;
+                    }
+
+                    User user = documentSnapshot.toObject(User.class);
+
+                    if (user.getLevelInfo() != null) {
+                        String titleStr = documentSnapshot.getString("levelInfo.title");
+                        UserTitle titleEnum;
+                        try {
+                            titleEnum = UserTitle.valueOf(titleStr);
+                        } catch (Exception e) {
+                            titleEnum = UserTitle.POČETNIK; // fallback
+                        }
+                        user.getLevelInfo().setTitle(titleEnum);
+                    } else {
+                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0)); // default LevelInfo
+                    }
+
+                    callback.onSuccess(user);
+                })
+                .addOnFailureListener(callback::onFailure);
 
     }
+
+    public void addTaskInstance(TaskInstance instance, final DataSourceCallback<String> callback) {
+        if (instance.getUserId() == null) {
+            callback.onFailure(new Exception("UserID je null."));
+            return;
+        }
+
+        db.collection(USERS_COLLECTION).document(instance.getUserId())
+                .collection(INSTANCES_COLLECTION)
+                .add(instance)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void getAllTaskInstances(String userId, String originalTaskId, final DataSourceCallback<List<TaskInstance>> callback) {
+        if (userId == null || originalTaskId == null) {
+            callback.onFailure(new Exception("UserID ili OriginalTaskID je null."));
+            return;
+        }
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(INSTANCES_COLLECTION)
+                .whereEqualTo("originalTaskId", originalTaskId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        List<TaskInstance> instances = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            TaskInstance instance = document.toObject(TaskInstance.class);
+                            instance.setId(document.getId());
+                            instances.add(instance);
+                        }
+                        callback.onSuccess(instances);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateTaskInstance(TaskInstance instance, final DataSourceCallback<Void> callback) {
+        if (instance.getUserId() == null || instance.getId() == null) {
+            callback.onFailure(new Exception("UserID ili InstanceID je null."));
+            return;
+        }
+        db.collection(USERS_COLLECTION).document(instance.getUserId())
+                .collection(INSTANCES_COLLECTION)
+                .document(instance.getId())
+                .set(instance, SetOptions.merge()) // Koristi merge da ne prebrišeš polja ako ih ne šalješ sve
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void deleteTaskInstance(String instanceId, String userId, final DataSourceCallback<Void> callback) {
+        if (userId == null || instanceId == null) {
+            callback.onFailure(new Exception("UserID ili InstanceID je null."));
+            return;
+        }
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(INSTANCES_COLLECTION)
+                .document(instanceId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    private CollectionReference getTaskInstanceCollection(String userId) {
+        return db.collection(USERS_COLLECTION).document(userId).collection(INSTANCES_COLLECTION);
+    }
+
+
 
 }

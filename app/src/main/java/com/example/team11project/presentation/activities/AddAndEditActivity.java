@@ -2,7 +2,12 @@ package com.example.team11project.presentation.activities;
 
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -54,12 +59,25 @@ public class AddAndEditActivity extends BaseActivity {
     private Calendar selectedDateTime = Calendar.getInstance();
     private Calendar recurrenceStartDate = Calendar.getInstance();
     private Calendar recurrenceEndDate = Calendar.getInstance();
-    private final String currentUserId = "12345678";
+    private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_and_edit);
+
+        //deo za usera
+        SharedPreferences prefs = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("userId", null);
+
+        if (currentUserId == null) {
+            // Ako ID ne postoji, to znači da korisnik nije ulogovan.
+            Toast.makeText(this, "Greška: Korisnik nije pronađen. Molimo ulogujte se.", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
 
         setupNavbar();
 
@@ -127,6 +145,13 @@ public class AddAndEditActivity extends BaseActivity {
                 spinnerCategory.setAdapter(adapter);
             } else {
                 Toast.makeText(this, "Nema dostupnih kategorija. Kreirajte ih prvo.", Toast.LENGTH_LONG).show();
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    Intent intent = new Intent(AddAndEditActivity.this, CategoryActivity.class);
+                    startActivity(intent);
+                    finish();
+                }, 2500);
+
+                return;
             }
         });
 
@@ -197,11 +222,6 @@ public class AddAndEditActivity extends BaseActivity {
         String title = etTitle.getText().toString().trim();
         if (title.isEmpty()) {
             etTitle.setError("Naziv je obavezan");
-            return;
-        }
-
-        if (categoryList.isEmpty()) {
-            Toast.makeText(this, "Nema dostupnih kategorija.", Toast.LENGTH_LONG).show();
             return;
         }
 

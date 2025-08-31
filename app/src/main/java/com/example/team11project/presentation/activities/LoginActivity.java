@@ -55,7 +55,7 @@ public class LoginActivity extends AppCompatActivity {
 
         viewModel.getUser().observe(this, user -> {
             if(user != null){
-                startActivity(new Intent(this, AddAndEditActivity.class));
+                startActivity(new Intent(this, HomeScreenActivity.class));
                 finish();
             }
         });
