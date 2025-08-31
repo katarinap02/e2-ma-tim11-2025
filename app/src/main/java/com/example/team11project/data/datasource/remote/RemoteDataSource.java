@@ -4,10 +4,14 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.example.team11project.domain.model.Clothing;
+import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.UserTitle;
+import com.example.team11project.domain.model.Weapon;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -308,5 +312,114 @@ public class RemoteDataSource {
                     // ... logika za parsiranje rezultata u List<TaskInstance> ...
                 });
     }
+
+    public void addEquipment(Equipment equipment, String userId, final DataSourceCallback<Void> callback) {
+        Map<String, Object> metadata = new HashMap<>();
+
+        if (equipment instanceof Potion) {
+            Potion potion = (Potion) equipment;
+            metadata.put("isOneTimeUse", potion.isOneTimeUse());
+            metadata.put("isConsumed", potion.isConsumed());
+            metadata.put("powerBoostPercent", potion.getPowerBoost());
+        } else if (equipment instanceof Clothing) {
+            Clothing clothing = (Clothing) equipment;
+            metadata.put("effectPercent", clothing.getEffectPercent());
+            metadata.put("remainingBattles", clothing.getRemainingBattles());
+        } else if (equipment instanceof Weapon) {
+            Weapon weapon = (Weapon) equipment;
+            metadata.put("permanentBoostPercent", weapon.getPermanentBoostPercent());
+            metadata.put("upgradeProbability", weapon.getUpgradeProbability());
+        }
+
+        Map<String, Object> docData = new HashMap<>();
+        docData.put("id", equipment.getId());
+        docData.put("userId", userId);
+        docData.put("name", equipment.getName());
+        docData.put("type", equipment.getType().name());
+        docData.put("isActive", equipment.isActive());
+        docData.put("metadata", metadata);
+
+        db.collection("equipment")
+                .document(equipment.getId())
+                .set(docData)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void updateEquipment(Equipment equipment, String userId, final DataSourceCallback<Void> callback) {
+        Map<String, Object> metadata = new HashMap<>();
+
+        if (equipment instanceof Potion) {
+            Potion potion = (Potion) equipment;
+            metadata.put("isOneTimeUse", potion.isOneTimeUse());
+            metadata.put("isConsumed", potion.isConsumed());
+            metadata.put("powerBoostPercent", potion.getPowerBoost());
+        } else if (equipment instanceof Clothing) {
+            Clothing clothing = (Clothing) equipment;
+            metadata.put("effectPercent", clothing.getEffectPercent());
+            metadata.put("remainingBattles", clothing.getRemainingBattles());
+        } else if (equipment instanceof Weapon) {
+            Weapon weapon = (Weapon) equipment;
+            metadata.put("permanentBoostPercent", weapon.getPermanentBoostPercent());
+            metadata.put("upgradeProbability", weapon.getUpgradeProbability());
+        }
+
+        Map<String, Object> docData = new HashMap<>();
+        docData.put("name", equipment.getName());
+        docData.put("type", equipment.getType().name());
+        docData.put("isActive", equipment.isActive());
+        docData.put("metadata", metadata);
+
+        db.collection("equipment")
+                .document(equipment.getId())
+                .update(docData)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+
+    public void getEquipmentForUser(String userId, final DataSourceCallback<List<Equipment>> callback) {
+        db.collection("equipment")
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Equipment> equipments = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        String type = doc.getString("type");
+                        Map<String, Object> metadata = (Map<String, Object>) doc.get("metadata");
+
+                        switch (type) {
+                            case "POTION":
+                                equipments.add(new Potion(
+                                        doc.getString("id"),
+                                        doc.getString("name"),
+                                        doc.getString("userId"),
+                                        ((Long) metadata.get("powerBoostPercent")).intValue(),
+                                        (Boolean) metadata.get("isOneTimeUse")
+                                ));
+                                break;
+                            case "CLOTHING":
+                                equipments.add(new Clothing(
+                                        doc.getString("id"),
+                                        doc.getString("name"),
+                                        doc.getString("userId"),
+                                        ((Long) metadata.get("effectPercent")).intValue()
+                                ));
+                                break;
+                            case "WEAPON":
+                                equipments.add(new Weapon(
+                                        doc.getString("id"),
+                                        doc.getString("name"),
+                                        doc.getString("userId"),
+                                        ((Long) metadata.get("permanentBoostPercent")).intValue()
+                                ));
+                                break;
+                        }
+                    }
+                    callback.onSuccess(equipments);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
 
 }

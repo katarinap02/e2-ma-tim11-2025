@@ -104,7 +104,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_PP + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_TITLE + " TEXT NOT NULL" +
-                    "FOREIGN KEY(" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +
+                    "FOREIGN KEY (" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +
                     AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
                     ")";
 
@@ -121,6 +121,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
 
+
+    private static final String SQL_CREATE_EQUIPMENT_TABLE =
+            "CREATE TABLE " + AppContract.EquipmentEntry.TABLE_NAME + " (" +
+                    AppContract.EquipmentEntry._ID + " TEXT PRIMARY KEY, " +
+                    AppContract.EquipmentEntry.COLUMN_USER_ID + " TEXT NOT NULL, " +
+                    AppContract.EquipmentEntry.COLUMN_NAME + " TEXT NOT NULL, " +
+                    AppContract.EquipmentEntry.COLUMN_TYPE + " TEXT NOT NULL, " +
+                    AppContract.EquipmentEntry.COLUMN_IS_ACTIVE + " INTEGER NOT NULL, " +
+
+                    // Potion
+                    AppContract.EquipmentEntry.COLUMN_IS_ONE_TIME_USE + " INTEGER, " +
+                    AppContract.EquipmentEntry.COLUMN_IS_CONSUMED + " INTEGER, " +
+                    AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT + " INTEGER, " +
+
+                    // Clothing
+                    AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT + " INTEGER, " +
+                    AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES + " INTEGER, " +
+
+                    // Weapon
+                    AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT + " INTEGER, " +
+                    AppContract.EquipmentEntry.COLUMN_UPGRADE_PROBABILITY + " REAL, " +
+
+                    "FOREIGN KEY(" + AppContract.EquipmentEntry.COLUMN_USER_ID + ") REFERENCES " +
+                    AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
+                    ");";
 
 
 

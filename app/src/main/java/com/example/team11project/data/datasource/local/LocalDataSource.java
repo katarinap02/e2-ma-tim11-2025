@@ -8,7 +8,10 @@ import android.database.sqlite.SQLiteDatabase;
 import com.example.team11project.data.datasource.local.db.AppContract;
 import com.example.team11project.data.datasource.local.db.DatabaseHelper;
 import com.example.team11project.domain.model.Category;
+import com.example.team11project.domain.model.Clothing;
+import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
@@ -16,6 +19,7 @@ import com.example.team11project.domain.model.TaskImportance;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.model.Weapon;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -718,6 +722,40 @@ public class LocalDataSource {
             if (db != null && db.isOpen()) db.close();
         }
         return count;
+    }
+
+    private ContentValues equipmentToContentValues(Equipment equipment) {
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.EquipmentEntry._ID, equipment.getId());
+        values.put(AppContract.EquipmentEntry.COLUMN_USER_ID, equipment.getUserId());
+        values.put(AppContract.EquipmentEntry.COLUMN_NAME, equipment.getName());
+        values.put(AppContract.EquipmentEntry.COLUMN_TYPE, equipment.getType().name());
+        values.put(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE, equipment.isActive() ? 1 : 0);
+
+        // Potion
+        if (equipment instanceof Potion) {
+            Potion potion = (Potion) equipment;
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_ONE_TIME_USE, potion.isOneTimeUse() ? 1 : 0);
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_CONSUMED, potion.isConsumed() ? 1 : 0);
+            values.put(AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT, potion.getPowerBoost());
+        }
+
+        // Clothing
+        if (equipment instanceof Clothing) {
+            Clothing clothing = (Clothing) equipment;
+            values.put(AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT, clothing.getEffectPercent());
+            values.put(AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES, clothing.getRemainingBattles());
+        }
+
+        // Weapon
+        if (equipment instanceof Weapon) {
+            Weapon weapon = (Weapon) equipment;
+            values.put(AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT, weapon.getPermanentBoostPercent());
+            values.put(AppContract.EquipmentEntry.COLUMN_UPGRADE_PROBABILITY, weapon.getUpgradeProbability());
+        }
+
+        return values;
     }
 
 
