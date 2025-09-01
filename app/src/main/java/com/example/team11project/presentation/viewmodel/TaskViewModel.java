@@ -21,6 +21,7 @@ import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
+import com.example.team11project.domain.usecase.TaskEditUseCase;
 import com.example.team11project.domain.usecase.TaskUseCase;
 
 import java.util.ArrayList;
@@ -384,6 +385,30 @@ public class TaskViewModel extends ViewModel{
                 taskUseCase.cancelTask(task, userId, instanceDate, updateCallback);
                 break;
         }
+    }
+
+    public void editTask(Task originalTask, Task editedTask, String userId, Date instanceDate) {
+        _isSaving.setValue(true);
+
+        // Koristi TaskEditUseCase koji već imaš
+        TaskEditUseCase editUseCase = new TaskEditUseCase(taskRepository, taskInstanceRepository);
+
+        editUseCase.editTask(originalTask, editedTask, userId, instanceDate, new RepositoryCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> updatedTasks) {
+                _isSaving.postValue(false);
+                _taskSaveSuccess.postValue(true);
+
+                // Refresh task listu
+                loadTasksAndInstances(userId);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                _error.postValue(e.getMessage());
+                _isSaving.postValue(false);
+            }
+        });
     }
 
     public void loadInitialData(String userId) {

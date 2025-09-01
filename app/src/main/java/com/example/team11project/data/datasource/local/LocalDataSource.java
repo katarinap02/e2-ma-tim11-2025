@@ -319,6 +319,37 @@ public class LocalDataSource {
         return deletedRows;
     }
 
+    public List<Task> getTasksByGroupId(String groupId, String userId) {
+        List<Task> tasks = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+
+        try {
+            String selection = AppContract.TaskEntry.COLUMN_NAME_GROUP_ID + " = ? AND " +
+                    AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { groupId, userId };
+
+            cursor = db.query(
+                    AppContract.TaskEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " ASC"
+            );
+
+            while (cursor.moveToNext()) {
+                tasks.add(cursorToTask(cursor));
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+
+        return tasks;
+    }
+
     public int deleteAllTasksForUser(String userId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         int deletedRows = 0;
@@ -552,6 +583,10 @@ public class LocalDataSource {
         task.setRecurrenceInterval(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL)));
         task.setExecutionTime(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME))));
 
+        int groupIdIndex = cursor.getColumnIndex(AppContract.TaskEntry.COLUMN_NAME_GROUP_ID);
+        if (groupIdIndex != -1) {
+            task.setGroupId(cursor.getString(groupIdIndex));
+        }
 
         if (!cursor.isNull(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_UNIT))) {
             task.setRecurrenceUnit(RecurrenceUnit.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_UNIT))));
@@ -580,6 +615,7 @@ public class LocalDataSource {
         values.put(AppContract.TaskEntry.COLUMN_NAME_TITLE, task.getTitle());
         values.put(AppContract.TaskEntry.COLUMN_NAME_DESCRIPTION, task.getDescription());
         values.put(AppContract.TaskEntry.COLUMN_NAME_CATEGORY_ID, task.getCategoryId());
+        values.put(AppContract.TaskEntry.COLUMN_NAME_GROUP_ID, task.getGroupId());
         values.put(AppContract.TaskEntry.COLUMN_NAME_IS_RECURRING, task.isRecurring() ? 1 : 0);
         values.put(AppContract.TaskEntry.COLUMN_NAME_RECURRENCE_INTERVAL, task.getRecurrenceInterval());
         values.put(AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME, task.getExecutionTime() != null ? task.getExecutionTime().getTime() : null);

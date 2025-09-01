@@ -156,7 +156,13 @@ public class TaskDetailActivity extends BaseActivity {
             }
         });
 
-        btnEdit.setOnClickListener(v -> Toast.makeText(this, "Akcija: Izmeni", Toast.LENGTH_SHORT).show());
+        btnEdit.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AddAndEditActivity.class);
+            intent.putExtra("MODE", "EDIT");
+            intent.putExtra("TASK_ID", currentTask.getId());
+            intent.putExtra("INSTANCE_DATE", instanceDate != null ? instanceDate.getTime() : -1L);
+            startActivity(intent);
+        });
         btnDelete.setOnClickListener(v -> {
 
             if (currentTask != null)

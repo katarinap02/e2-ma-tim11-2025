@@ -37,24 +37,48 @@ public class TaskRepositoryImpl implements TaskRepository {
             callback.onFailure(new Exception("Naziv zadatka ne sme biti prazan."));
             return;
         }
+        if (task.getGroupId() == null) {
+            task.initializeGroupId();
+        }
+
+        String originalId = task.getId();
+
         databaseExecutor.execute(() -> {
-            // Korak 1: Pokušaj da dodaš na Firebase
-            remoteDataSource.addTask(task, new RemoteDataSource.DataSourceCallback<String>() {
-                @Override
-                public void onSuccess(String newId) {
-                    task.setId(newId);
+            if (originalId != null && !originalId.trim().isEmpty()) {
+                // Ako task već ima ID, koristi set() umesto add()
+                remoteDataSource.setTaskWithId(task, originalId, new RemoteDataSource.DataSourceCallback<String>() {
+                    @Override
+                    public void onSuccess(String id) {
+                        task.setId(originalId); // Zadrži originalni ID
+                        databaseExecutor.execute(() -> {
+                            localDataSource.addTask(task);
+                            callback.onSuccess(null);
+                        });
+                    }
 
-                    databaseExecutor.execute(() -> {
-                        localDataSource.addTask(task);
-                        callback.onSuccess(null);
-                    });
-                }
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            } else {
+                // Ako nema ID, koristi add() da Firestore generiše novi
+                remoteDataSource.addTask(task, new RemoteDataSource.DataSourceCallback<String>() {
+                    @Override
+                    public void onSuccess(String newId) {
+                        task.setId(newId);
+                        databaseExecutor.execute(() -> {
+                            localDataSource.addTask(task);
+                            callback.onSuccess(null);
+                        });
+                    }
 
-                @Override
-                public void onFailure(Exception e) {
-                    callback.onFailure(e);
-                }
-            });
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
         });
     }
 
@@ -127,6 +151,8 @@ public class TaskRepositoryImpl implements TaskRepository {
         });
     }
 
+
+
     @Override
     public void updateTask(Task task, RepositoryCallback<Void> callback) {
         if (task.getId() == null || task.getId().trim().isEmpty()) {
@@ -180,6 +206,51 @@ public class TaskRepositoryImpl implements TaskRepository {
 
         task.setStatus(TaskStatus.DELETED);
         updateTask(task, callback);
+    }
+    @Override
+    public void getTasksByGroupId(String groupId, String userId, RepositoryCallback<List<Task>> callback) {
+        if (groupId == null || groupId.trim().isEmpty()) {
+            callback.onFailure(new Exception("Group ID ne sme biti prazan."));
+            return;
+        }
+
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("User ID ne sme biti prazan."));
+            return;
+        }
+
+        databaseExecutor.execute(() -> {
+            try {
+                // First try to get from local database
+                List<Task> localTasks = localDataSource.getTasksByGroupId(groupId, userId);
+
+                if (!localTasks.isEmpty()) {
+                    // If we have local tasks, return them
+                    callback.onSuccess(localTasks);
+                } else {
+                    // If no local tasks, try to fetch from remote
+                    remoteDataSource.getTasksByGroupId(groupId, userId, new RemoteDataSource.DataSourceCallback<List<Task>>() {
+                        @Override
+                        public void onSuccess(List<Task> remoteTasks) {
+                            databaseExecutor.execute(() -> {
+                                // Save to local database for future use
+                                for (Task task : remoteTasks) {
+                                    localDataSource.addTask(task);
+                                }
+                                callback.onSuccess(remoteTasks);
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            callback.onFailure(e);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
     @Override

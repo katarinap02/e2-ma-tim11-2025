@@ -53,6 +53,16 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void setTaskWithId(Task task, String taskId, final DataSourceCallback<String> callback) {
+        // Koristi set() umesto add() da zadržite specifičan ID
+        db.collection(USERS_COLLECTION).document(task.getUserId())
+                .collection(TASKS_COLLECTION)
+                .document(taskId) // Koristi specifičan ID
+                .set(task)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(taskId))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
     public void getAllTasks(String userId, final DataSourceCallback<List<Task>> callback) {
         getTasksCollection(userId)
                 .get()
@@ -76,6 +86,26 @@ public class RemoteDataSource {
                 .delete()
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void getTasksByGroupId(String groupId, String userId, final DataSourceCallback<List<Task>> callback) {
+        getTasksCollection(userId)
+                .whereEqualTo("groupId", groupId)
+                .orderBy("executionTime")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<Task> taskList = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Task t = document.toObject(Task.class);
+                            t.setId(document.getId());
+                            taskList.add(t);
+                        }
+                        callback.onSuccess(taskList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
     }
     public void updateTask(Task task, final DataSourceCallback<Void> callback) {
         getTasksCollection(task.getUserId()).document(task.getId())

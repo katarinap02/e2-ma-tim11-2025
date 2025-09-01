@@ -14,6 +14,8 @@ public final class AppContract {
 
     public static class TaskEntry implements BaseColumns {
         public static  final  String TABLE_NAME = "tasks";
+
+        public static final String COLUMN_NAME_GROUP_ID = "group_id";
         public static final String COLUMN_NAME_USER_ID = "user_id";
         public static final String COLUMN_NAME_TITLE = "title";
         public static final String COLUMN_NAME_DESCRIPTION = "description";

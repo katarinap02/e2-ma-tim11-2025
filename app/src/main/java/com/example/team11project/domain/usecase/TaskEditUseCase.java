@@ -15,6 +15,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Collection;
+
 public class TaskEditUseCase {
 
     private final TaskRepository taskRepository;
@@ -33,6 +37,11 @@ public class TaskEditUseCase {
             return;
         }
 
+        // Inicijalizuj groupId ako ne postoji
+        if (originalTask.getGroupId() == null) {
+            originalTask.setGroupId(originalTask.getId());
+        }
+
         // Proveri dozvole za izmenu
         if (!canEditTask(originalTask, instanceDate)) {
             finalCallback.onFailure(new Exception("Zadatak ne može biti izmenjen u ovom stanju."));
@@ -43,9 +52,134 @@ public class TaskEditUseCase {
             // Jednostavna izmena jednokratnog zadatka
             editSingleTask(originalTask, editedTask, finalCallback);
         } else {
-            // Kompleksna izmena ponavljajućeg zadatka
-            editRecurringTask(originalTask, editedTask, userId, instanceDate, finalCallback);
+            // Za recurring zadatke, radi sa celom grupom
+            editTaskGroup(originalTask.getGroupId(), originalTask, editedTask, userId, instanceDate, finalCallback);
         }
+    }
+
+    private void editTaskGroup(String groupId, Task triggerTask, Task editedTask, String userId,
+                               Date instanceDate, RepositoryCallback<List<Task>> finalCallback) {
+
+        Log.d("TaskEdit", "Editing task group: " + groupId);
+
+        // Prvo učitaj sve zadatke u grupi
+        taskRepository.getTasksByGroupId(groupId, userId, new RepositoryCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> tasksInGroup) {
+                if (tasksInGroup.isEmpty()) {
+                    // Nema drugih zadataka u grupi, tretaj kao individualni
+                    editRecurringTask(triggerTask, editedTask, userId, instanceDate, finalCallback);
+                    return;
+                }
+
+                Log.d("TaskEdit", "Found " + tasksInGroup.size() + " tasks in group");
+
+                // Ako je grupa već podeljena (više od 1 zadatka), proveravaj instance
+                if (tasksInGroup.size() > 1) {
+                    updateTasksInGroupWithInstanceCheck(tasksInGroup, editedTask, userId, finalCallback);
+                } else {
+                    // Prvi put se deli, nastavi sa normalnom logikom
+                    editRecurringTask(triggerTask, editedTask, userId, instanceDate, finalCallback);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("TaskEdit", "Error loading task group", e);
+                // Fallback na individualnu izmenu
+                editRecurringTask(triggerTask, editedTask, userId, instanceDate, finalCallback);
+            }
+        });
+    }
+
+    private void updateTasksInGroupWithInstanceCheck(List<Task> tasksInGroup, Task editedTask, String userId,
+                                                     RepositoryCallback<List<Task>> finalCallback) {
+
+        Log.d("TaskEdit", "Checking instances for " + tasksInGroup.size() + " tasks in group");
+
+        // Rezultujuća lista zadataka koje treba vratiti
+        List<Task> resultTasks = new ArrayList<>();
+
+        // Pozovi asinhronu metodu za proveru i ažuriranje
+        checkTaskInstancesAndUpdate(tasksInGroup, editedTask, userId, 0, resultTasks, finalCallback);
+    }
+
+    private void checkTaskInstancesAndUpdate(List<Task> tasksInGroup, Task editedTask, String userId,
+                                             int currentIndex, List<Task> resultTasks,
+                                             RepositoryCallback<List<Task>> finalCallback) {
+
+        if (currentIndex >= tasksInGroup.size()) {
+            // Završili smo sa svim zadacima
+            Log.d("TaskEdit", "Finished checking all tasks. Result: " + resultTasks.size() + " tasks");
+            finalCallback.onSuccess(resultTasks);
+            return;
+        }
+
+        Task currentTask = tasksInGroup.get(currentIndex);
+        Log.d("TaskEdit", "Checking task " + (currentIndex + 1) + "/" + tasksInGroup.size() +
+                ": " + currentTask.getId());
+
+        // Proveri da li ovaj zadatak ima instance
+        taskInstanceRepository.getTaskInstancesForTask(userId, currentTask.getId(), new RepositoryCallback<List<TaskInstance>>() {
+            @Override
+            public void onSuccess(List<TaskInstance> instances) {
+                boolean hasInstances = instances != null && !instances.isEmpty();
+                Log.d("TaskEdit", "Task " + currentTask.getId() + " has " +
+                        (hasInstances ? instances.size() : 0) + " instances");
+
+                if (hasInstances) {
+                    // Zadatak ima instance - ostavi ga nepromenjenog
+                    Log.d("TaskEdit", "Task " + currentTask.getId() + " has instances, keeping original");
+                    resultTasks.add(currentTask);
+                    // Nastavi sa sledećim zadatkom
+                    checkTaskInstancesAndUpdate(tasksInGroup, editedTask, userId,
+                            currentIndex + 1, resultTasks, finalCallback);
+                } else {
+                    // Zadatak nema instance - primeni izmene
+                    Log.d("TaskEdit", "Task " + currentTask.getId() + " has no instances, applying edits");
+                    applyEditsToTask(currentTask, editedTask);
+
+                    // Sačuvaj izmenjeni zadatak
+                    taskRepository.updateTask(currentTask, new RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            resultTasks.add(currentTask);
+                            // Nastavi sa sledećim zadatkom
+                            checkTaskInstancesAndUpdate(tasksInGroup, editedTask, userId,
+                                    currentIndex + 1, resultTasks, finalCallback);
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            Log.e("TaskEdit", "Error updating task " + currentTask.getId(), e);
+                            finalCallback.onFailure(e);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("TaskEdit", "Error checking instances for task " + currentTask.getId(), e);
+                // U slučaju greške, tretaj kao da nema instance i primeni izmene
+                applyEditsToTask(currentTask, editedTask);
+
+                taskRepository.updateTask(currentTask, new RepositoryCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        resultTasks.add(currentTask);
+                        checkTaskInstancesAndUpdate(tasksInGroup, editedTask, userId,
+                                currentIndex + 1, resultTasks, finalCallback);
+                    }
+
+                    @Override
+                    public void onFailure(Exception updateError) {
+                        Log.e("TaskEdit", "Error updating task after instance check failed", updateError);
+                        finalCallback.onFailure(updateError);
+                    }
+                });
+            }
+        });
     }
 
     private void editRecurringTask(Task originalTask, Task editedTask, String userId,
@@ -130,7 +264,7 @@ public class TaskEditUseCase {
         // ZADATAK 2: Pronadji prvi validan datum
         Date futureStart = findNextValidRecurrenceDate(originalTask, today);
 
-        if (!futureStart.after(endDate)) {
+        if (futureStart != null && !futureStart.after(endDate)) {
             if (protectedDates.isEmpty()) {
                 // Nema zaštićenih datuma - jedan veliki izmenjeni period
                 Task futureTask = cloneTask(originalTask);
@@ -188,7 +322,7 @@ public class TaskEditUseCase {
         }
 
         // Kreiraj poslednji izmenjeni segment POSLE poslednjeg zaštićenog datuma
-        if (currentStart != null &&!currentStart.after(endDate)) {
+        if (currentStart != null && !currentStart.after(endDate)) {
             Date validStart = findNextValidRecurrenceDate(originalTask, currentStart);
 
             if (validStart != null && !validStart.after(endDate)) {
@@ -252,15 +386,26 @@ public class TaskEditUseCase {
     private void updateTaskInstances(String originalTaskId, List<Task> newTasks, List<TaskInstance> instances,
                                      RepositoryCallback<Void> callback) {
         if (instances == null || instances.isEmpty()) {
+            Log.d("TaskEdit", "No instances to update");
             callback.onSuccess(null);
             return;
         }
 
-        updateInstancesSequentially(instances, newTasks, 0, callback);
+        Log.d("TaskEdit", "Updating " + instances.size() + " instances across " + newTasks.size() + " new tasks");
+
+        // Kreiraj mapu za lakše pronalaženje task-ova
+        Map<String, Task> taskMap = new HashMap<>();
+        for (Task task : newTasks) {
+            taskMap.put(task.getId(), task);
+            Log.d("TaskEdit", "Task " + task.getId() + " covers: " +
+                    task.getRecurrenceStartDate() + " to " + task.getRecurrenceEndDate());
+        }
+
+        updateInstancesSequentiallyImproved(instances, taskMap, 0, callback);
     }
 
-    private void updateInstancesSequentially(List<TaskInstance> instances, List<Task> newTasks,
-                                             int currentIndex, RepositoryCallback<Void> callback) {
+    private void updateInstancesSequentiallyImproved(List<TaskInstance> instances, Map<String, Task> taskMap,
+                                                     int currentIndex, RepositoryCallback<Void> callback) {
         if (currentIndex >= instances.size()) {
             Log.d("TaskEdit", "All instances updated successfully");
             callback.onSuccess(null);
@@ -270,46 +415,75 @@ public class TaskEditUseCase {
         TaskInstance instance = instances.get(currentIndex);
         Date instanceDate = getStartOfDay(instance.getOriginalDate());
 
-        // Pronađi u koji novi zadatak spada ova instanca
-        Task targetTask = findTaskForDate(newTasks, instanceDate);
+        // Pronađi odgovarajući task sa poboljšanom logikom
+        Task targetTask = findTaskForDateImproved(taskMap.values(), instanceDate);
 
         if (targetTask != null) {
-            Log.d("TaskEdit", "Updating instance " + instanceDate + " to task " + targetTask.getId());
+            Log.d("TaskEdit", "Updating instance " + instanceDate + " from task " +
+                    instance.getOriginalTaskId() + " to task " + targetTask.getId());
 
-            // Ažuriraj originalTaskId instance
-            instance.setOriginalTaskId(targetTask.getId());
+            // Kreiraj novu instancu sa ažuriranim originalTaskId
+            TaskInstance updatedInstance = new TaskInstance();
+            updatedInstance.setId(instance.getId());
+            updatedInstance.setOriginalTaskId(targetTask.getId()); // Ovo je ključna promena
+            updatedInstance.setUserId(instance.getUserId());
+            updatedInstance.setOriginalDate(instance.getOriginalDate());
+            updatedInstance.setNewStatus(instance.getNewStatus());
+            updatedInstance.setCompletionDate(instance.getCompletionDate());
 
-            taskInstanceRepository.updateTaskInstance(instance, new RepositoryCallback<Void>() {
+            taskInstanceRepository.updateTaskInstance(updatedInstance, new RepositoryCallback<Void>() {
                 @Override
                 public void onSuccess(Void result) {
-                    updateInstancesSequentially(instances, newTasks, currentIndex + 1, callback);
+                    updateInstancesSequentiallyImproved(instances, taskMap, currentIndex + 1, callback);
                 }
 
                 @Override
                 public void onFailure(Exception e) {
-                    Log.e("TaskEdit", "Error updating instance at index " + currentIndex, e);
+                    Log.e("TaskEdit", "Error updating instance at index " + currentIndex +
+                            " for date " + instanceDate, e);
                     callback.onFailure(e);
                 }
             });
         } else {
-            Log.w("TaskEdit", "No target task found for instance date: " + instanceDate);
+            Log.w("TaskEdit", "No target task found for instance date: " + instanceDate +
+                    ". Available tasks:");
+            for (Task task : taskMap.values()) {
+                Log.w("TaskEdit", "  Task " + task.getId() + ": " +
+                        task.getRecurrenceStartDate() + " to " + task.getRecurrenceEndDate());
+            }
+
             // Preskoči ovu instancu i nastavi sa sledećom
-            updateInstancesSequentially(instances, newTasks, currentIndex + 1, callback);
+            updateInstancesSequentiallyImproved(instances, taskMap, currentIndex + 1, callback);
         }
     }
 
-    private Task findTaskForDate(List<Task> tasks, Date date) {
+    private Task findTaskForDateImproved(Collection<Task> tasks, Date date) {
+        Log.d("TaskEdit", "Looking for task for date: " + date);
+
         for (Task task : tasks) {
             Date taskStart = getStartOfDay(task.getRecurrenceStartDate());
             Date taskEnd = getStartOfDay(task.getRecurrenceEndDate());
 
+            Log.d("TaskEdit", "Checking task " + task.getId() +
+                    " (" + taskStart + " to " + taskEnd + ")");
+
+            // Proveri da li datum spada u opseg ovog task-a
             if (!date.before(taskStart) && !date.after(taskEnd)) {
+                Log.d("TaskEdit", "Date is in range, checking recurrence pattern");
+
                 // Proveri da li datum spada u recurrence pattern ovog zadatka
                 if (isValidRecurrenceDate(task, date)) {
+                    Log.d("TaskEdit", "Found matching task: " + task.getId());
                     return task;
+                } else {
+                    Log.d("TaskEdit", "Date not valid for recurrence pattern");
                 }
+            } else {
+                Log.d("TaskEdit", "Date not in task range");
             }
         }
+
+        Log.w("TaskEdit", "No matching task found for date: " + date);
         return null;
     }
 
@@ -318,15 +492,30 @@ public class TaskEditUseCase {
         long diffInMillis = date.getTime() - startDate.getTime();
         int diffInDays = (int) (diffInMillis / (24 * 60 * 60 * 1000));
 
+        if (diffInDays < 0) {
+            Log.d("TaskEdit", "Date is before task start date");
+            return false;
+        }
+
         int interval = task.getRecurrenceInterval();
         RecurrenceUnit unit = task.getRecurrenceUnit();
 
+        Log.d("TaskEdit", "Checking recurrence: diffInDays=" + diffInDays +
+                ", interval=" + interval + ", unit=" + unit);
+
         if (unit == RecurrenceUnit.DAY) {
-            return diffInDays % interval == 0;
+            boolean isValid = diffInDays % interval == 0;
+            Log.d("TaskEdit", "Daily recurrence check: " + isValid);
+            return isValid;
         } else if (unit == RecurrenceUnit.WEEK) {
-            return (diffInDays % 7 == 0) && ((diffInDays / 7) % interval == 0);
+            boolean isValid = (diffInDays % 7 == 0) && ((diffInDays / 7) % interval == 0);
+            Log.d("TaskEdit", "Weekly recurrence check: " + isValid +
+                    " (diffInDays % 7 = " + (diffInDays % 7) +
+                    ", (diffInDays / 7) % interval = " + ((diffInDays / 7) % interval) + ")");
+            return isValid;
         }
 
+        Log.w("TaskEdit", "Unknown recurrence unit: " + unit);
         return false;
     }
 
@@ -394,7 +583,6 @@ public class TaskEditUseCase {
         target.setDifficulty(source.getDifficulty());
         target.setImportance(source.getImportance());
         target.setExecutionTime(source.getExecutionTime());
-
     }
 
     private Task cloneTask(Task original) {
@@ -413,6 +601,9 @@ public class TaskEditUseCase {
         clone.setRecurrenceUnit(original.getRecurrenceUnit());
         clone.setRecurrenceStartDate(original.getRecurrenceStartDate());
         clone.setRecurrenceEndDate(original.getRecurrenceEndDate());
+
+        // KLJUČNO: Svi segmenti imaju isti groupId
+        clone.setGroupId(original.getGroupId() != null ? original.getGroupId() : original.getId());
 
         return clone;
     }
@@ -466,7 +657,6 @@ public class TaskEditUseCase {
         Date searchFrom = getStartOfDay(fromDate);
 
         // Ako je searchFrom pre početka zadatka, vrati start date
-        //searchFrom je danas
         if (searchFrom.before(startDate)) {
             return startDate;
         }
