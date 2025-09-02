@@ -22,10 +22,6 @@ public interface TaskRepository {
 
     public void deleteTask(Task task, RepositoryCallback<Void> callback);
 
-    void getTasksByGroupId(String groupId, String userId, RepositoryCallback<List<Task>> callback);
-
-    public void deleteTaskFromDatabase(String taskId, String userId, RepositoryCallback<Void> callback);
-
     void countCompletedTasksByDifficulty(String userId, TaskDifficulty difficulty, Date startDate, Date endDate, RepositoryCallback<Integer> callback);
     void countCompletedTasksByImportance(String userId, TaskImportance importance, Date startDate, Date endDate, RepositoryCallback<Integer> callback);
 }

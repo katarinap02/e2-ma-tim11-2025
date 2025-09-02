@@ -5,7 +5,6 @@ import java.util.Date;
 public class Task {
     private String id;
 
-    private String groupId;
     private String title;
     private String description;
     private String categoryId;
@@ -181,19 +180,5 @@ public class Task {
         this.completionDate = completionDate;
     }
 
-    public String getGroupId() { return groupId; }
-    public void setGroupId(String groupId) { this.groupId = groupId; }
-
-    // Helper metoda za proveru da li je task deo grupe
-    public boolean isPartOfGroup() {
-        return groupId != null && !groupId.equals(getId());
-    }
-
-    // Helper metoda za postavljanje group ID pri kreiranju
-    public void initializeGroupId() {
-        if (groupId == null) {
-            groupId = getId(); // Koristi vlastiti ID kao group ID
-        }
-    }
 
 }

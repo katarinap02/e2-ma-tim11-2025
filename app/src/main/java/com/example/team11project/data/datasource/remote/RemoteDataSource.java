@@ -87,26 +87,6 @@ public class RemoteDataSource {
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
-
-    public void getTasksByGroupId(String groupId, String userId, final DataSourceCallback<List<Task>> callback) {
-        getTasksCollection(userId)
-                .whereEqualTo("groupId", groupId)
-                .orderBy("executionTime")
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        List<Task> taskList = new ArrayList<>();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Task t = document.toObject(Task.class);
-                            t.setId(document.getId());
-                            taskList.add(t);
-                        }
-                        callback.onSuccess(taskList);
-                    } else {
-                        callback.onFailure(task.getException());
-                    }
-                });
-    }
     public void updateTask(Task task, final DataSourceCallback<Void> callback) {
         getTasksCollection(task.getUserId()).document(task.getId())
                 .set(task) // set() će ili ažurirati postojeći ili kreirati novi ako ne postoji

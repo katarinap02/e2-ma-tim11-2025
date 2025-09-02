@@ -37,9 +37,6 @@ public class TaskRepositoryImpl implements TaskRepository {
             callback.onFailure(new Exception("Naziv zadatka ne sme biti prazan."));
             return;
         }
-        if (task.getGroupId() == null) {
-            task.initializeGroupId();
-        }
 
         String originalId = task.getId();
 
@@ -207,51 +204,6 @@ public class TaskRepositoryImpl implements TaskRepository {
         task.setStatus(TaskStatus.DELETED);
         updateTask(task, callback);
     }
-    @Override
-    public void getTasksByGroupId(String groupId, String userId, RepositoryCallback<List<Task>> callback) {
-        if (groupId == null || groupId.trim().isEmpty()) {
-            callback.onFailure(new Exception("Group ID ne sme biti prazan."));
-            return;
-        }
-
-        if (userId == null || userId.trim().isEmpty()) {
-            callback.onFailure(new Exception("User ID ne sme biti prazan."));
-            return;
-        }
-
-        databaseExecutor.execute(() -> {
-            try {
-                // First try to get from local database
-                List<Task> localTasks = localDataSource.getTasksByGroupId(groupId, userId);
-
-                if (!localTasks.isEmpty()) {
-                    // If we have local tasks, return them
-                    callback.onSuccess(localTasks);
-                } else {
-                    // If no local tasks, try to fetch from remote
-                    remoteDataSource.getTasksByGroupId(groupId, userId, new RemoteDataSource.DataSourceCallback<List<Task>>() {
-                        @Override
-                        public void onSuccess(List<Task> remoteTasks) {
-                            databaseExecutor.execute(() -> {
-                                // Save to local database for future use
-                                for (Task task : remoteTasks) {
-                                    localDataSource.addTask(task);
-                                }
-                                callback.onSuccess(remoteTasks);
-                            });
-                        }
-
-                        @Override
-                        public void onFailure(Exception e) {
-                            callback.onFailure(e);
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                callback.onFailure(e);
-            }
-        });
-    }
 
     @Override
     public void activateTask(Task task, RepositoryCallback<Void> callback) {
@@ -290,25 +242,6 @@ public class TaskRepositoryImpl implements TaskRepository {
         });
     }
 
-    @Override
-    public void deleteTaskFromDatabase(String taskId, String userId, RepositoryCallback<Void> callback) {
-        databaseExecutor.execute(() -> {
-            remoteDataSource.deleteTask(taskId, userId, new RemoteDataSource.DataSourceCallback<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    databaseExecutor.execute(() -> {
-                        localDataSource.deleteTask(taskId, userId);
-                        callback.onSuccess(null);
-                    });
-                }
-
-                @Override
-                public void onFailure(Exception e) {
-                    callback.onFailure(e);
-                }
-            });
-        });
-    }
 
 
 }

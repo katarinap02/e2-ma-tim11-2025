@@ -273,7 +273,7 @@ public class CalendarFragment extends Fragment implements TaskAdapter.OnTaskClic
                     TaskStatus finalStatus;
                     TaskInstance exception = exceptionsForThisTask.get(getStartOfDay(instanceDate));
 
-                    // PRAVILO 1: Da li postoji "izuzetak" (COMPLETED ili CANCELED)?
+                    // PRAVILO 1: Da li postoji "izuzetak" (COMPLETED ili CANCELED ili DELETED)?
                     if (exception != null) {
                         finalStatus = exception.getNewStatus();
                     }
