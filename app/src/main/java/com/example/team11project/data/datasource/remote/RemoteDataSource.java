@@ -357,6 +357,41 @@ public class RemoteDataSource {
         return db.collection(USERS_COLLECTION).document(userId).collection(INSTANCES_COLLECTION);
     }
 
+    public void getAllUsers(final DataSourceCallback<List<User>> callback) {
+        db.collection(USERS_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<User> users = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            User u = document.toObject(User.class);
+                            u.setId(document.getId()); // Ručno postavljamo ID
+                            users.add(u);
+                        }
+                        callback.onSuccess(users);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updatePassword(String userId, String newPassword, final DataSourceCallback<Void> callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users")
+                .document(userId)
+                .update("password", newPassword)
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) {
+                        callback.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) {
+                        callback.onFailure(e);
+                    }
+                });
+    }
 
 
 }

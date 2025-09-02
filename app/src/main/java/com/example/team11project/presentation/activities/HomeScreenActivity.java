@@ -20,6 +20,21 @@ public class HomeScreenActivity extends BaseActivity {
         setContentView(R.layout.activity_home_screen);
 
         setupNavbar();
+        String userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                .getString("userId", null);
+
+        Button btnAllProfiles = findViewById(R.id.btnAllProfiles);
+        btnAllProfiles.setOnClickListener(v -> {
+            Intent intent = new Intent(this, UsersListActivity.class);
+            startActivity(intent);
+        });
+
+        Button btnProfile = findViewById(R.id.btnProfile);
+        btnProfile.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ProfileActivity.class);
+            intent.putExtra("userId", userId);
+            startActivity(intent);
+        });
 
         Button btnAddEdit = findViewById(R.id.btnAddEdit);
         btnAddEdit.setOnClickListener(v -> {

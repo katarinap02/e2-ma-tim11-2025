@@ -12,6 +12,7 @@ import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
+import com.example.team11project.domain.repository.UserRepository;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,13 +22,15 @@ import java.util.Date;
 
 public class TaskUseCase {
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
     private final LevelInfoRepository levelInfoRepository;
     private final TaskInstanceRepository taskInstanceRepository;
 
-    public TaskUseCase(TaskRepository taskRepository, LevelInfoRepository levelInfoRepository, TaskInstanceRepository taskInstanceRepository) {
+    public TaskUseCase(TaskRepository taskRepository, UserRepository userRepository, TaskInstanceRepository taskInstanceRepository, LevelInfoRepository levelInfoRepository) {
         this.taskRepository = taskRepository;
-        this.levelInfoRepository = levelInfoRepository;
+        this.userRepository = userRepository;
         this.taskInstanceRepository = taskInstanceRepository;
+        this.levelInfoRepository = levelInfoRepository;
     }
 
     public void completeTask(Task task, String userId, Date instanceDate, RepositoryCallback<Integer> finalCallback) {
@@ -174,7 +177,7 @@ public class TaskUseCase {
 
     private void addXpToUser(String userId, int xpAmount, RepositoryCallback<Integer> finalCallback) {
         if (xpAmount > 0) {
-            levelInfoRepository.getUserById(userId, new RepositoryCallback<User>() {
+            userRepository.getUserById(userId, new RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User user) {
                     levelInfoRepository.addXp(user, xpAmount, new RepositoryCallback<Void>() {

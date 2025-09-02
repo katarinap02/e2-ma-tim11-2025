@@ -80,32 +80,4 @@ public class LevelInfoRepositoryImpl implements LevelInfoRepository {
         return ((value + 99) / 100) * 100;
     }
 
-
-    public void getUserById(String userId, RepositoryCallback<User> callback) {
-        if (userId == null || userId.isEmpty()) {
-            callback.onFailure(new Exception("User ID je null ili prazan."));
-            return;
-        }
-
-        remoteDataSource.getUserById(userId, new RemoteDataSource.DataSourceCallback<User>() {
-            @Override
-            public void onSuccess(User user) {
-                if (user != null) {
-                    databaseExecutor.execute(() -> {
-                        callback.onSuccess(user);
-                    });
-                } else {
-                    callback.onFailure(new Exception("Korisnik ne postoji."));
-                }
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                callback.onFailure(e);
-            }
-        });
-    }
-
-
-
 }

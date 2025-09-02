@@ -47,7 +47,7 @@
     <string name="action_home_title">Pocetna strana</string>
     <string name="logout">Logout</string>
     <string name="dobrodosli_hs">Dobrodošli na Home Screen</string>
-    <string name="profil">Profil</string>
+    <string name="mojProfil">Moj profil</string>
     <string name="dodaj_izmeni_zadatke">Zadaci</string>
     <string name="login">Log in</string>
     <string name="napredak_kroz_nivoe">Napredak kroz nivoe</string>
@@ -61,5 +61,22 @@
     <string name="complete_task_button_description">Dugme da označi zadatak kao završen</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="prikazi_kategorije">Kategorije</string>
+    <string name="svi_profili">Svi profili</string>
+    <string name="stara_lozinka">Stara lozinka</string>
+    <string name="nova_lozinka">Nova lozinka</string>
+    <string name="potvrdi_lozinku">Potvrdi lozinku</string>
+    <string name="promeni_loznku">Promeni loznku</string>
+    <string name="korisni_ko_ime">Korisničko ime</string>
+    <string name="titula_po_etnik">Titula: Početnik</string>
+    <string name="level_1">Level: 1</string>
+    <string name="statistike">⚔ Statistike</string>
+    <string name="snaga_pp_0">Snaga (PP): 0</string>
+    <string name="xp_0">XP: 0</string>
+    <string name="nov_i_i_0">Novčići: 0</string>
+    <string name="dostignu_a">🏅 Dostignuća</string>
+    <string name="broj_bed_eva_0">Broj bedževa: 0</string>
+    <string name="oprema">Oprema</string>
+    <string name="qr_kod">📲 QR kod</string>
+    <string name="promeni_lozinku">Promeni lozinku</string>
 
 </resources>
