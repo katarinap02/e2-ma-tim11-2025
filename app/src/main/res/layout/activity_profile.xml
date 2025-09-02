@@ -44,7 +44,7 @@
                         android:id="@+id/txtUsername"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Korisničko ime"
+                        android:text="@string/korisni_ko_ime"
                         android:textSize="20sp"
                         android:textStyle="bold" />
 
@@ -52,7 +52,7 @@
                         android:id="@+id/txtTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Titula: Početnik"
+                        android:text="@string/titula_po_etnik"
                         android:textSize="16sp" />
                 </LinearLayout>
             </LinearLayout>
@@ -62,7 +62,7 @@
                 android:id="@+id/txtLevel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Level: 1"
+                android:text="@string/level_1"
                 android:textSize="16sp"
                 android:padding="8dp" />
 
@@ -70,7 +70,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="⚔ Statistike"
+                android:text="@string/statistike"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:paddingTop="12dp"
@@ -80,25 +80,25 @@
                 android:id="@+id/txtPP"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Snaga (PP): 0" />
+                android:text="@string/snaga_pp_0" />
 
             <TextView
                 android:id="@+id/txtXP"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="XP: 0" />
+                android:text="@string/xp_0" />
 
             <TextView
                 android:id="@+id/txtCoins"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Novčići: 0" />
+                android:text="@string/nov_i_i_0" />
 
             <!-- Dostignuća -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🏅 Dostignuća"
+                android:text="@string/dostignu_a"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:paddingTop="12dp"
@@ -108,7 +108,7 @@
                 android:id="@+id/txtBadgesCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Broj bedževa: 0" />
+                android:text="@string/broj_bed_eva_0" />
 
             <LinearLayout
                 android:id="@+id/layoutBadges"
@@ -123,7 +123,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Oprema"
+                android:text="@string/oprema"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:paddingTop="12dp"
@@ -141,7 +141,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="📲 QR kod"
+                android:text="@string/qr_kod"
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:paddingTop="12dp"
@@ -152,6 +152,13 @@
                 android:layout_width="150dp"
                 android:layout_height="150dp"
                 android:layout_gravity="center" />
+
+            <Button
+                android:id="@+id/btnChangePassword"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/promeni_lozinku" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.example.team11project.data.datasource.local.db.AppContract;
 import com.example.team11project.data.datasource.local.db.DatabaseHelper;
@@ -769,5 +770,24 @@ public class LocalDataSource {
         return deletedRows;
     }
 
+    public int updatePassword(String userId, String newPassword) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(AppContract.UserEntry.COLUMN_PASSWORD, newPassword);
+
+        String selection = AppContract.UserEntry._ID + " = ?";
+        String[] selectionArgs = { userId };
+
+        int count = db.update(
+                AppContract.UserEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+
+        db.close();
+        Log.d("DEBUG", "Local DB update count: " + count);
+        return count;
+    }
 
 }

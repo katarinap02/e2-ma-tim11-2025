@@ -144,4 +144,36 @@ public class UserRepositoryImpl implements UserRepository {
             }
         });
     }
+
+    @Override
+    public void updatePassword(String userId, String newPassword, RepositoryCallback<Void> callback) {
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            callback.onFailure(new Exception("Lozinka ne sme biti prazna."));
+            return;
+        }
+
+        databaseExecutor.execute(() -> {
+            Log.d("DEBUG", "Repository: calling remote updatePassword");
+
+            remoteDataSource.updatePassword(userId, newPassword, new RemoteDataSource.DataSourceCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    Log.d("DEBUG", "Repository: remote update success");
+
+                    databaseExecutor.execute(() -> {
+                        int count = localDataSource.updatePassword(userId, newPassword);
+                        Log.d("DEBUG", "Repository: local update count = " + count);
+                        callback.onSuccess(null);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    Log.e("DEBUG", "Repository: remote update failed", e);
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
 }

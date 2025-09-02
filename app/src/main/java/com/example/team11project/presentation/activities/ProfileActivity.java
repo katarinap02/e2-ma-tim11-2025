@@ -1,16 +1,16 @@
 package com.example.team11project.presentation.activities;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
@@ -29,7 +29,10 @@ public class ProfileActivity extends BaseActivity {
 
     private UserViewModel viewModel;
     private TextView textUsername, textTitle, textLevel, textPp, textXp, textCoins;
+    private TextView textBadgesCount;
+    private LinearLayout layoutBadges, layoutEquipment;
     private ImageView imgAvatar, imgQr;
+    private Button btnChangePassword;
 
     private static final Map<String, Integer> avatarMap = new HashMap<String, Integer>() {{
         put("avatar1", R.drawable.avatar1);
@@ -37,7 +40,6 @@ public class ProfileActivity extends BaseActivity {
         put("avatar3", R.drawable.avatar3);
         put("avatar4", R.drawable.avatar4);
         put("avatar5", R.drawable.avatar5);
-
     }};
 
     @Override
@@ -53,17 +55,25 @@ public class ProfileActivity extends BaseActivity {
         textPp = findViewById(R.id.txtPP);
         textXp = findViewById(R.id.txtXP);
         textCoins = findViewById(R.id.txtCoins);
+        textBadgesCount = findViewById(R.id.txtBadgesCount);
+        layoutBadges = findViewById(R.id.layoutBadges);
+        layoutEquipment = findViewById(R.id.layoutEquipment);
         imgAvatar = findViewById(R.id.imgAvatar);
         imgQr = findViewById(R.id.imgQrCode);
+        btnChangePassword = findViewById(R.id.btnChangePassword);
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
-
         UserViewModel.Factory factory = new UserViewModel.Factory(userRepository);
         viewModel = new ViewModelProvider(this, factory).get(UserViewModel.class);
 
         String userId = getIntent().getStringExtra("userId");
+        String currentUserId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                .getString("userId", null);
+        boolean isOwner = userId != null && userId.equals(currentUserId);
 
         viewModel.getUser().observe(this, user -> {
+            if (user == null) return;
+
             int resId = avatarMap.getOrDefault(user.getAvatar(), R.drawable.avatar1);
             imgAvatar.setImageResource(resId);
 
@@ -73,6 +83,7 @@ public class ProfileActivity extends BaseActivity {
             textPp.setText("Snaga (PP): " + user.getLevelInfo().getPp());
             textXp.setText("XP: " + user.getLevelInfo().getXp());
 
+            // QR code
             String qrText = user.getId();
             QRCodeWriter writer = new QRCodeWriter();
             try {
@@ -80,11 +91,23 @@ public class ProfileActivity extends BaseActivity {
                 com.google.zxing.common.BitMatrix bitMatrix = writer.encode(qrText, BarcodeFormat.QR_CODE, size, size);
                 BarcodeEncoder encoder = new BarcodeEncoder();
                 Bitmap bitmap = encoder.createBitmap(bitMatrix);
-
                 imgQr.setImageBitmap(bitmap);
-
             } catch (WriterException e) {
                 e.printStackTrace();
+            }
+
+            // Populate badges and equipment
+            textBadgesCount.setText("Broj bedževa: " + 12);
+            layoutBadges.removeAllViews();
+            layoutEquipment.removeAllViews();
+
+            // Sakrij privatne podatke ako nije vlasnik
+            if (!isOwner) {
+                textCoins.setVisibility(View.GONE);
+                btnChangePassword.setVisibility(View.GONE);
+                textPp.setVisibility(View.GONE);
+                // Ako postoje dodatna privatna polja, postavi i njih GONE
+                // npr. email, phone, stats koje ne smeju da vide drugi
             }
         });
 
@@ -92,5 +115,11 @@ public class ProfileActivity extends BaseActivity {
                 Toast.makeText(this, "Greška: " + message, Toast.LENGTH_SHORT).show());
 
         viewModel.loadUser(userId);
+
+        // Dugme za promenu lozinke
+        btnChangePassword.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ChangePasswordActivity.class);
+            startActivity(intent);
+        });
     }
 }

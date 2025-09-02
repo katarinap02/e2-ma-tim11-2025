@@ -10,4 +10,5 @@ public interface UserRepository {
     void getUserById(String userId, RepositoryCallback<User> callback);
     LoginResult login(String email, String password, RepositoryCallback<User> callback);
     void getAllUsers(RepositoryCallback<List<User>> callback);
+    void updatePassword(String userId, String newPassword, RepositoryCallback<Void> callback);
 }

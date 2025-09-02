@@ -1,5 +1,7 @@
 package com.example.team11project.presentation.viewmodel;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -20,6 +22,8 @@ public class UserViewModel extends ViewModel {
     private MutableLiveData<User> user = new MutableLiveData<>();
     private MutableLiveData<List<User>> allUsers = new MutableLiveData<>();
     private MutableLiveData<String> error = new MutableLiveData<>();
+    private MutableLiveData<Boolean> updateSuccess = new MutableLiveData<>();
+
     public LiveData<String> getError() { return error; }
 
     public UserViewModel(UserRepository repository){
@@ -33,6 +37,11 @@ public class UserViewModel extends ViewModel {
     public LiveData<List<User>> getAllUsers() {
         return allUsers;
     }
+
+    public LiveData<Boolean> getUpdateSuccess() {
+        return updateSuccess;
+    }
+
 
     public void loadUser(String userId) {
         repository.getUserById(userId, new RepositoryCallback<User>() {
@@ -65,6 +74,25 @@ public class UserViewModel extends ViewModel {
     }
 
 
+    public void updatePassword(String userId, String newPassword) {
+        repository.updatePassword(userId, newPassword, new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Log.d("DEBUG", "ViewModel: password update success");
+
+                updateSuccess.postValue(true);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("DEBUG", "ViewModel: password update failed", e);
+
+                error.postValue(e.getMessage());
+            }
+        });
+    }
+
+
     public static class Factory implements ViewModelProvider.Factory {
         private final UserRepository userRepository;
 
@@ -81,4 +109,6 @@ public class UserViewModel extends ViewModel {
             throw new IllegalArgumentException("Unknown ViewModel class");
         }
     }
+
+
 }

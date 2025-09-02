@@ -375,4 +375,23 @@ public class RemoteDataSource {
                 });
     }
 
+    public void updatePassword(String userId, String newPassword, final DataSourceCallback<Void> callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users")
+                .document(userId)
+                .update("password", newPassword)
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) {
+                        callback.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) {
+                        callback.onFailure(e);
+                    }
+                });
+    }
+
+
 }
