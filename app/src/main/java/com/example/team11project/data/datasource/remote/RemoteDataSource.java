@@ -53,6 +53,16 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void setTaskWithId(Task task, String taskId, final DataSourceCallback<String> callback) {
+        // Koristi set() umesto add() da zadržite specifičan ID
+        db.collection(USERS_COLLECTION).document(task.getUserId())
+                .collection(TASKS_COLLECTION)
+                .document(taskId) // Koristi specifičan ID
+                .set(task)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(taskId))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
     public void getAllTasks(String userId, final DataSourceCallback<List<Task>> callback) {
         getTasksCollection(userId)
                 .get()

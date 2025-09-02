@@ -37,24 +37,45 @@ public class TaskRepositoryImpl implements TaskRepository {
             callback.onFailure(new Exception("Naziv zadatka ne sme biti prazan."));
             return;
         }
+
+        String originalId = task.getId();
+
         databaseExecutor.execute(() -> {
-            // Korak 1: Pokušaj da dodaš na Firebase
-            remoteDataSource.addTask(task, new RemoteDataSource.DataSourceCallback<String>() {
-                @Override
-                public void onSuccess(String newId) {
-                    task.setId(newId);
+            if (originalId != null && !originalId.trim().isEmpty()) {
+                // Ako task već ima ID, koristi set() umesto add()
+                remoteDataSource.setTaskWithId(task, originalId, new RemoteDataSource.DataSourceCallback<String>() {
+                    @Override
+                    public void onSuccess(String id) {
+                        task.setId(originalId); // Zadrži originalni ID
+                        databaseExecutor.execute(() -> {
+                            localDataSource.addTask(task);
+                            callback.onSuccess(null);
+                        });
+                    }
 
-                    databaseExecutor.execute(() -> {
-                        localDataSource.addTask(task);
-                        callback.onSuccess(null);
-                    });
-                }
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            } else {
+                // Ako nema ID, koristi add() da Firestore generiše novi
+                remoteDataSource.addTask(task, new RemoteDataSource.DataSourceCallback<String>() {
+                    @Override
+                    public void onSuccess(String newId) {
+                        task.setId(newId);
+                        databaseExecutor.execute(() -> {
+                            localDataSource.addTask(task);
+                            callback.onSuccess(null);
+                        });
+                    }
 
-                @Override
-                public void onFailure(Exception e) {
-                    callback.onFailure(e);
-                }
-            });
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
         });
     }
 
@@ -127,6 +148,8 @@ public class TaskRepositoryImpl implements TaskRepository {
         });
     }
 
+
+
     @Override
     public void updateTask(Task task, RepositoryCallback<Void> callback) {
         if (task.getId() == null || task.getId().trim().isEmpty()) {
@@ -172,6 +195,17 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     @Override
+    public void deleteTask(Task task, RepositoryCallback<Void> callback) {
+        if (task.getStatus() != TaskStatus.ACTIVE && task.getStatus() != TaskStatus.PAUSED) {
+            callback.onFailure(new Exception("Zadatak mora biti aktivan ili pauziran da bi se obrisao."));
+            return;
+        }
+
+        task.setStatus(TaskStatus.DELETED);
+        updateTask(task, callback);
+    }
+
+    @Override
     public void activateTask(Task task, RepositoryCallback<Void> callback) {
         // PRAVILO: Samo pauzirani zadaci se mogu ponovo aktivirati
         if (task.getStatus() != TaskStatus.PAUSED) {
@@ -207,6 +241,7 @@ public class TaskRepositoryImpl implements TaskRepository {
             }
         });
     }
+
 
 
 }

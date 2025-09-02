@@ -156,8 +156,44 @@ public class TaskDetailActivity extends BaseActivity {
             }
         });
 
-        btnEdit.setOnClickListener(v -> Toast.makeText(this, "Akcija: Izmeni", Toast.LENGTH_SHORT).show());
-        btnDelete.setOnClickListener(v -> showDeleteConfirmationDialog());
+        btnEdit.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AddAndEditActivity.class);
+            intent.putExtra("MODE", "EDIT");
+            intent.putExtra("TASK_ID", currentTask.getId());
+            intent.putExtra("INSTANCE_DATE", instanceDate != null ? instanceDate.getTime() : -1L);
+            startActivity(intent);
+        });
+        btnDelete.setOnClickListener(v -> {
+
+            if (currentTask != null)
+            {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                View dialogView = getLayoutInflater().inflate(R.layout.delete_confirm_dialog, null);
+                builder.setView(dialogView);
+
+                TextView messageView = dialogView.findViewById(R.id.text_view_delete_message);
+                String message = getString(R.string.delete_confirm_message, currentTask.getTitle());
+                messageView.setText(message);
+
+                final AlertDialog dialog = builder.create();
+
+                dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Obriši", (d, which) -> {
+                    if(currentTask != null)
+                    {
+                        btnDelete.setEnabled(false);
+                        btnDelete.setText("Brisanje...");
+                        viewModel.changeTaskStatus(currentTask, TaskStatus.DELETED, currentUserId, instanceDate);
+                        finish();
+                    }
+                });
+
+                dialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Otkaži", (d, which) -> {
+                    dialog.dismiss(); // Samo zatvori dijalog
+                });
+
+                dialog.show();
+            }
+        });
     }
 
     private void setupObservers() {

@@ -4,6 +4,7 @@ import java.util.Date;
 
 public class Task {
     private String id;
+
     private String title;
     private String description;
     private String categoryId;
@@ -178,5 +179,6 @@ public class Task {
     public void setCompletionDate(Date completionDate) {
         this.completionDate = completionDate;
     }
+
 
 }

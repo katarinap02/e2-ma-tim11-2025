@@ -61,10 +61,26 @@ public class AddAndEditActivity extends BaseActivity {
     private Calendar recurrenceEndDate = Calendar.getInstance();
     private String currentUserId;
 
+    // Za edit
+    private boolean isEditMode = false;
+    private String taskIdToEdit = null;
+    private Date instanceDateToEdit = null;
+    private Task originalTask = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_and_edit);
+        Intent intent1 = getIntent();
+        String mode = intent1.getStringExtra("MODE");
+        if ("EDIT".equals(mode)) {
+            isEditMode = true;
+            taskIdToEdit = intent1.getStringExtra("TASK_ID");
+            long instanceTime = intent1.getLongExtra("INSTANCE_DATE", -1L);
+            if (instanceTime != -1L) {
+                instanceDateToEdit = new Date(instanceTime);
+            }
+        }
 
         //deo za usera
         SharedPreferences prefs = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
@@ -93,6 +109,9 @@ public class AddAndEditActivity extends BaseActivity {
         // Učitaj kategorije samo pri prvom kreiranju
         if (savedInstanceState == null) {
             viewModel.loadCategories(currentUserId);
+            if (isEditMode && taskIdToEdit != null) {
+                viewModel.loadTaskDetails(taskIdToEdit, currentUserId);
+            }
         }
     }
 
@@ -143,6 +162,9 @@ public class AddAndEditActivity extends BaseActivity {
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, categoryNames);
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spinnerCategory.setAdapter(adapter);
+                if (isEditMode && originalTask != null) {
+                    populateFieldsForEdit(originalTask);
+                }
             } else {
                 Toast.makeText(this, "Nema dostupnih kategorija. Kreirajte ih prvo.", Toast.LENGTH_LONG).show();
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -155,12 +177,32 @@ public class AddAndEditActivity extends BaseActivity {
             }
         });
 
+        viewModel.selectedTask.observe(this, task -> {
+            if (isEditMode && task != null) {
+                originalTask = task;
+                updateUIForEditMode();
+
+                // AKO SU KATEGORIJE VEĆ UČITANE, POPUNI ODMAH
+                if (categoryList != null && !categoryList.isEmpty()) {
+                    populateFieldsForEdit(task);
+                }
+            }
+        });
+
         // Posmatra signal za uspešno čuvanje
         viewModel.taskSaveSuccess.observe(this, isSuccess -> {
             if (isSuccess) {
                 Toast.makeText(this, "Zadatak uspešno sačuvan!", Toast.LENGTH_SHORT).show();
                 viewModel.onSaveSuccessNavigated(); // Resetuj signal
-                finish(); // Zatvori activity i vrati se na prethodni
+                if (isEditMode) {
+                    Intent intent = new Intent(this, TaskActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    // Za novi zadatak, samo finish()
+                    finish();
+                }
             }
         });
 
@@ -229,6 +271,49 @@ public class AddAndEditActivity extends BaseActivity {
             Toast.makeText(this, "Morate izabrati težinu i bitnost.", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (isEditMode) {
+            // EDIT MODE - kreiraj editovani task
+            Task editedTask = new Task();
+            editedTask.setTitle(title);
+            editedTask.setDescription(etDescription.getText().toString().trim());
+            editedTask.setDifficulty(getSelectedDifficulty());
+            editedTask.setImportance(getSelectedImportance());
+
+            // Vreme izvršenja
+            Date finalExecutionDate;
+            if (originalTask.isRecurring()) {
+                // Za ponavljajuće - uzmi vreme iz recurrenceTime
+                if (etRecurrenceTime.getText().toString().isEmpty()) {
+                    Toast.makeText(this, "Vreme izvršenja je obavezno.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Calendar executionCal = Calendar.getInstance();
+                executionCal.setTime(originalTask.getRecurrenceStartDate());
+                executionCal.set(Calendar.HOUR_OF_DAY, selectedDateTime.get(Calendar.HOUR_OF_DAY));
+                executionCal.set(Calendar.MINUTE, selectedDateTime.get(Calendar.MINUTE));
+                finalExecutionDate = executionCal.getTime();
+            } else {
+                // Za jednokratne
+                if (etExecutionTime.getText().toString().isEmpty()) {
+                    Toast.makeText(this, "Vreme izvršenja je obavezno.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                finalExecutionDate = selectedDateTime.getTime();
+
+                if (finalExecutionDate.before(new Date())) {
+                    Toast.makeText(this, "Vreme izvršenja ne može biti u prošlosti.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
+            editedTask.setExecutionTime(finalExecutionDate);
+
+            // Pozovi edit funkciju
+            viewModel.editTask(originalTask, editedTask, currentUserId, instanceDateToEdit);
+
+        } else {
+
 
         Task newTask = new Task();
         newTask.setUserId(currentUserId);
@@ -287,6 +372,7 @@ public class AddAndEditActivity extends BaseActivity {
         newTask.setExecutionTime(finalExecutionDate);
         viewModel.createNewTask(newTask);
     }
+    }
 
     private TaskDifficulty getSelectedDifficulty() {
         int selectedId = rgDifficulty.getCheckedRadioButtonId();
@@ -313,6 +399,105 @@ public class AddAndEditActivity extends BaseActivity {
             return TaskImportance.SPECIAL;
         } else {
             return TaskImportance.NORMAL;
+        }
+    }
+
+    // DEO ZA EDIT
+
+    private void populateFieldsForEdit(Task task) {
+        etTitle.setText(task.getTitle());
+        etDescription.setText(task.getDescription());
+
+        // Popuni kategoriju
+        if (task.getCategoryId() != null && categoryList != null) {
+            for (int i = 0; i < categoryList.size(); i++) {
+                if (categoryList.get(i).getId().equals(task.getCategoryId())) {
+                    spinnerCategory.setSelection(i);
+                    break;
+                }
+            }
+        }
+        spinnerCategory.setEnabled(false);
+
+        // Popuni težinu
+        switch (task.getDifficulty()) {
+            case VERY_EASY: rgDifficulty.check(R.id.radio_very_easy); break;
+            case EASY: rgDifficulty.check(R.id.radio_easy); break;
+            case HARD: rgDifficulty.check(R.id.radio_hard); break;
+            case EXTREME: rgDifficulty.check(R.id.radio_extreme); break;
+        }
+
+        // Popuni bitnost
+        switch (task.getImportance()) {
+            case NORMAL: rgImportance.check(R.id.radio_normal); break;
+            case IMPORTANT: rgImportance.check(R.id.radio_important); break;
+            case VERY_IMPORTANT: rgImportance.check(R.id.radio_very_important); break;
+            case SPECIAL: rgImportance.check(R.id.radio_special); break;
+        }
+
+        // Popuni vreme izvršenja
+        if (task.getExecutionTime() != null) {
+            selectedDateTime.setTime(task.getExecutionTime());
+            SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault());
+            etExecutionTime.setText(sdf.format(task.getExecutionTime()));
+        }
+
+        // Za ponavljajuće zadatke - ograniči opcije
+        if (task.isRecurring()) {
+            switchRecurring.setChecked(true);
+            switchRecurring.setEnabled(false); // Ne dozvoli menjanje tipa
+
+
+            etRecurrenceInterval.setText(String.valueOf(task.getRecurrenceInterval()));
+            etRecurrenceInterval.setEnabled(false);
+            etRecurrenceInterval.setFocusable(false);
+
+            if (task.getRecurrenceUnit() == RecurrenceUnit.DAY) {
+                rgRecurrenceUnit.check(R.id.radio_day);
+            } else {
+                rgRecurrenceUnit.check(R.id.radio_week);
+            }
+            for (int i = 0; i < rgRecurrenceUnit.getChildCount(); i++) {
+                rgRecurrenceUnit.getChildAt(i).setEnabled(false);
+            }
+
+            // Datumi se ne menjaju
+            if (task.getRecurrenceStartDate() != null) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                etRecurrenceStart.setText(sdf.format(task.getRecurrenceStartDate()));
+            }
+            etRecurrenceStart.setEnabled(false);
+            etRecurrenceStart.setFocusable(false);
+            etRecurrenceStart.setClickable(false);
+
+            if (task.getRecurrenceEndDate() != null) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                etRecurrenceEnd.setText(sdf.format(task.getRecurrenceEndDate()));
+            }
+            etRecurrenceEnd.setEnabled(false);
+            etRecurrenceEnd.setFocusable(false);
+            etRecurrenceEnd.setClickable(false);
+
+            // Vreme se može menjati - OSTAVI ENABLED
+            if (task.getExecutionTime() != null) {
+                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                etRecurrenceTime.setText(timeFormat.format(task.getExecutionTime()));
+            }
+        } else {
+            // Za jednokratne zadatke - DISABLE switch
+            switchRecurring.setEnabled(false);
+        }
+    }
+
+    private void updateUIForEditMode() {
+        toolbar.setTitle("Izmeni zadatak");
+        btnSave.setText("Sačuvaj izmene");
+
+        // Sakrij opcije za ponavljanje ako je recurring task
+        if (originalTask != null && originalTask.isRecurring()) {
+            // Prikaži ograničene opcije
+            layoutRecurringOptions.setVisibility(View.VISIBLE);
+            layoutExecutionTime.setVisibility(View.GONE);
         }
     }
 }
