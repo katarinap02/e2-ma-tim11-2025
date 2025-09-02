@@ -12,6 +12,7 @@ import com.example.team11project.data.repository.CategoryRepositoryImpl;
 import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
+import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskInstance;
@@ -21,6 +22,7 @@ import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
+import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.TaskUseCase;
 
 import java.util.ArrayList;
@@ -419,10 +421,11 @@ public class TaskViewModel extends ViewModel{
             if (modelClass.isAssignableFrom(TaskViewModel.class)) {
                 try {
                     TaskRepository taskRepo = new TaskRepositoryImpl(application);
-                    LevelInfoRepository levelRepo = new LevelInfoRepositoryImpl(application);
+                    UserRepository userRepo = new UserRepositoryImpl(application);
                     CategoryRepository catRepo = new CategoryRepositoryImpl(application);
                     TaskInstanceRepository instanceRepo = new TaskInstanceRepositoryImpl(application);
-                    TaskUseCase completeUC = new TaskUseCase(taskRepo, levelRepo, instanceRepo);
+                    LevelInfoRepository levelInfoRepository = new LevelInfoRepositoryImpl(application);
+                    TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository);
 
 
                     @SuppressWarnings("unchecked")

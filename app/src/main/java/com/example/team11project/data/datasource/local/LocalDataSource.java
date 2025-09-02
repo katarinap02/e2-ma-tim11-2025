@@ -603,6 +603,19 @@ public class LocalDataSource {
         return values;
     }
 
+    private User cursorToUser(Cursor cursor) {
+        User user = new User();
+        user.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry._ID)));
+        user.setUsername(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_USERNAME)));
+        user.setEmail(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_EMAIL)));
+        user.setPassword(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_PASSWORD)));
+        user.setAvatar(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_AVATAR)));
+        user.setVerified(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_VERIFIED)) != 0);
+
+        return user;
+    }
+
+
     public long addUser(User user) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = userToContentValues(user);
@@ -718,6 +731,42 @@ public class LocalDataSource {
             if (db != null && db.isOpen()) db.close();
         }
         return count;
+    }
+
+
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        Cursor cursor = db.query(
+                AppContract.UserEntry.TABLE_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        while (cursor.moveToNext()) {
+            users.add(cursorToUser(cursor));
+        }
+        cursor.close();
+        db.close();
+        return users;
+    }
+
+    public int deleteAllUsers() {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        int deletedRows = db.delete(
+                AppContract.UserEntry.TABLE_NAME,
+                null,
+                null
+        );
+
+        db.close();
+        return deletedRows;
     }
 
 

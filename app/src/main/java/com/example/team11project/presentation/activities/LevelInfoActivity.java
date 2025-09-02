@@ -8,8 +8,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
 import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
+import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.LevelInfoRepository;
+import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.presentation.viewmodel.LevelInfoViewModel;
 import com.example.team11project.presentation.viewmodel.RegisterViewModel;
 
@@ -36,7 +38,8 @@ public class LevelInfoActivity extends BaseActivity {
                 .getString("userId", null);
 
         LevelInfoRepository repository = new LevelInfoRepositoryImpl(getApplicationContext());
-        LevelInfoViewModel.Factory factory = new LevelInfoViewModel.Factory(repository, userId);
+        UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
+        LevelInfoViewModel.Factory factory = new LevelInfoViewModel.Factory(repository, userRepository, userId);
         viewModel = new ViewModelProvider(this, factory).get(LevelInfoViewModel.class);
 
         viewModel.getProgress().observe(this, progress -> {
