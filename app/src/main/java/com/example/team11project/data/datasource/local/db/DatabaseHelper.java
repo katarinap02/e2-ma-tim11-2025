@@ -24,9 +24,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     "UNIQUE (" + AppContract.CategoryEntry.COLUMN_NAME_USER_ID + ", " + AppContract.CategoryEntry.COLUMN_NAME_COLOR + "))";
 
 
-    // SQL komanda za kreiranje tabele za zadatke
-    // U DatabaseHelper.java
-
     private static final String SQL_CREATE_TASKS_TABLE =
             "CREATE TABLE " + AppContract.TaskEntry.TABLE_NAME + " (" +
                     AppContract.TaskEntry._ID + " TEXT PRIMARY KEY," +
@@ -58,6 +55,44 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.TaskInstanceEntry.COLUMN_NAME_COMPLETION_DATE + " INTEGER," +
                     "FOREIGN KEY(" + AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_TASK_ID + ") REFERENCES " +
                     AppContract.TaskEntry.TABLE_NAME + "(" + AppContract.TaskEntry._ID + "))";
+    private static final String SQL_CREATE_BOSS_TABLE =
+            "CREATE TABLE " + AppContract.BossEntry.TABLE_NAME + " (" +
+                    AppContract.BossEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.BossEntry.COLUMN_NAME_LEVEL + " INTEGER NOT NULL," +
+                    AppContract.BossEntry.COLUMN_NAME_MAX_HP + " INTEGER NOT NULL," +
+                    AppContract.BossEntry.COLUMN_NAME_CURRENT_HP + " INTEGER NOT NULL," +
+                    AppContract.BossEntry.COLUMN_NAME_IS_DEFEATED + " INTEGER NOT NULL," + // 0 = false, 1 = true
+                    AppContract.BossEntry.COLUMN_NAME_COINS_REWARD + " INTEGER NOT NULL" +
+                    ")";
+    private static final String SQL_CREATE_BOSS_BATTLE_TABLE =
+            "CREATE TABLE " + AppContract.BossBattleEntry.TABLE_NAME + " (" +
+                    AppContract.BossBattleEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID + " TEXT NOT NULL," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_LEVEL_INFO_ID + " TEXT," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_ATTACKS_USED + " INTEGER NOT NULL," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_DAMAGE_DEALT + " INTEGER NOT NULL," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_HIT_CHANCE + " REAL NOT NULL," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_USER_PP + " INTEGER NOT NULL," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_BOSS_DEFEATED + " INTEGER NOT NULL," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_ACTIVE_EQUIPMENT + " TEXT," + // JSON string/list
+                    "FOREIGN KEY(" + AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID + ") REFERENCES " +
+                    AppContract.BossEntry.TABLE_NAME + "(" + AppContract.BossEntry._ID + ")," +
+                    "FOREIGN KEY(" + AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + ") REFERENCES users(id)" +
+                    ")";
+    private static final String SQL_CREATE_BOSS_REWARD_TABLE =
+            "CREATE TABLE " + AppContract.BossRewardEntry.TABLE_NAME + " (" +
+                    AppContract.BossRewardEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID + " TEXT NOT NULL," +
+                    AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.BossRewardEntry.COLUMN_NAME_LEVEL_INFO_ID + " TEXT," +
+                    AppContract.BossRewardEntry.COLUMN_NAME_COINS_EARNED + " INTEGER NOT NULL," +
+                    AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID + " TEXT," +
+                    "FOREIGN KEY(" + AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID + ") REFERENCES " +
+                    AppContract.BossEntry.TABLE_NAME + "(" + AppContract.BossEntry._ID + ")," +
+                    "FOREIGN KEY(" + AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + ") REFERENCES users(id)" +
+                    ")";
 
     // SQL komande za brisanje tabela
     private static final String SQL_DELETE_CATEGORIES_TABLE =
@@ -65,6 +100,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String SQL_DELETE_TASKS_TABLE =
             "DROP TABLE IF EXISTS " + AppContract.TaskEntry.TABLE_NAME;
+    private static final String SQL_DELETE_BOSS_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.BossEntry.TABLE_NAME;
+    private static final String SQL_DELETE_BOSS_BATTLE_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.BossBattleEntry.TABLE_NAME;
+    private static final String SQL_DELETE_BOSS_REWARD_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.BossRewardEntry.TABLE_NAME;
 
     //Poziva se kada se baza kreira po prvi put.
     @Override
@@ -73,6 +114,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_TASKS_TABLE);
         db.execSQL(SQL_CREATE_USERS_TABLE);
         db.execSQL(SQL_CREATE_TASK_INSTANCES_TABLE);
+        db.execSQL(SQL_CREATE_BOSS_TABLE);
+        db.execSQL(SQL_CREATE_BOSS_BATTLE_TABLE);
+        db.execSQL(SQL_CREATE_BOSS_REWARD_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -84,6 +128,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_CATEGORIES_TABLE);
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.TaskInstanceEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS users");
+        db.execSQL(SQL_DELETE_BOSS_REWARD_TABLE);
+        db.execSQL(SQL_DELETE_BOSS_BATTLE_TABLE);
+        db.execSQL(SQL_DELETE_BOSS_TABLE);
         onCreate(db);
     }
 

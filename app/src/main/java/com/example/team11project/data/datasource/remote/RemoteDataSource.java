@@ -4,6 +4,9 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.model.BossBattle;
+import com.example.team11project.domain.model.BossReward;
 import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
@@ -34,6 +37,9 @@ public class RemoteDataSource {
     private static final String TASKS_COLLECTION = "tasks";
     private static final String CATEGORIES_COLLECTION = "categories";
     private static final String INSTANCES_COLLECTION = "task_instances";
+    private static final String BOSSES_COLLECTION = "bosses";
+    private static final String BOSS_BATTLES_COLLECTION = "bossBattles";
+    private static final String BOSS_REWARDS_COLLECTION = "bossRewards";
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -401,6 +407,111 @@ public class RemoteDataSource {
                         callback.onFailure(e);
                     }
                 });
+    }
+
+    //*********************DEO SA BOSOM *******************************//
+
+    public void addBoss(Boss boss, final DataSourceCallback<String> callback) {
+        // /users/{userId}/bosses/{bossId}
+        db.collection(USERS_COLLECTION).document(boss.getUserId())
+                .collection(BOSSES_COLLECTION)
+                .add(boss)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllBosses(String userId, final DataSourceCallback<List<Boss>> callback) {
+        db.collection(USERS_COLLECTION).document(userId).collection(BOSSES_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<Boss> bossList = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Boss b = document.toObject(Boss.class);
+                            b.setId(document.getId());
+                            bossList.add(b);
+                        }
+                        callback.onSuccess(bossList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateBoss(Boss boss, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(boss.getUserId())
+                .collection(BOSSES_COLLECTION).document(boss.getId())
+                .set(boss)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void addBossBattle(BossBattle battle, final DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(battle.getUserId())
+                .collection(BOSS_BATTLES_COLLECTION)
+                .add(battle)
+                .addOnSuccessListener(docRef -> callback.onSuccess(docRef.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllBossBattles(String userId, final DataSourceCallback<List<BossBattle>> callback) {
+        db.collection(USERS_COLLECTION).document(userId).collection(BOSS_BATTLES_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<BossBattle> battleList = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            BossBattle b = doc.toObject(BossBattle.class);
+                            b.setId(doc.getId());
+                            battleList.add(b);
+                        }
+                        callback.onSuccess(battleList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateBossBattle(BossBattle battle, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(battle.getUserId())
+                .collection(BOSS_BATTLES_COLLECTION).document(battle.getId())
+                .set(battle)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void addBossReward(BossReward reward, final DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(reward.getUserId())
+                .collection(BOSS_REWARDS_COLLECTION)
+                .add(reward)
+                .addOnSuccessListener(docRef -> callback.onSuccess(docRef.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllBossRewards(String userId, final DataSourceCallback<List<BossReward>> callback) {
+        db.collection(USERS_COLLECTION).document(userId).collection(BOSS_REWARDS_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<BossReward> rewardList = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            BossReward r = doc.toObject(BossReward.class);
+                            r.setId(doc.getId());
+                            rewardList.add(r);
+                        }
+                        callback.onSuccess(rewardList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateBossReward(BossReward reward, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(reward.getUserId())
+                .collection(BOSS_REWARDS_COLLECTION).document(reward.getId())
+                .set(reward)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
     }
 
 

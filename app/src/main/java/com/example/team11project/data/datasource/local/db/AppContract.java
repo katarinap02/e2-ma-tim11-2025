@@ -24,7 +24,6 @@ public final class AppContract {
         public static final String COLUMN_NAME_RECURRENCE_START_DATE = "recurrence_start_date";
         public static final String COLUMN_NAME_RECURRENCE_END_DATE = "recurrence_end_date";
         public static final String COLUMN_NAME_EXECUTION_TIME = "execution_time";
-
         public static final String COLUMN_NAME_COMPLETION_DATE = "completion_date";
         public static final String COLUMN_NAME_DIFFICULTY = "difficulty";
         public static final String COLUMN_NAME_IMPORTANCE = "importance";
@@ -34,7 +33,6 @@ public final class AppContract {
 
     public static class UserEntry implements BaseColumns {
         public static final String TABLE_NAME = "users";
-
         public static final String _ID = "id";
         public static final String COLUMN_EMAIL = "email";
         public static final String COLUMN_USERNAME = "username";
@@ -47,7 +45,6 @@ public final class AppContract {
 
     public static class LevelInfoEntry implements BaseColumns {
         public static final String TABLE_NAME = "level_info";
-
         public static final String _ID = "id";
         public static final String COLUMN_LEVEL = "level";
         public static final String COLUMN_XP = "xp";
@@ -67,6 +64,41 @@ public final class AppContract {
             public static final String COLUMN_NAME_NEW_STATUS = "new_status";
             public static final String COLUMN_NAME_COMPLETION_DATE = "completion_date";
         }
+
+    public static class BossEntry implements BaseColumns {
+        public static final String TABLE_NAME = "bosses";
+        public static final String COLUMN_NAME_ID = "id";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
+        public static final String COLUMN_NAME_LEVEL = "level";
+        public static final String COLUMN_NAME_MAX_HP = "max_hp";
+        public static final String COLUMN_NAME_CURRENT_HP = "current_hp";
+        public static final String COLUMN_NAME_IS_DEFEATED = "is_defeated";
+        public static final String COLUMN_NAME_COINS_REWARD = "coins_reward";
+    }
+
+    public static class BossBattleEntry implements BaseColumns {
+        public static final String TABLE_NAME = "boss_battles";
+        public static final String COLUMN_NAME_ID = "id";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
+        public static final String COLUMN_NAME_BOSS_ID = "boss_id";
+        public static final String COLUMN_NAME_LEVEL_INFO_ID = "level_info_id";
+        public static final String COLUMN_NAME_ATTACKS_USED = "attacks_used";
+        public static final String COLUMN_NAME_DAMAGE_DEALT = "damage_dealt";
+        public static final String COLUMN_NAME_HIT_CHANCE = "hit_chance";
+        public static final String COLUMN_NAME_USER_PP = "user_pp";
+        public static final String COLUMN_NAME_BOSS_DEFEATED = "boss_defeated";
+        public static final String COLUMN_NAME_ACTIVE_EQUIPMENT = "active_equipment";
+    }
+
+    public static class BossRewardEntry implements BaseColumns {
+        public static final String TABLE_NAME = "boss_rewards";
+        public static final String COLUMN_NAME_ID = "id";
+        public static final String COLUMN_NAME_BOSS_ID = "boss_id";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
+        public static final String COLUMN_NAME_LEVEL_INFO_ID = "level_info_id";
+        public static final String COLUMN_NAME_COINS_EARNED = "coins_earned";
+        public static final String COLUMN_NAME_EQUIPMENT_ID = "equipment_id";
+    }
 
 
 
