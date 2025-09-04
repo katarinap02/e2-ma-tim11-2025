@@ -84,7 +84,7 @@ public final class AppContract {
         public static final String COLUMN_NAME_ID = "id";
         public static final String COLUMN_NAME_USER_ID = "user_id";
         public static final String COLUMN_NAME_BOSS_ID = "boss_id";
-        public static final String COLUMN_NAME_LEVEL_INFO_ID = "level_info_id";
+        public static final String COLUMN_NAME_LEVEL = "level";
         public static final String COLUMN_NAME_ATTACKS_USED = "attacks_used";
         public static final String COLUMN_NAME_DAMAGE_DEALT = "damage_dealt";
         public static final String COLUMN_NAME_HIT_CHANCE = "hit_chance";
@@ -98,7 +98,7 @@ public final class AppContract {
         public static final String COLUMN_NAME_ID = "id";
         public static final String COLUMN_NAME_BOSS_ID = "boss_id";
         public static final String COLUMN_NAME_USER_ID = "user_id";
-        public static final String COLUMN_NAME_LEVEL_INFO_ID = "level_info_id";
+        public static final String COLUMN_NAME_LEVEL = "level";
         public static final String COLUMN_NAME_COINS_EARNED = "coins_earned";
         public static final String COLUMN_NAME_EQUIPMENT_ID = "equipment_id";
     }

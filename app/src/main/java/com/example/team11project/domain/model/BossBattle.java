@@ -6,7 +6,7 @@ public class BossBattle {
     private String id;
     private String userId;
     private String bossId;
-    private String levelInfoId;
+    private int level;
     private int attacksUsed;
     private int damageDealt; //koliko je stete naneto bosu
     private double hitChance; //sansa koja se racuna za pogodak
@@ -15,10 +15,10 @@ public class BossBattle {
     private boolean bossDefeated;
 
     public BossBattle() {}
-    public BossBattle(String id, String userId, String levelInfoId, String bossId, int damageDealt, int attacksUsed, double hitChance, List<String> activeEquipment, int userPP, boolean bossDefeated) {
+    public BossBattle(String id, String userId, int level, String bossId, int damageDealt, int attacksUsed, double hitChance, List<String> activeEquipment, int userPP, boolean bossDefeated) {
         this.id = id;
         this.userId = userId;
-        this.levelInfoId = levelInfoId;
+        this.level = level;
         this.bossId = bossId;
         this.damageDealt = damageDealt;
         this.attacksUsed = attacksUsed;
@@ -50,14 +50,6 @@ public class BossBattle {
 
     public void setBossId(String bossId) {
         this.bossId = bossId;
-    }
-
-    public String getLevelInfoId() {
-        return levelInfoId;
-    }
-
-    public void setLevelInfoId(String levelInfoId) {
-        this.levelInfoId = levelInfoId;
     }
 
     public int getAttacksUsed() {
@@ -106,5 +98,13 @@ public class BossBattle {
 
     public void setBossDefeated(boolean bossDefeated) {
         this.bossDefeated = bossDefeated;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
     }
 }

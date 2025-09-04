@@ -4,17 +4,17 @@ public class BossReward {
     private String id;
     private String bossId;
     private String userId;
-    private String levelInfoId;
+    private int level;
     private int coinsEarned;
     private String equipmentId;
 
     public BossReward(){}
 
-    public BossReward(String id, String bossId, String userId, String levelInfoId, int coinsEarned, String equipmentId) {
+    public BossReward(String id, String bossId, String userId, int level, int coinsEarned, String equipmentId) {
         this.id = id;
         this.bossId = bossId;
         this.userId = userId;
-        this.levelInfoId = levelInfoId;
+        this.level = level;
         this.coinsEarned = coinsEarned;
         this.equipmentId = equipmentId;
     }
@@ -43,14 +43,6 @@ public class BossReward {
         this.userId = userId;
     }
 
-    public String getLevelInfoId() {
-        return levelInfoId;
-    }
-
-    public void setLevelInfoId(String levelInfoId) {
-        this.levelInfoId = levelInfoId;
-    }
-
     public int getCoinsEarned() {
         return coinsEarned;
     }
@@ -65,5 +57,13 @@ public class BossReward {
 
     public void setEquipmentId(String equipmentId) {
         this.equipmentId = equipmentId;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
     }
 }

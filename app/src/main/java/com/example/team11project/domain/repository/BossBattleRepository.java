@@ -9,4 +9,5 @@ public interface BossBattleRepository {
     void getBattles(String userId, RepositoryCallback<List<BossBattle>> callback);
 
     void updateBattle(BossBattle battle, RepositoryCallback<Void> callback);
+    public void getBattleByUserAndBossAndLevel(String userId, String bossId, int level, RepositoryCallback<BossBattle> callback);
 }

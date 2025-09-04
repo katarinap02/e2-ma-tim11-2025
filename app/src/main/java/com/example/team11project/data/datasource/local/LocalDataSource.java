@@ -1098,7 +1098,7 @@ public class LocalDataSource {
         values.put(AppContract.BossBattleEntry._ID, battle.getId());
         values.put(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID, battle.getUserId());
         values.put(AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID, battle.getBossId());
-        values.put(AppContract.BossBattleEntry.COLUMN_NAME_LEVEL_INFO_ID, battle.getLevelInfoId());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_LEVEL, battle.getLevel());
         values.put(AppContract.BossBattleEntry.COLUMN_NAME_ATTACKS_USED, battle.getAttacksUsed());
         values.put(AppContract.BossBattleEntry.COLUMN_NAME_DAMAGE_DEALT, battle.getDamageDealt());
         values.put(AppContract.BossBattleEntry.COLUMN_NAME_HIT_CHANCE, battle.getHitChance());
@@ -1117,7 +1117,7 @@ public class LocalDataSource {
         battle.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry._ID)));
         battle.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID)));
         battle.setBossId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID)));
-        battle.setLevelInfoId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_LEVEL_INFO_ID)));
+        battle.setLevel(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_LEVEL)));
         battle.setAttacksUsed(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_ATTACKS_USED)));
         battle.setDamageDealt(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_DAMAGE_DEALT)));
         battle.setHitChance(cursor.getDouble(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_HIT_CHANCE)));
@@ -1234,13 +1234,39 @@ public class LocalDataSource {
         return boss;
     }
 
+    public BossBattle getBattleByUserAndBossAndLevel(String userId, String bossId, int level) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID + " = ? AND " +
+                AppContract.BossBattleEntry.COLUMN_NAME_LEVEL + " = ?";
+        String[] selectionArgs = {userId, bossId, String.valueOf(level)};
+
+        Cursor cursor = db.query(
+                AppContract.BossBattleEntry.TABLE_NAME,
+                null, // sve kolone
+                selection,
+                selectionArgs,
+                null, null, null, "1" // limit 1
+        );
+
+        BossBattle bossBattle = null;
+        if (cursor.moveToFirst()) {
+            bossBattle = cursorToBossBattle(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return bossBattle;
+    }
+
 
     private ContentValues rewardToContentValues(BossReward reward) {
         ContentValues values = new ContentValues();
         values.put(AppContract.BossRewardEntry._ID, reward.getId());
         values.put(AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID, reward.getBossId());
         values.put(AppContract.BossRewardEntry.COLUMN_NAME_USER_ID, reward.getUserId());
-        values.put(AppContract.BossRewardEntry.COLUMN_NAME_LEVEL_INFO_ID, reward.getLevelInfoId());
+        values.put(AppContract.BossRewardEntry.COLUMN_NAME_LEVEL, reward.getLevel());
         values.put(AppContract.BossRewardEntry.COLUMN_NAME_COINS_EARNED, reward.getCoinsEarned());
         values.put(AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID, reward.getEquipmentId());
         return values;
@@ -1251,7 +1277,7 @@ public class LocalDataSource {
         reward.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry._ID)));
         reward.setBossId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID)));
         reward.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_USER_ID)));
-        reward.setLevelInfoId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_LEVEL_INFO_ID)));
+        reward.setLevel(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_LEVEL)));
         reward.setCoinsEarned(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_COINS_EARNED)));
         reward.setEquipmentId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID)));
         return reward;

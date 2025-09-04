@@ -2,6 +2,7 @@ package com.example.team11project.domain.usecase;
 
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
+import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.BossBattleRepository;
@@ -9,6 +10,9 @@ import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BossUseCase {
 
@@ -60,22 +64,29 @@ public class BossUseCase {
                     // Boss već postoji za ovaj nivo
                     callback.onSuccess(existingBoss);
                 } else {
-                    // Kreiramo novi boss jer ne postoji za ovaj nivo
-                    Boss newBoss = createNewBoss(user, levelInfo);
+                    if (levelInfo.getLevel() == 0)
+                    {
+                        callback.onSuccess(null);
+                    }
+                    else {
+                        // Kreiramo novi boss jer ne postoji za ovaj nivo
+                        Boss newBoss = createNewBoss(user, levelInfo);
 
-                    // Čuvamo boss u bazi koristeći addBoss metodu
-                    bossRepository.addBoss(newBoss, new RepositoryCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            // ID je sada postavljen od strane remote data source-a
-                            callback.onSuccess(newBoss);
-                        }
+                        // Čuvamo boss u bazi koristeći addBoss metodu
+                        bossRepository.addBoss(newBoss, new RepositoryCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                                // ID je sada postavljen od strane remote data source-a
+                                callback.onSuccess(newBoss);
+                            }
 
-                        @Override
-                        public void onFailure(Exception e) {
-                            callback.onFailure(e);
-                        }
-                    });
+                            @Override
+                            public void onFailure(Exception e) {
+                                callback.onFailure(e);
+                            }
+                        });
+                    }
+
                 }
             }
 
@@ -116,17 +127,17 @@ public class BossUseCase {
         }
         return (int) reward;
     }
-/*
-    public void createBossBattle(User user, Boss boss, LevelInfo levelInfo, RepositoryCallback<BossBattle> callback) {
+
+    public void getOrCreateBossBattle(User user, Boss boss, int level, RepositoryCallback<BossBattle> callback) {
         // Proveravamo da li već postoji aktivna bitka protiv ovog boss-a
-        bossBattleRepository.getActiveBattleByUserAndBoss(user.getId(), boss.getId(), new RepositoryCallback<BossBattle>() {
+        bossBattleRepository.getBattleByUserAndBossAndLevel(user.getId(), boss.getId(), level, new RepositoryCallback<BossBattle>() {
             @Override
             public void onSuccess(BossBattle existingBattle) {
                 if (existingBattle != null && !existingBattle.isBossDefeated()) {
                     // Već postoji aktivna bitka
                     callback.onSuccess(existingBattle);
                 } else {
-                    BossBattle newBattle = createNewBossBattle(user, boss, levelInfo);
+                    BossBattle newBattle = createNewBossBattle(user, boss, level);
                     bossBattleRepository.addBattle(newBattle, new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
@@ -148,21 +159,23 @@ public class BossUseCase {
         });
     }
 
-    private BossBattle createNewBossBattle(User user, Boss boss, LevelInfo levelInfo) {
+    private BossBattle createNewBossBattle(User user, Boss boss, int level) {
         BossBattle battle = new BossBattle();
         battle.setUserId(user.getId());
         battle.setBossId(boss.getId());
-        battle.setLevelInfoId(levelInfo.getId());
+        battle.setLevel(level);
         battle.setAttacksUsed(0); // Počinje sa 0 napada (maksimalno 5)
         battle.setDamageDealt(0);
 
         // Šansa za pogodak se računa na osnovu uspešnosti rešavanja zadataka u etapi
-        battle.setHitChance(calculateHitChanceFromTaskSuccess(user, levelInfo));
+        //battle.setHitChance(calculateHitChanceFromTaskSuccess(user));
 
-        battle.setActiveEquipment(getUserActiveEquipment(user));
+        battle.setHitChance(0.67);
 
-        // PP korisnika = osnovni PP iz levelInfo + bonus PP od opreme
-        int totalPP = calculateUserTotalPP(user, levelInfo);
+        List<String> equipments= new ArrayList<String>(); // za sada nema nista u equipment
+        battle.setActiveEquipment(equipments);
+
+        int totalPP = user.getLevelInfo().getPp();
         battle.setUserPP(totalPP);
 
         battle.setBossDefeated(false);
@@ -171,6 +184,6 @@ public class BossUseCase {
     }
 
 
-*/
+
 
 }

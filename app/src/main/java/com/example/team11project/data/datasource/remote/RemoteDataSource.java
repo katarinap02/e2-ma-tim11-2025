@@ -619,5 +619,30 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void getBattleByUserAndBossAndLevel(String userId, String bossId, int level, final DataSourceCallback<BossBattle> callback) {
+        // Tražimo boss battle sa određenim parametrima
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSS_BATTLES_COLLECTION)
+                .whereEqualTo("bossId", bossId)
+                .whereEqualTo("level", level)  // NOVO - direktno int umesto levelInfoId string
+                .limit(1) // Očekujemo samo jednu bitku po kombinaciji
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        // Nema boss battle-a za ovu kombinaciju
+                        callback.onSuccess(null);
+                    } else {
+                        // Pronađen je boss battle
+                        DocumentSnapshot document = queryDocumentSnapshots.getDocuments().get(0);
+                        BossBattle bossBattle = document.toObject(BossBattle.class);
+                        if (bossBattle != null) {
+                            bossBattle.setId(document.getId()); // Postavimo ID iz dokumenta
+                        }
+                        callback.onSuccess(bossBattle);
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
 
 }

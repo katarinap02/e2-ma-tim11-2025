@@ -70,7 +70,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.BossBattleEntry._ID + " TEXT PRIMARY KEY," +
                     AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
                     AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID + " TEXT NOT NULL," +
-                    AppContract.BossBattleEntry.COLUMN_NAME_LEVEL_INFO_ID + " TEXT," +
+                    AppContract.BossBattleEntry.COLUMN_NAME_LEVEL+ " INTEGER NOT NULL," +
                     AppContract.BossBattleEntry.COLUMN_NAME_ATTACKS_USED + " INTEGER NOT NULL," +
                     AppContract.BossBattleEntry.COLUMN_NAME_DAMAGE_DEALT + " INTEGER NOT NULL," +
                     AppContract.BossBattleEntry.COLUMN_NAME_HIT_CHANCE + " REAL NOT NULL," +
@@ -86,7 +86,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.BossRewardEntry._ID + " TEXT PRIMARY KEY," +
                     AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID + " TEXT NOT NULL," +
                     AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
-                    AppContract.BossRewardEntry.COLUMN_NAME_LEVEL_INFO_ID + " TEXT," +
+                    AppContract.BossRewardEntry.COLUMN_NAME_LEVEL + " INTEGER NOT NULL," +
                     AppContract.BossRewardEntry.COLUMN_NAME_COINS_EARNED + " INTEGER NOT NULL," +
                     AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID + " TEXT," +
                     "FOREIGN KEY(" + AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID + ") REFERENCES " +

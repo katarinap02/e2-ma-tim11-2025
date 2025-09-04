@@ -95,4 +95,40 @@ public class BossBattleRepositoryImpl implements BossBattleRepository {
             });
         });
     }
+
+    @Override
+    public void getBattleByUserAndBossAndLevel(String userId, String bossId, int level, RepositoryCallback<BossBattle> callback) {
+        databaseExecutor.execute(() -> {
+            // Prvo pokušamo iz remote data source-a
+            remoteDataSource.getBattleByUserAndBossAndLevel(userId, bossId, level, new RemoteDataSource.DataSourceCallback<BossBattle>() {
+                @Override
+                public void onSuccess(BossBattle bossBattle) {
+                    if (bossBattle != null) {
+                        databaseExecutor.execute(() -> {
+                            callback.onSuccess(bossBattle);
+                        });
+                    } else {
+                        databaseExecutor.execute(() -> {
+                            BossBattle localBossBattle = localDataSource.getBattleByUserAndBossAndLevel(userId, bossId, level);
+                            callback.onSuccess(localBossBattle);
+                        });
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    databaseExecutor.execute(() -> {
+                        BossBattle localBossBattle = localDataSource.getBattleByUserAndBossAndLevel(userId, bossId, level);
+                        if (localBossBattle != null) {
+                            // Pronađen u lokalnoj bazi
+                            callback.onSuccess(localBossBattle);
+                        } else {
+                            // Nije pronađen nigde
+                            callback.onFailure(e);
+                        }
+                    });
+                }
+            });
+        });
+    }
 }
