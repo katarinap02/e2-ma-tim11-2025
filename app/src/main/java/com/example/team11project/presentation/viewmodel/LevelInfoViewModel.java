@@ -12,6 +12,7 @@ import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.UserRepository;
 
 import java.util.ResourceBundle;
 
@@ -19,20 +20,22 @@ public class LevelInfoViewModel extends ViewModel {
 
     private final LevelInfoRepository repository;
 
+    private final UserRepository userRepository;
     private final MutableLiveData<Integer> _progress = new MutableLiveData<>();
 
     private final MutableLiveData<LevelInfo> _levelInfo = new MutableLiveData<>();
 
     private User currentUser;
 
-    public LevelInfoViewModel(LevelInfoRepository repository, String userId) {
+    public LevelInfoViewModel(LevelInfoRepository repository, UserRepository userRepository, String userId) {
         this.repository = repository;
+        this.userRepository = userRepository;
         loadUser(userId);
     }
 
     private void loadUser(String userId) {
         try {
-            repository.getUserById(userId, new RepositoryCallback<User>() {
+            userRepository.getUserById(userId, new RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User user) {
                     currentUser = user;
@@ -87,10 +90,12 @@ public class LevelInfoViewModel extends ViewModel {
 
     public static class Factory implements ViewModelProvider.Factory {
         private final LevelInfoRepository repository;
+        private final UserRepository userRepository;
         private final String userId;
 
-        public Factory(LevelInfoRepository repository, String userId) {
+        public Factory(LevelInfoRepository repository, UserRepository userRepository, String userId) {
             this.repository = repository;
+            this.userRepository = userRepository;
             this.userId = userId;
         }
 
@@ -98,7 +103,7 @@ public class LevelInfoViewModel extends ViewModel {
         @Override
         public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
             if (modelClass.isAssignableFrom(LevelInfoViewModel.class)) {
-                return (T) new LevelInfoViewModel(repository, userId);
+                return (T) new LevelInfoViewModel(repository, userRepository, userId);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

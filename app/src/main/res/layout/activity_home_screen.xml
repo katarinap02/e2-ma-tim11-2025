@@ -26,10 +26,17 @@
             android:layout_marginBottom="32dp"/>
 
         <Button
+            android:id="@+id/btnAllProfiles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/svi_profili"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
             android:id="@+id/btnProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/profil"
+            android:text="@string/mojProfil"
             android:layout_marginBottom="16dp"/>
 
         <Button

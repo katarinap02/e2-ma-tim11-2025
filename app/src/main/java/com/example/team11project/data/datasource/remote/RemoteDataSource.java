@@ -58,6 +58,16 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void setTaskWithId(Task task, String taskId, final DataSourceCallback<String> callback) {
+        // Koristi set() umesto add() da zadržite specifičan ID
+        db.collection(USERS_COLLECTION).document(task.getUserId())
+                .collection(TASKS_COLLECTION)
+                .document(taskId) // Koristi specifičan ID
+                .set(task)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(taskId))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
     public void getAllTasks(String userId, final DataSourceCallback<List<Task>> callback) {
         getTasksCollection(userId)
                 .get()
@@ -303,22 +313,40 @@ public class RemoteDataSource {
 
     }
 
-    public void addTaskInstance(TaskInstance instance, DataSourceCallback<String> callback) {
+    public void addTaskInstance(TaskInstance instance, final DataSourceCallback<String> callback) {
+        if (instance.getUserId() == null) {
+            callback.onFailure(new Exception("UserID je null."));
+            return;
+        }
+
         db.collection(USERS_COLLECTION).document(instance.getUserId())
                 .collection(INSTANCES_COLLECTION)
-                .document(instance.getId())
-                .set(instance)
-                .addOnSuccessListener(aVoid -> callback.onSuccess(instance.getId()))
+                .add(instance)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
-    public void getAllTaskInstances(String userId, String originalTaskId, DataSourceCallback<List<TaskInstance>> callback) {
+    public void getAllTaskInstances(String userId, String originalTaskId, final DataSourceCallback<List<TaskInstance>> callback) {
+        if (userId == null || originalTaskId == null) {
+            callback.onFailure(new Exception("UserID ili OriginalTaskID je null."));
+            return;
+        }
         db.collection(USERS_COLLECTION).document(userId)
                 .collection(INSTANCES_COLLECTION)
                 .whereEqualTo("originalTaskId", originalTaskId)
                 .get()
                 .addOnCompleteListener(task -> {
-                    // ... logika za parsiranje rezultata u List<TaskInstance> ...
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        List<TaskInstance> instances = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            TaskInstance instance = document.toObject(TaskInstance.class);
+                            instance.setId(document.getId());
+                            instances.add(instance);
+                        }
+                        callback.onSuccess(instances);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
                 });
     }
     public void addEquipmentToCollection(Equipment equipment, final DataSourceCallback<String> callback) {
@@ -370,6 +398,73 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+
+
+    public void updateTaskInstance(TaskInstance instance, final DataSourceCallback<Void> callback) {
+        if (instance.getUserId() == null || instance.getId() == null) {
+            callback.onFailure(new Exception("UserID ili InstanceID je null."));
+            return;
+        }
+        db.collection(USERS_COLLECTION).document(instance.getUserId())
+                .collection(INSTANCES_COLLECTION)
+                .document(instance.getId())
+                .set(instance, SetOptions.merge()) // Koristi merge da ne prebrišeš polja ako ih ne šalješ sve
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void deleteTaskInstance(String instanceId, String userId, final DataSourceCallback<Void> callback) {
+        if (userId == null || instanceId == null) {
+            callback.onFailure(new Exception("UserID ili InstanceID je null."));
+            return;
+        }
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(INSTANCES_COLLECTION)
+                .document(instanceId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    private CollectionReference getTaskInstanceCollection(String userId) {
+        return db.collection(USERS_COLLECTION).document(userId).collection(INSTANCES_COLLECTION);
+    }
+
+    public void getAllUsers(final DataSourceCallback<List<User>> callback) {
+        db.collection(USERS_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<User> users = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            User u = document.toObject(User.class);
+                            u.setId(document.getId()); // Ručno postavljamo ID
+                            users.add(u);
+                        }
+                        callback.onSuccess(users);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updatePassword(String userId, String newPassword, final DataSourceCallback<Void> callback) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users")
+                .document(userId)
+                .update("password", newPassword)
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) {
+                        callback.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) {
+                        callback.onFailure(e);
+                    }
+                });
+    }
 
 
 }

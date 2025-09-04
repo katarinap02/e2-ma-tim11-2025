@@ -4,6 +4,7 @@ import java.util.Date;
 
 public class Task {
     private String id;
+
     private String title;
     private String description;
     private String categoryId;
@@ -39,6 +40,24 @@ public class Task {
         this.description = description;
         this.title = title;
         this.id = id;
+    }
+
+    public Task(Task other) {
+        this.id = other.id;
+        this.userId = other.userId;
+        this.title = other.title;
+        this.description = other.description;
+        this.categoryId = other.categoryId;
+        this.difficulty = other.difficulty;
+        this.importance = other.importance;
+        this.status = other.status;
+        this.executionTime = other.executionTime != null ? new Date(other.executionTime.getTime()) : null;
+        this.completionDate = other.completionDate != null ? new Date(other.completionDate.getTime()) : null;
+        this.isRecurring = other.isRecurring;
+        this.recurrenceInterval = other.recurrenceInterval;
+        this.recurrenceUnit = other.recurrenceUnit;
+        this.recurrenceStartDate = other.recurrenceStartDate != null ? new Date(other.recurrenceStartDate.getTime()) : null;
+        this.recurrenceEndDate = other.recurrenceEndDate != null ? new Date(other.recurrenceEndDate.getTime()) : null;
     }
 
     public String getUserId() {
@@ -160,5 +179,6 @@ public class Task {
     public void setCompletionDate(Date completionDate) {
         this.completionDate = completionDate;
     }
+
 
 }

@@ -10,24 +10,36 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.data.repository.CategoryRepositoryImpl;
 import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
+import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
+import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.repository.CategoryRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
+import com.example.team11project.domain.repository.UserRepository;
+import com.example.team11project.domain.usecase.TaskEditUseCase;
 import com.example.team11project.domain.usecase.TaskUseCase;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskViewModel extends ViewModel{
     private final TaskRepository taskRepository;
     private final CategoryRepository categoryRepository;
 
     private final TaskUseCase taskUseCase;
+
+    private final TaskInstanceRepository taskInstanceRepository;
 
     private final MutableLiveData<List<Task>> _tasks = new MutableLiveData<>();
     public final LiveData<List<Task>> tasks = _tasks;
@@ -39,6 +51,10 @@ public class TaskViewModel extends ViewModel{
 
     private final MutableLiveData<Category> _selectedTaskCategory = new MutableLiveData<>();
     public final LiveData<Category> selectedTaskCategory = _selectedTaskCategory;
+
+    // Za sve instance (izuzetke) vezane za taj zadatak
+    private final MutableLiveData<List<TaskInstance>> _selectedTaskInstances = new MutableLiveData<>();
+    public final LiveData<List<TaskInstance>> selectedTaskInstances = _selectedTaskInstances;
 
     private final MutableLiveData<String> _error = new MutableLiveData<>();
     public final LiveData<String> error = _error;
@@ -61,18 +77,30 @@ public class TaskViewModel extends ViewModel{
     private final MutableLiveData<Integer> _taskCompletedXp = new MutableLiveData<>();
     public final LiveData<Integer> taskCompletedXp = _taskCompletedXp;
 
-    public TaskViewModel(TaskRepository taskRepository, CategoryRepository categoryRepository, TaskUseCase taskUseCase) {
+    // --- NOVI LIVE DATA ZA MAPE INSTANCI ---
+    private final MutableLiveData<Map<String, List<TaskInstance>>> _instancesMap = new MutableLiveData<>();
+    public final LiveData<Map<String, List<TaskInstance>>> instancesMap = _instancesMap;
+
+    private final MutableLiveData<Boolean> _statusChangeCompleted = new MutableLiveData<>();
+    public final LiveData<Boolean> statusChangeCompleted = _statusChangeCompleted;
+
+    private final MutableLiveData<Boolean> _taskCompleteSuccess = new MutableLiveData<>();
+    public final LiveData<Boolean> taskCompleteSuccess = _taskCompleteSuccess;
+
+    public TaskViewModel(TaskRepository taskRepository, CategoryRepository categoryRepository, TaskUseCase taskUseCase, TaskInstanceRepository taskInstanceRepository) {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
         this.taskUseCase = taskUseCase;
+        this.taskInstanceRepository = taskInstanceRepository;
     }
 
-    public void loadTasks(String userId) {
-        taskRepository.getTasks(userId, new RepositoryCallback<List<Task>>() { // PROVERI DA LI JE getTasksForUser
+    public void loadTasksAndInstances(String userId) {
+        _isLoading.postValue(true);
+        taskRepository.getTasks(userId, new RepositoryCallback<List<Task>>() {
             @Override
             public void onSuccess(List<Task> result) {
                 _tasks.postValue(result);
-                _isLoading.postValue(false);
+                fetchInstancesForTasks(result, userId);
             }
             @Override
             public void onFailure(Exception e) {
@@ -80,6 +108,49 @@ public class TaskViewModel extends ViewModel{
                 _isLoading.postValue(false);
             }
         });
+    }
+
+    // Pomoćna metoda za povlačenje instanci
+    private void fetchInstancesForTasks(List<Task> tasks, String userId) {
+        Map<String, List<TaskInstance>> finalMap = new HashMap<>();
+        AtomicInteger tasksProcessed = new AtomicInteger(0);
+        int recurringTasksCount = 0;
+
+        // Izbroj koliko ponavljajućih zadataka uopšte imamo
+        for (Task t : tasks) if (t.isRecurring()) recurringTasksCount++;
+
+        if (recurringTasksCount == 0) {
+            // Ako nema ponavljajućih, odmah završi i ugasi loading
+            _instancesMap.postValue(finalMap); // Pošalji praznu mapu
+            _isLoading.postValue(false);
+            return;
+        }
+
+        // Za svaki ponavljajući zadatak, dohvati njegove instance
+        for (Task task : tasks) {
+            if (task.isRecurring()) {
+                int finalRecurringTasksCount = recurringTasksCount;
+                taskInstanceRepository.getTaskInstancesForTask(userId, task.getId(), new RepositoryCallback<List<TaskInstance>>() {
+                    @Override
+                    public void onSuccess(List<TaskInstance> instances) {
+                        finalMap.put(task.getId(), instances);
+                        // Proveri da li smo završili sa svim zadacima
+                        if (tasksProcessed.incrementAndGet() == finalRecurringTasksCount) {
+                            _instancesMap.postValue(finalMap);
+                            _isLoading.postValue(false);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        if (tasksProcessed.incrementAndGet() == finalRecurringTasksCount) {
+                            _instancesMap.postValue(finalMap);
+                            _isLoading.postValue(false);
+                        }
+                    }
+                });
+            }
+        }
     }
 
     public void loadCategories(String userId) {
@@ -129,7 +200,22 @@ public class TaskViewModel extends ViewModel{
                         @Override
                         public void onSuccess(Category category) {
                             _selectedTaskCategory.postValue(category);
-                            _isLoading.postValue(false);
+                            // sada dobavljamo i instance posle kategorije
+                            if (task.isRecurring()) {
+                                taskInstanceRepository.getTaskInstancesForTask(userId, taskId, new RepositoryCallback<List<TaskInstance>>() {
+                                    @Override public void onSuccess(List<TaskInstance> instances) {
+                                        _selectedTaskInstances.postValue(instances);
+                                        _isLoading.postValue(false);
+                                    }
+                                    @Override public void onFailure(Exception e) {
+                                        _selectedTaskInstances.postValue(new ArrayList<>()); // Pošalji praznu listu
+                                        _isLoading.postValue(false);
+                                    }
+                                });
+                            } else {
+                                _selectedTaskInstances.postValue(new ArrayList<>()); // Jednokratni nema instance
+                                _isLoading.postValue(false);
+                            }
                         }
                         @Override
                         public void onFailure(Exception e) {
@@ -151,115 +237,180 @@ public class TaskViewModel extends ViewModel{
     }
 
     // Poziva UseCase za završavanje zadatka
-    public void completeTask(Task task, String userId) {
+    public void completeTask(Task task, String userId, Date instanceDate) {
         _isSaving.setValue(true);
-        taskUseCase.completeTask(task, userId, new RepositoryCallback<Integer>() {
+        Task optimisticTask = new Task(task);
+        optimisticTask.setStatus(TaskStatus.COMPLETED);
+        optimisticTask.setCompletionDate(new Date());
+
+        _selectedTask.postValue(optimisticTask);
+
+        List<Task> currentTasks = _tasks.getValue();
+        if (currentTasks != null) {
+            List<Task> updatedTasksList = new ArrayList<>(currentTasks);
+            for (int i = 0; i < updatedTasksList.size(); i++) {
+                if (updatedTasksList.get(i).getId().equals(task.getId())) {
+                    updatedTasksList.set(i, optimisticTask);
+                    break;
+                }
+            }
+            _tasks.postValue(updatedTasksList);
+        }
+
+        // 4. Asinhrono izvrši operaciju u bazi
+        taskUseCase.completeTask(task, userId, instanceDate, new RepositoryCallback<Integer>() {
             @Override
             public void onSuccess(Integer earnedXp) {
                 _isSaving.postValue(false);
                 _taskCompletedXp.postValue(earnedXp);
+                _taskCompleteSuccess.postValue(true);
 
+                // Task je već ažuriran optimistički, samo potvrdi da je sve OK
+                // Možeš dodati refresh instance-a ako je potrebno
+                if (task.isRecurring()) {
+                    taskInstanceRepository.getTaskInstancesForTask(userId, task.getId(), new RepositoryCallback<List<TaskInstance>>() {
+                        @Override
+                        public void onSuccess(List<TaskInstance> instances) {
+                            _selectedTaskInstances.postValue(instances);
+                        }
+                        @Override
+                        public void onFailure(Exception e) {
+                            // Ignoriši grešku za instance
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                _isSaving.postValue(false);
+                _error.postValue(e.getMessage());
+                _taskCompleteSuccess.postValue(false);
+
+                // ROLLBACK: Vrati originalnu vrednost ako je operacija neuspešna
                 _selectedTask.postValue(task);
 
+                // Vrati i glavnu listu
                 List<Task> currentTasks = _tasks.getValue();
                 if (currentTasks != null) {
-                    for (int i = 0; i < currentTasks.size(); i++) {
-                        if (currentTasks.get(i).getId().equals(task.getId())) {
-                            currentTasks.set(i, task);
+                    List<Task> revertedTasksList = new ArrayList<>(currentTasks);
+                    for (int i = 0; i < revertedTasksList.size(); i++) {
+                        if (revertedTasksList.get(i).getId().equals(task.getId())) {
+                            revertedTasksList.set(i, task);
                             break;
                         }
                     }
-                    _tasks.postValue(currentTasks);
+                    _tasks.postValue(revertedTasksList);
                 }
             }
+        });
+    }
+
+
+    //promene statusa za taskove, uslove dodajemo kasnije
+    public void changeTaskStatus(Task task, TaskStatus newStatus, String userId, Date instanceDate) {
+        // 1. ODMAH ažuriraj UI optimistički
+        Task optimisticTask = new Task(task);
+        optimisticTask.setStatus(newStatus);
+        _selectedTask.postValue(optimisticTask);
+
+        // 2. Ažuriraj i glavnu listu zadataka
+        List<Task> currentTasks = _tasks.getValue();
+        if (currentTasks != null) {
+            List<Task> updatedTasksList = new ArrayList<>(currentTasks);
+            for (int i = 0; i < updatedTasksList.size(); i++) {
+                if (updatedTasksList.get(i).getId().equals(task.getId())) {
+                    updatedTasksList.set(i, optimisticTask);
+                    break;
+                }
+            }
+            _tasks.postValue(updatedTasksList);
+        }
+
+        // 3. Asinhrono pošalji promenu u bazu
+        RepositoryCallback<Void> updateCallback = new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // Potvrdi da je operacija uspešna
+                _statusChangeCompleted.postValue(true);
+
+                // Refresh instance-e ako je ponavljajući zadatak
+                if (task.isRecurring()) {
+                    taskInstanceRepository.getTaskInstancesForTask(userId, task.getId(), new RepositoryCallback<List<TaskInstance>>() {
+                        @Override
+                        public void onSuccess(List<TaskInstance> instances) {
+                            _selectedTaskInstances.postValue(instances);
+                        }
+                        @Override
+                        public void onFailure(Exception e) {
+                            // Ignoriši grešku za instance
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // ROLLBACK: Vrati originalnu vrednost ako je operacija neuspešna
+                _selectedTask.postValue(task);
+
+                // Vrati i glavnu listu
+                List<Task> currentTasks = _tasks.getValue();
+                if (currentTasks != null) {
+                    List<Task> revertedTasksList = new ArrayList<>(currentTasks);
+                    for (int i = 0; i < revertedTasksList.size(); i++) {
+                        if (revertedTasksList.get(i).getId().equals(task.getId())) {
+                            revertedTasksList.set(i, task);
+                            break;
+                        }
+                    }
+                    _tasks.postValue(revertedTasksList);
+                }
+
+                _error.postValue(e.getMessage());
+                _statusChangeCompleted.postValue(false);
+            }
+        };
+
+        // Izvršavanje operacije u bazi
+        switch (newStatus) {
+            case DELETED:
+                taskRepository.deleteTask(task, updateCallback);
+                break;
+            case ACTIVE:
+                taskRepository.activateTask(task, updateCallback);
+                break;
+            case PAUSED:
+                taskRepository.pauseTask(task, updateCallback);
+                break;
+            case CANCELED:
+                taskUseCase.cancelTask(task, userId, instanceDate, updateCallback);
+                break;
+        }
+    }
+
+    public void editTask(Task originalTask, Task editedTask, String userId, Date instanceDate) {
+        _isSaving.setValue(true);
+
+        // Koristi TaskEditUseCase koji već imaš
+        TaskEditUseCase editUseCase = new TaskEditUseCase(taskRepository, taskInstanceRepository);
+
+        editUseCase.editTask(originalTask, editedTask, userId, instanceDate, new RepositoryCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> updatedTasks) {
+                _isSaving.postValue(false);
+                _taskSaveSuccess.postValue(true);
+
+                // Refresh task listu
+                loadTasksAndInstances(userId);
+            }
+
             @Override
             public void onFailure(Exception e) {
                 _error.postValue(e.getMessage());
                 _isSaving.postValue(false);
             }
         });
-    }
-
-    //promene statusa za taskove, uslove dodajemo kasnije
-    public void changeTaskStatus(Task task, TaskStatus newStatus, String userId) {
-
-
-        if(newStatus == TaskStatus.ACTIVE)
-        {
-            taskRepository.activateTask(task, new RepositoryCallback<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    List<Task> currentTasks = _tasks.getValue();
-                    if (currentTasks != null) {
-                        for (int i = 0; i < currentTasks.size(); i++) {
-                            if (currentTasks.get(i).getId().equals(task.getId())) {
-                                // Pronašli smo zadatak, ažurirajmo ga
-                                currentTasks.set(i, task);
-                                break;
-                            }
-                        }
-                        // Javi UI-ju da se lista promenila
-                        _tasks.postValue(currentTasks);
-                    }
-
-                    // Takođe, ažuriraj i selektovani zadatak, ako ga `TaskDetailActivity` posmatra
-                    _selectedTask.postValue(task);
-                }
-                @Override
-                public void onFailure(Exception e) {
-                    _error.postValue(e.getMessage());
-                }
-            });
-        }
-        else if(newStatus == TaskStatus.PAUSED)
-        {
-            taskRepository.pauseTask(task, new RepositoryCallback<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    List<Task> currentTasks = _tasks.getValue();
-                    if (currentTasks != null) {
-                        for (int i = 0; i < currentTasks.size(); i++) {
-                            if (currentTasks.get(i).getId().equals(task.getId())) {
-                                currentTasks.set(i, task);
-                                break;
-                            }
-                        }
-                        _tasks.postValue(currentTasks);
-                    }
-                    _selectedTask.postValue(task);
-                }
-                @Override
-                public void onFailure(Exception e) {
-                    _error.postValue(e.getMessage());
-                }
-            });
-        }
-        else if(newStatus == TaskStatus.CANCELED)
-        {
-            taskRepository.cancelTask(task, new RepositoryCallback<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    List<Task> currentTasks = _tasks.getValue();
-                    if (currentTasks != null) {
-                        for (int i = 0; i < currentTasks.size(); i++) {
-                            if (currentTasks.get(i).getId().equals(task.getId())) {
-                                currentTasks.set(i, task);
-                                break;
-                            }
-                        }
-                        _tasks.postValue(currentTasks);
-                    }
-                    _selectedTask.postValue(task);
-                }
-                @Override
-                public void onFailure(Exception e) {
-                    _error.postValue(e.getMessage());
-                }
-            });
-        }
-
-
-
     }
 
     public void loadInitialData(String userId) {
@@ -272,7 +423,7 @@ public class TaskViewModel extends ViewModel{
                 _categories.postValue(categoryResult);
                 _isLoadingCategory.postValue(false);
 
-                loadTasks(userId);
+                loadTasksAndInstances(userId);
             }
             @Override
             public void onFailure(Exception e) {
@@ -298,14 +449,16 @@ public class TaskViewModel extends ViewModel{
             if (modelClass.isAssignableFrom(TaskViewModel.class)) {
                 try {
                     TaskRepository taskRepo = new TaskRepositoryImpl(application);
-                    LevelInfoRepository levelRepo = new LevelInfoRepositoryImpl(application);
+                    UserRepository userRepo = new UserRepositoryImpl(application);
                     CategoryRepository catRepo = new CategoryRepositoryImpl(application);
-                    // Kreiramo i UseCase
-                    TaskUseCase completeUC = new TaskUseCase(taskRepo, levelRepo);
+                    TaskInstanceRepository instanceRepo = new TaskInstanceRepositoryImpl(application);
+                    LevelInfoRepository levelInfoRepository = new LevelInfoRepositoryImpl(application);
+                    TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository);
+
 
                     @SuppressWarnings("unchecked")
-                    T viewModel = (T) modelClass.getConstructor(TaskRepository.class, CategoryRepository.class, TaskUseCase.class)
-                            .newInstance(taskRepo, catRepo, completeUC);
+                    T viewModel = (T) modelClass.getConstructor(TaskRepository.class, CategoryRepository.class, TaskUseCase.class, TaskInstanceRepository.class)
+                            .newInstance(taskRepo, catRepo, completeUC, instanceRepo);
                     return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);
