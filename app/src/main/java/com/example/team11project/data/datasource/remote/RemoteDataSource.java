@@ -595,5 +595,29 @@ public class RemoteDataSource {
                 .addOnFailureListener(callback::onFailure);
     }
 
+    public void getBossByUserIdAndLevel(String userId, int level, final DataSourceCallback<Boss> callback) {
+        // Tražimo boss-a sa određenim level-om za korisnika
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSSES_COLLECTION)
+                .whereEqualTo("level", level)
+                .limit(1) // Očekujemo samo jedan boss po nivou
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        // Nema boss-a za ovaj nivo
+                        callback.onSuccess(null);
+                    } else {
+                        // Pronađen je boss
+                        DocumentSnapshot document = queryDocumentSnapshots.getDocuments().get(0);
+                        Boss boss = document.toObject(Boss.class);
+                        if (boss != null) {
+                            boss.setId(document.getId()); // Postavimo ID iz dokumenta
+                        }
+                        callback.onSuccess(boss);
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
 
 }

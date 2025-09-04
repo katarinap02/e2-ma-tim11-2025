@@ -8,6 +8,9 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.team11project.data.repository.BossBattleRepositoryImpl;
+import com.example.team11project.data.repository.BossRepositoryImpl;
+import com.example.team11project.data.repository.BossRewardRepositoryImpl;
 import com.example.team11project.data.repository.CategoryRepositoryImpl;
 import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
@@ -17,12 +20,16 @@ import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
+import com.example.team11project.domain.repository.BossBattleRepository;
+import com.example.team11project.domain.repository.BossRepository;
+import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.CategoryRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
+import com.example.team11project.domain.usecase.BossUseCase;
 import com.example.team11project.domain.usecase.TaskEditUseCase;
 import com.example.team11project.domain.usecase.TaskUseCase;
 
@@ -87,11 +94,16 @@ public class TaskViewModel extends ViewModel{
     private final MutableLiveData<Boolean> _taskCompleteSuccess = new MutableLiveData<>();
     public final LiveData<Boolean> taskCompleteSuccess = _taskCompleteSuccess;
 
-    public TaskViewModel(TaskRepository taskRepository, CategoryRepository categoryRepository, TaskUseCase taskUseCase, TaskInstanceRepository taskInstanceRepository) {
+    public TaskViewModel(TaskRepository taskRepository,
+                         CategoryRepository categoryRepository,
+                         TaskUseCase taskUseCase,
+                         TaskInstanceRepository taskInstanceRepository
+) {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
         this.taskUseCase = taskUseCase;
         this.taskInstanceRepository = taskInstanceRepository;
+
     }
 
     public void loadTasksAndInstances(String userId) {
@@ -453,11 +465,19 @@ public class TaskViewModel extends ViewModel{
                     CategoryRepository catRepo = new CategoryRepositoryImpl(application);
                     TaskInstanceRepository instanceRepo = new TaskInstanceRepositoryImpl(application);
                     LevelInfoRepository levelInfoRepository = new LevelInfoRepositoryImpl(application);
-                    TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository);
+                    BossRepository bossRepository = new BossRepositoryImpl(application);
+                    BossBattleRepository battleRepository = new BossBattleRepositoryImpl(application);
+                    BossRewardRepository rewardRepository = new BossRewardRepositoryImpl(application);
+                    BossUseCase bossUseCase = new BossUseCase(bossRepository,battleRepository,rewardRepository);
+                    TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository, bossUseCase);
 
 
                     @SuppressWarnings("unchecked")
-                    T viewModel = (T) modelClass.getConstructor(TaskRepository.class, CategoryRepository.class, TaskUseCase.class, TaskInstanceRepository.class)
+                    T viewModel = (T) modelClass.getConstructor(
+                                    TaskRepository.class,
+                                    CategoryRepository.class,
+                                    TaskUseCase.class,
+                                    TaskInstanceRepository.class)
                             .newInstance(taskRepo, catRepo, completeUC, instanceRepo);
                     return viewModel;
                 } catch (Exception e) {

@@ -30,42 +30,49 @@ public class LevelInfoRepositoryImpl implements LevelInfoRepository {
     }
 
     @Override
-    public void addXp(User user, int xpEarned, RepositoryCallback<Void> callback){
+    public void addXp(User user, int xpEarned, RepositoryCallback<LevelInfo> callback) {
         LevelInfo levelInfo = user.getLevelInfo();
         int newXp = levelInfo.getXp() + xpEarned;
         int level = levelInfo.getLevel();
         int xpForNextLevel = levelInfo.getXpForNextLevel();
         int pp = levelInfo.getPp();
 
-        while(newXp >= xpForNextLevel && level < 3){
+        while (newXp >= xpForNextLevel && level < 3) {
             level++;
 
-            if(level == 1){
+            if (level == 1) {
                 pp += 40;
-            }
-            else{
+            } else {
                 pp = pp + (pp * 3) / 4;
             }
-            xpForNextLevel = roundToNextHundered(xpForNextLevel * 2 + xpForNextLevel / 2);
+            xpForNextLevel = roundToNextHundred(xpForNextLevel * 2 + xpForNextLevel / 2);
 
-            switch(level){
-                case 1: levelInfo.setTitle(UserTitle.NAPREDNI); break;
-                case 2: levelInfo.setTitle(UserTitle.PROGRESOR); break;
-                case 3: levelInfo.setTitle(UserTitle.LEGENDICA); break;
+            switch (level) {
+                case 1:
+                    levelInfo.setTitle(UserTitle.NAPREDNI);
+                    break;
+                case 2:
+                    levelInfo.setTitle(UserTitle.PROGRESOR);
+                    break;
+                case 3:
+                    levelInfo.setTitle(UserTitle.LEGENDICA);
+                    break;
             }
         }
+
         levelInfo.setLevel(level);
         levelInfo.setXpForNextLevel(xpForNextLevel);
         levelInfo.setXp(newXp);
-        user.setLevelInfo(levelInfo);
         levelInfo.setPp(pp);
+        user.setLevelInfo(levelInfo);
 
+        // asinhrono čuvanje
         remoteDataSource.updateUser(user, new RemoteDataSource.DataSourceCallback<Void>() {
             @Override
             public void onSuccess(Void unused) {
                 databaseExecutor.execute(() -> {
-                  //  localDataSource.updateLevelInfo(levelInfo, user.getId());
-                    callback.onSuccess(null);
+                    // localDataSource.updateLevelInfo(levelInfo, user.getId());
+                    callback.onSuccess(levelInfo); // sada vraćaš LevelInfo
                 });
             }
 
@@ -76,8 +83,7 @@ public class LevelInfoRepositoryImpl implements LevelInfoRepository {
         });
     }
 
-    private int roundToNextHundered(int value){
+    private int roundToNextHundred(int value) {
         return ((value + 99) / 100) * 100;
     }
-
 }

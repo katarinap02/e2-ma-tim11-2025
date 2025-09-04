@@ -27,7 +27,6 @@ import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.Weapon;
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -993,6 +992,7 @@ public class LocalDataSource {
     private ContentValues bossToContentValues(Boss boss) {
         ContentValues values = new ContentValues();
         values.put(AppContract.BossEntry._ID, boss.getId());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID, boss.getUserId());
         values.put(AppContract.BossEntry.COLUMN_NAME_LEVEL, boss.getLevel());
         values.put(AppContract.BossEntry.COLUMN_NAME_MAX_HP, boss.getMaxHP());
         values.put(AppContract.BossEntry.COLUMN_NAME_CURRENT_HP, boss.getCurrentHP());
@@ -1004,6 +1004,7 @@ public class LocalDataSource {
     private Boss cursorToBoss(Cursor cursor) {
         Boss boss = new Boss();
         boss.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossEntry._ID)));
+        boss.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID)));
         boss.setLevel(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_LEVEL)));
         boss.setMaxHP(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_MAX_HP)));
         boss.setCurrentHP(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_CURRENT_HP)));
@@ -1206,6 +1207,31 @@ public class LocalDataSource {
         }
 
         return deletedRows;
+    }
+
+    public Boss getBossByUserIdAndLevel(String userId, int level) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossEntry.COLUMN_NAME_LEVEL + " = ?";
+        String[] selectionArgs = {userId, String.valueOf(level)};
+
+        Cursor cursor = db.query(
+                AppContract.BossEntry.TABLE_NAME,
+                null, // sve kolone
+                selection,
+                selectionArgs,
+                null, null, null, "1" // limit 1
+        );
+
+        Boss boss = null;
+        if (cursor.moveToFirst()) {
+            boss = cursorToBoss(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return boss;
     }
 
 

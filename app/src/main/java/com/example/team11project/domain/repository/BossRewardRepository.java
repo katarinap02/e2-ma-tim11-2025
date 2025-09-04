@@ -8,5 +8,5 @@ public interface BossRewardRepository {
     void addReward(BossReward category, RepositoryCallback<Void> callback);
     void getRewards(String userId, RepositoryCallback<List<BossReward>> callback);
 
-    void updateReward(BossReward category, RepositoryCallback<Void> callback);
+    void updateReward(BossReward reward, RepositoryCallback<Void> callback);
 }

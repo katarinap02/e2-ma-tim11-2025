@@ -8,5 +8,5 @@ public interface BossBattleRepository {
     void addBattle(BossBattle category, RepositoryCallback<Void> callback);
     void getBattles(String userId, RepositoryCallback<List<BossBattle>> callback);
 
-    void updateBattle(BossBattle category, RepositoryCallback<Void> callback);
+    void updateBattle(BossBattle battle, RepositoryCallback<Void> callback);
 }

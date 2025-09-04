@@ -31,6 +31,15 @@ public class BossRepositoryImpl implements BossRepository {
             callback.onFailure(new Exception("Level bosa mora biti veći od 0."));
             return;
         }
+        if (boss.getId() == null || boss.getId().isEmpty()) {
+            boss.setId(java.util.UUID.randomUUID().toString());
+        }
+
+        // Proverite userId
+        if (boss.getUserId() == null) {
+            callback.onFailure(new Exception("Boss must have userId"));
+            return;
+        }
 
         databaseExecutor.execute(() -> {
             remoteDataSource.addBoss(boss, new RemoteDataSource.DataSourceCallback<String>() {
@@ -97,6 +106,42 @@ public class BossRepositoryImpl implements BossRepository {
                 @Override
                 public void onFailure(Exception e) {
                     callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void getBossByUserIdAndLevel(String userId, int level, RepositoryCallback<Boss> callback) {
+        databaseExecutor.execute(() -> {
+            // Prvo pokušamo iz remote data source-a
+            remoteDataSource.getBossByUserIdAndLevel(userId, level, new RemoteDataSource.DataSourceCallback<Boss>() {
+                @Override
+                public void onSuccess(Boss boss) {
+                    if (boss != null) {
+                        databaseExecutor.execute(() -> {
+                            callback.onSuccess(boss);
+                        });
+                    } else {
+                        databaseExecutor.execute(() -> {
+                            Boss localBoss = localDataSource.getBossByUserIdAndLevel(userId, level);
+                            callback.onSuccess(localBoss);
+                        });
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    databaseExecutor.execute(() -> {
+                        Boss localBoss = localDataSource.getBossByUserIdAndLevel(userId, level);
+                        if (localBoss != null) {
+                            // Pronađen u lokalnoj bazi
+                            callback.onSuccess(localBoss);
+                        } else {
+                            // Nije pronađen nigde
+                            callback.onFailure(e);
+                        }
+                    });
                 }
             });
         });

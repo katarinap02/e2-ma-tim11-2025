@@ -2,6 +2,8 @@ package com.example.team11project.domain.usecase;
 
 import android.util.Log;
 
+import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
@@ -25,12 +27,14 @@ public class TaskUseCase {
     private final UserRepository userRepository;
     private final LevelInfoRepository levelInfoRepository;
     private final TaskInstanceRepository taskInstanceRepository;
+    private final BossUseCase bossUseCase;
 
-    public TaskUseCase(TaskRepository taskRepository, UserRepository userRepository, TaskInstanceRepository taskInstanceRepository, LevelInfoRepository levelInfoRepository) {
+    public TaskUseCase(TaskRepository taskRepository, UserRepository userRepository, TaskInstanceRepository taskInstanceRepository, LevelInfoRepository levelInfoRepository, BossUseCase bossUseCase) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.taskInstanceRepository = taskInstanceRepository;
         this.levelInfoRepository = levelInfoRepository;
+        this.bossUseCase = bossUseCase;
     }
 
     public void completeTask(Task task, String userId, Date instanceDate, RepositoryCallback<Integer> finalCallback) {
@@ -180,10 +184,25 @@ public class TaskUseCase {
             userRepository.getUserById(userId, new RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User user) {
-                    levelInfoRepository.addXp(user, xpAmount, new RepositoryCallback<Void>() {
+                    levelInfoRepository.addXp(user, xpAmount, new RepositoryCallback<LevelInfo>() {
                         @Override
-                        public void onSuccess(Void unused) {
-                            finalCallback.onSuccess(xpAmount);
+                        public void onSuccess(LevelInfo levelInfo) {
+
+                            // 📌 Poziv servisa za pravljenje bossa sa userom i level info
+                           bossUseCase.createBoss(user, levelInfo, new RepositoryCallback<Boss>() {
+                                @Override
+                                public void onSuccess(Boss boss) {
+                                    // Boss uspešno kreiran → prosleđujemo dalje
+                                    finalCallback.onSuccess(xpAmount);
+
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    // Ako kreiranje bossa padne, javljamo fail
+                                    finalCallback.onFailure(e);
+                                }
+                            });
                         }
 
                         @Override
