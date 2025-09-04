@@ -12,7 +12,9 @@ public class User {
     private String avatar;
     private boolean isVerified;
     private LevelInfo levelInfo;
-    private List<Equipment> equipment;
+    private List<Weapon> weapons = new ArrayList<>();
+    private List<Potion> potions = new ArrayList<>();
+    private List<Clothing> clothing = new ArrayList<>();
     private int coins;
 
     public User(){}
@@ -25,7 +27,9 @@ public class User {
         this.avatar = avatar;
         this.isVerified = isVerified;
         levelInfo = new LevelInfo();
-        equipment = new ArrayList<>();
+        weapons = new ArrayList<>();
+        potions = new ArrayList<>();
+        clothing = new ArrayList<>();
         this.coins = coins;
     }
 
@@ -85,13 +89,7 @@ public class User {
         this.levelInfo = levelInfo;
     }
 
-    public List<Equipment> getEquipment() {
-        return equipment;
-    }
 
-    public void setEquipment(List<Equipment> equipment) {
-        this.equipment = equipment;
-    }
 
     public int getCoins() {
         return coins;
@@ -99,5 +97,29 @@ public class User {
 
     public void setCoins(int coins) {
         this.coins = coins;
+    }
+
+    public List<Weapon> getWeapons() {
+        return weapons;
+    }
+
+    public void setWeapons(List<Weapon> weapons) {
+        this.weapons = weapons;
+    }
+
+    public List<Potion> getPotions() {
+        return potions;
+    }
+
+    public void setPotions(List<Potion> potions) {
+        this.potions = potions;
+    }
+
+    public List<Clothing> getClothing() {
+        return clothing;
+    }
+
+    public void setClothing(List<Clothing> clothing) {
+        this.clothing = clothing;
     }
 }

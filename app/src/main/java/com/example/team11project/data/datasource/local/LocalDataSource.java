@@ -22,6 +22,7 @@ import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.Weapon;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -618,6 +619,20 @@ public class LocalDataSource {
         user.setAvatar(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_AVATAR)));
         user.setVerified(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_VERIFIED)) != 0);
 
+        user.setCoins(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_COINS)));
+
+        Gson gson = new Gson();
+
+        String weaponsJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_WEAPON));
+        user.setWeapons(gson.fromJson(weaponsJson, new TypeToken<List<Weapon>>(){}.getType()));
+
+        String clothingJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_CLOTHING));
+        user.setClothing(gson.fromJson(clothingJson, new TypeToken<List<Clothing>>(){}.getType()));
+
+        String potionsJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_POTION));
+        user.setPotions(gson.fromJson(potionsJson, new TypeToken<List<Potion>>(){}.getType()));
+
+
         return user;
     }
 
@@ -661,8 +676,17 @@ public class LocalDataSource {
         values.put(AppContract.UserEntry.COLUMN_VERIFIED, user.getVerified());
 
         Gson gson = new Gson();
-        String equipmentJson = gson.toJson(user.getEquipment());
-        values.put(AppContract.UserEntry.COLUMN_EQUIPMENT, equipmentJson);
+        List<Weapon> weapons = user.getWeapons();
+        if (weapons == null) weapons = new ArrayList<>();
+        values.put(AppContract.UserEntry.COLUMN_WEAPON, gson.toJson(weapons));
+
+        List<Potion> potions = user.getPotions();
+        if (potions == null) potions = new ArrayList<>();
+        values.put(AppContract.UserEntry.COLUMN_POTION, gson.toJson(potions));
+
+        List<Clothing> clothing = user.getClothing();
+        if (clothing == null) clothing = new ArrayList<>();
+        values.put(AppContract.UserEntry.COLUMN_CLOTHING, gson.toJson(clothing));
 
         values.put(AppContract.UserEntry.COLUMN_COINS, user.getCoins());
         return values;

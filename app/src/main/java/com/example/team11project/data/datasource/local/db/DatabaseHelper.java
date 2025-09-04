@@ -102,7 +102,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_PASSWORD + " TEXT NOT NULL," +
                     AppContract.UserEntry.COLUMN_AVATAR + " TEXT," +
                     AppContract.UserEntry.COLUMN_VERIFIED + " INTEGER NOT NULL DEFAULT 0, " + // 0 = false, 1 = true
-                    AppContract.UserEntry.COLUMN_EQUIPMENT + " TEXT, " +
+                    AppContract.UserEntry.COLUMN_WEAPON + " TEXT, " +
+                    AppContract.UserEntry.COLUMN_CLOTHING + " TEXT, " +
+                    AppContract.UserEntry.COLUMN_POTION + " TEXT, " +
                     AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0" +
                     ")";
 

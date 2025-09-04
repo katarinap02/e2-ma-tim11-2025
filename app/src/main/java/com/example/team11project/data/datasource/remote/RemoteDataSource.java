@@ -170,8 +170,16 @@ public class RemoteDataSource {
                                                     if (verificationTask.isSuccessful()) {
                                                         // Upis korisnika
                                                         user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0));
-                                                        if (user.getEquipment() == null) {
-                                                            user.setEquipment(new ArrayList<>());
+                                                        if (user.getClothing() == null) {
+                                                            user.setClothing(new ArrayList<>());
+                                                        }
+
+                                                        if (user.getWeapons() == null) {
+                                                            user.setWeapons(new ArrayList<>());
+                                                        }
+
+                                                        if (user.getPotions() == null) {
+                                                            user.setPotions(new ArrayList<>());
                                                         }
                                                         user.setCoins(0);
                                                         db.collection(USERS_COLLECTION)
@@ -266,8 +274,16 @@ public class RemoteDataSource {
             return;
         }
 
-        if (user.getEquipment() == null) {
-            user.setEquipment(new ArrayList<>());
+        if (user.getClothing() == null) {
+            user.setClothing(new ArrayList<>());
+        }
+
+        if (user.getWeapons() == null) {
+            user.setWeapons(new ArrayList<>());
+        }
+
+        if (user.getPotions() == null) {
+            user.setPotions(new ArrayList<>());
         }
 
         db.collection(USERS_COLLECTION)
