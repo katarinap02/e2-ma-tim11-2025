@@ -13,7 +13,10 @@ import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.BossReward;
 import com.example.team11project.domain.model.Category;
+import com.example.team11project.domain.model.Clothing;
+import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
@@ -21,6 +24,10 @@ import com.example.team11project.domain.model.TaskImportance;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.model.Weapon;
+import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -618,6 +625,20 @@ public class LocalDataSource {
         user.setAvatar(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_AVATAR)));
         user.setVerified(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_VERIFIED)) != 0);
 
+        user.setCoins(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_COINS)));
+
+        Gson gson = new Gson();
+
+        String weaponsJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_WEAPON));
+        user.setWeapons(gson.fromJson(weaponsJson, new TypeToken<List<Weapon>>(){}.getType()));
+
+        String clothingJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_CLOTHING));
+        user.setClothing(gson.fromJson(clothingJson, new TypeToken<List<Clothing>>(){}.getType()));
+
+        String potionsJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.UserEntry.COLUMN_POTION));
+        user.setPotions(gson.fromJson(potionsJson, new TypeToken<List<Potion>>(){}.getType()));
+
+
         return user;
     }
 
@@ -660,6 +681,20 @@ public class LocalDataSource {
         values.put(AppContract.UserEntry.COLUMN_AVATAR, user.getAvatar());
         values.put(AppContract.UserEntry.COLUMN_VERIFIED, user.getVerified());
 
+        Gson gson = new Gson();
+        List<Weapon> weapons = user.getWeapons();
+        if (weapons == null) weapons = new ArrayList<>();
+        values.put(AppContract.UserEntry.COLUMN_WEAPON, gson.toJson(weapons));
+
+        List<Potion> potions = user.getPotions();
+        if (potions == null) potions = new ArrayList<>();
+        values.put(AppContract.UserEntry.COLUMN_POTION, gson.toJson(potions));
+
+        List<Clothing> clothing = user.getClothing();
+        if (clothing == null) clothing = new ArrayList<>();
+        values.put(AppContract.UserEntry.COLUMN_CLOTHING, gson.toJson(clothing));
+
+        values.put(AppContract.UserEntry.COLUMN_COINS, user.getCoins());
         return values;
     }
 
@@ -795,6 +830,7 @@ public class LocalDataSource {
         return count;
     }
 
+
     //******************* DEO SA BOSSOM ***************///
     public long addBoss(Boss boss) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -808,6 +844,66 @@ public class LocalDataSource {
         db.close();
         return newRowId;
     }
+
+    private ContentValues equipmentToContentValues(Equipment equipment) {
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.EquipmentEntry._ID, equipment.getId());
+        values.put(AppContract.EquipmentEntry.COLUMN_NAME, equipment.getName());
+        values.put(AppContract.EquipmentEntry.COLUMN_TYPE, equipment.getType().name());
+        values.put(AppContract.EquipmentEntry.COLUMN_PRICE, equipment.getPrice());
+
+        if (equipment instanceof Potion) {
+            Potion potion = (Potion) equipment;
+            values.put(AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT, potion.getPowerBoostPercent());
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_PERMANENT, potion.isPermanent() ? 1 : 0);
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE, potion.isActive() ? 1 : 0);
+        } else {
+            values.putNull(AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_IS_PERMANENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE);
+        }
+
+        if (equipment instanceof Clothing) {
+            Clothing clothing = (Clothing) equipment;
+            values.put(AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT, clothing.getEffectPercent());
+            values.put(AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES, clothing.getRemainingBattles());
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE, clothing.isActive() ? 1 : 0);
+            values.put(AppContract.EquipmentEntry.COLUMN_CLOTHING_EFFECT_TYPE, clothing.getEffectType().name());
+        } else if (!(equipment instanceof Potion)) {
+            values.putNull(AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_CLOTHING_EFFECT_TYPE);
+        }
+
+        if (equipment instanceof Weapon) {
+            Weapon weapon = (Weapon) equipment;
+            values.put(AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT, weapon.getPermanentBoostPercent());
+            values.put(AppContract.EquipmentEntry.COLUMN_UPGRADE_CHANCE, weapon.getUpgradeChance());
+            values.put(AppContract.EquipmentEntry.COLUMN_WEAPON_EFFECT_TYPE, weapon.getEffectType().name());
+        } else {
+            values.putNull(AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_WEAPON_EFFECT_TYPE);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_UPGRADE_CHANCE);
+        }
+
+        return values;
+    }
+
+    public long addEquipment(Equipment equipment) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = equipmentToContentValues(equipment);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.EquipmentEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE
+        );
+        db.close();
+        return newRowId;
+    }
+
 
     public List<Boss> getAllBosses(String userId) {
         List<Boss> bosses = new ArrayList<>();
@@ -844,6 +940,24 @@ public class LocalDataSource {
 
         int count = db.update(
                 AppContract.BossEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return count;
+    }
+
+    public int updateEquipment(Equipment equipment) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = equipmentToContentValues(equipment);
+
+        String selection = AppContract.EquipmentEntry._ID + " = ?";
+        String[] selectionArgs = { equipment.getId() };
+
+        int count = db.update(
+                AppContract.EquipmentEntry.TABLE_NAME,
+
                 values,
                 selection,
                 selectionArgs
@@ -1116,7 +1230,5 @@ public class LocalDataSource {
         reward.setEquipmentId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID)));
         return reward;
     }
-
-
 
 }
