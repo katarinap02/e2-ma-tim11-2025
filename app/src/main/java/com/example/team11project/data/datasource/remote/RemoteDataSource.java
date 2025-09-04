@@ -4,10 +4,14 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.example.team11project.domain.model.Clothing;
+import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.UserTitle;
+import com.example.team11project.domain.model.Weapon;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -34,6 +38,7 @@ public class RemoteDataSource {
     private static final String TASKS_COLLECTION = "tasks";
     private static final String CATEGORIES_COLLECTION = "categories";
     private static final String INSTANCES_COLLECTION = "task_instances";
+    private static final String EQUIPMENT_COLLECTION = "equipment";
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -165,6 +170,18 @@ public class RemoteDataSource {
                                                     if (verificationTask.isSuccessful()) {
                                                         // Upis korisnika
                                                         user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0));
+                                                        if (user.getClothing() == null) {
+                                                            user.setClothing(new ArrayList<>());
+                                                        }
+
+                                                        if (user.getWeapons() == null) {
+                                                            user.setWeapons(new ArrayList<>());
+                                                        }
+
+                                                        if (user.getPotions() == null) {
+                                                            user.setPotions(new ArrayList<>());
+                                                        }
+                                                        user.setCoins(0);
                                                         db.collection(USERS_COLLECTION)
                                                                 .document(uid)
                                                                 .set(user)
@@ -257,6 +274,18 @@ public class RemoteDataSource {
             return;
         }
 
+        if (user.getClothing() == null) {
+            user.setClothing(new ArrayList<>());
+        }
+
+        if (user.getWeapons() == null) {
+            user.setWeapons(new ArrayList<>());
+        }
+
+        if (user.getPotions() == null) {
+            user.setPotions(new ArrayList<>());
+        }
+
         db.collection(USERS_COLLECTION)
                 .document(user.getId())
                 .set(user, SetOptions.merge())
@@ -336,6 +365,56 @@ public class RemoteDataSource {
                     }
                 });
     }
+    public void addEquipmentToCollection(Equipment equipment, final DataSourceCallback<String> callback) {
+        db.collection(EQUIPMENT_COLLECTION)
+                .add(equipment)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void updateEquipmentInCollection(Equipment equipment, final DataSourceCallback<Void> callback) {
+        db.collection(EQUIPMENT_COLLECTION).document(equipment.getId())
+                .set(equipment)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void deleteEquipmentFromCollection(String equipmentId, final DataSourceCallback<Void> callback) {
+        db.collection(EQUIPMENT_COLLECTION).document(equipmentId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void getAllEquipment(final DataSourceCallback<List<Equipment>> callback) {
+        db.collection(EQUIPMENT_COLLECTION)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Equipment> list = new ArrayList<>();
+
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        String type = doc.getString("type"); // polje u Firestore dokumentu
+                        Equipment equipment = null;
+
+                        if ("weapon".equalsIgnoreCase(type)) {
+                            equipment = doc.toObject(Weapon.class);
+                        } else if ("clothing".equalsIgnoreCase(type)) {
+                            equipment = doc.toObject(Clothing.class);
+                        } else if ("potion".equalsIgnoreCase(type)) {
+                            equipment = doc.toObject(Potion.class);
+                        }
+
+                        if (equipment != null) {
+                            list.add(equipment);
+                        }
+                    }
+
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+
 
     public void updateTaskInstance(TaskInstance instance, final DataSourceCallback<Void> callback) {
         if (instance.getUserId() == null || instance.getId() == null) {

@@ -1,5 +1,7 @@
 package com.example.team11project.domain.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 public class User {
@@ -10,10 +12,14 @@ public class User {
     private String avatar;
     private boolean isVerified;
     private LevelInfo levelInfo;
+    private List<Weapon> weapons = new ArrayList<>();
+    private List<Potion> potions = new ArrayList<>();
+    private List<Clothing> clothing = new ArrayList<>();
+    private int coins;
 
     public User(){}
 
-    public User(String id, String username, String email, String password, String avatar, boolean isVerified){
+    public User(String id, String username, String email, String password, String avatar, boolean isVerified, int coins){
         this.id = id;
         this.username = username;
         this.email = email;
@@ -21,6 +27,10 @@ public class User {
         this.avatar = avatar;
         this.isVerified = isVerified;
         levelInfo = new LevelInfo();
+        weapons = new ArrayList<>();
+        potions = new ArrayList<>();
+        clothing = new ArrayList<>();
+        this.coins = coins;
     }
 
     public String getId(){
@@ -77,5 +87,39 @@ public class User {
 
     public void setLevelInfo(LevelInfo levelInfo) {
         this.levelInfo = levelInfo;
+    }
+
+
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public void setCoins(int coins) {
+        this.coins = coins;
+    }
+
+    public List<Weapon> getWeapons() {
+        return weapons;
+    }
+
+    public void setWeapons(List<Weapon> weapons) {
+        this.weapons = weapons;
+    }
+
+    public List<Potion> getPotions() {
+        return potions;
+    }
+
+    public void setPotions(List<Potion> potions) {
+        this.potions = potions;
+    }
+
+    public List<Clothing> getClothing() {
+        return clothing;
+    }
+
+    public void setClothing(List<Clothing> clothing) {
+        this.clothing = clothing;
     }
 }

@@ -41,7 +41,10 @@ public final class AppContract {
         public static final String COLUMN_PASSWORD = "password";
         public static final String COLUMN_AVATAR = "avatar";
         public static final String COLUMN_VERIFIED = "isVerified";
-        //
+        public static final String COLUMN_CLOTHING = "clothing";
+        public static final String COLUMN_WEAPON = "weapon";
+        public static final String COLUMN_POTION = "potion";
+        public static final String COLUMN_COINS = "coins";
     }
 
 
@@ -68,6 +71,30 @@ public final class AppContract {
             public static final String COLUMN_NAME_COMPLETION_DATE = "completion_date";
         }
 
+
+    public static class EquipmentEntry implements BaseColumns {
+        public static final String TABLE_NAME = "equipment";
+
+        public static final String _ID = "id";
+        public static final String COLUMN_NAME = "name";
+        public static final String COLUMN_TYPE = "type"; // POTION, CLOTHING, WEAPON
+        public static final String COLUMN_PRICE = "price";
+        public static final String COLUMN_IS_ACTIVE = "is_active";
+
+        // Potion
+        public static final String COLUMN_POWER_BOOST_PERCENT = "power_boost_percent";
+        public static final String COLUMN_IS_PERMANENT = "is_permanent";
+
+        // Clothing
+        public static final String COLUMN_EFFECT_PERCENT = "effect_percent";
+        public static final String COLUMN_CLOTHING_EFFECT_TYPE = "clothing_effect_type";
+        public static final String COLUMN_REMAINING_BATTLES = "remaining_battles";
+
+        // Weapon
+        public static final String COLUMN_PERMANENT_BOOST_PERCENT = "permanent_boost_percent";
+        public static final String COLUMN_UPGRADE_CHANCE = "upgrade_chance";
+        public static final String COLUMN_WEAPON_EFFECT_TYPE = "weapon_effect_type";
+    }
 
 
 }
