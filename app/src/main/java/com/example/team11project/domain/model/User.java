@@ -1,5 +1,7 @@
 package com.example.team11project.domain.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 public class User {
@@ -10,10 +12,12 @@ public class User {
     private String avatar;
     private boolean isVerified;
     private LevelInfo levelInfo;
+    private List<Equipment> equipment;
+    private int coins;
 
     public User(){}
 
-    public User(String id, String username, String email, String password, String avatar, boolean isVerified){
+    public User(String id, String username, String email, String password, String avatar, boolean isVerified, int coins){
         this.id = id;
         this.username = username;
         this.email = email;
@@ -21,6 +25,8 @@ public class User {
         this.avatar = avatar;
         this.isVerified = isVerified;
         levelInfo = new LevelInfo();
+        equipment = new ArrayList<>();
+        this.coins = coins;
     }
 
     public String getId(){
@@ -77,5 +83,21 @@ public class User {
 
     public void setLevelInfo(LevelInfo levelInfo) {
         this.levelInfo = levelInfo;
+    }
+
+    public List<Equipment> getEquipment() {
+        return equipment;
+    }
+
+    public void setEquipment(List<Equipment> equipment) {
+        this.equipment = equipment;
+    }
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public void setCoins(int coins) {
+        this.coins = coins;
     }
 }

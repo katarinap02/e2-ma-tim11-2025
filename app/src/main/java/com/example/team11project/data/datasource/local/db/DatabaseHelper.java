@@ -91,7 +91,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_EMAIL + " TEXT NOT NULL," +
                     AppContract.UserEntry.COLUMN_PASSWORD + " TEXT NOT NULL," +
                     AppContract.UserEntry.COLUMN_AVATAR + " TEXT," +
-                    AppContract.UserEntry.COLUMN_VERIFIED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
+                    AppContract.UserEntry.COLUMN_VERIFIED + " INTEGER NOT NULL DEFAULT 0, " + // 0 = false, 1 = true
+                    AppContract.UserEntry.COLUMN_EQUIPMENT + " TEXT, " +
+                    AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0" +
                     ")";
 
     private static final String SQL_CREATE_LEVELINFO_TABLE =
@@ -120,33 +122,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.TaskEntry.TABLE_NAME + "(" + AppContract.TaskEntry._ID + "))";
 
 
-
-
     private static final String SQL_CREATE_EQUIPMENT_TABLE =
             "CREATE TABLE " + AppContract.EquipmentEntry.TABLE_NAME + " (" +
-                    AppContract.EquipmentEntry._ID + " TEXT PRIMARY KEY, " +
-                    AppContract.EquipmentEntry.COLUMN_USER_ID + " TEXT NOT NULL, " +
-                    AppContract.EquipmentEntry.COLUMN_NAME + " TEXT NOT NULL, " +
-                    AppContract.EquipmentEntry.COLUMN_TYPE + " TEXT NOT NULL, " +
-                    AppContract.EquipmentEntry.COLUMN_IS_ACTIVE + " INTEGER NOT NULL, " +
+                    AppContract.EquipmentEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.EquipmentEntry.COLUMN_NAME + " TEXT NOT NULL," +
+                    AppContract.EquipmentEntry.COLUMN_TYPE + " TEXT NOT NULL," +
+                    AppContract.EquipmentEntry.COLUMN_PRICE + " REAL NOT NULL," +
+                    AppContract.EquipmentEntry.COLUMN_IS_ACTIVE + " INTEGER," + // 0 = false, 1 = true
 
                     // Potion
-                    AppContract.EquipmentEntry.COLUMN_IS_ONE_TIME_USE + " INTEGER, " +
-                    AppContract.EquipmentEntry.COLUMN_IS_CONSUMED + " INTEGER, " +
-                    AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT + " INTEGER, " +
+                    AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT + " INTEGER," +
+                    AppContract.EquipmentEntry.COLUMN_IS_PERMANENT + " INTEGER," +
 
                     // Clothing
-                    AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT + " INTEGER, " +
-                    AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES + " INTEGER, " +
+                    AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT + " INTEGER," +
+                    AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES + " INTEGER," +
+                    AppContract.EquipmentEntry.COLUMN_CLOTHING_EFFECT_TYPE + " TEXT, " +
 
                     // Weapon
-                    AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT + " INTEGER, " +
-                    AppContract.EquipmentEntry.COLUMN_UPGRADE_PROBABILITY + " REAL, " +
-
-                    "FOREIGN KEY(" + AppContract.EquipmentEntry.COLUMN_USER_ID + ") REFERENCES " +
-                    AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
-                    ");";
-
+                    AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT + " INTEGER," +
+                    AppContract.EquipmentEntry.COLUMN_UPGRADE_CHANCE + " REAL," +
+                    AppContract.EquipmentEntry.COLUMN_WEAPON_EFFECT_TYPE + " TEXT" +
+                    ")";
 
 
 

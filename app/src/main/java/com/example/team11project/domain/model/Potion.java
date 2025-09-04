@@ -1,65 +1,40 @@
 package com.example.team11project.domain.model;
 
 public class Potion extends Equipment{
-    private boolean isOneTimeUse;
-    private double powerBoost;
-    private boolean isConsumed;
+    private boolean isPermanent;
+    private int powerBoostPercent;
 
+    public Potion() {}
 
-    public Potion(String id, String name, String userId, int powerBoost, boolean isOneTimeUse) {
-        this.id = id;
-        this.name = name;
-        this.type = EquipmentType.POTION;
-        this.isActive = false;
-        this.isConsumed = false;
-        this.powerBoost = powerBoost;
-        this.isOneTimeUse = isOneTimeUse;
-        this.userId = userId;
+    public Potion(String id, String name, double price, int powerBoostPercent, boolean isPermanent, boolean isActive) {
+        super(id, name, EquipmentType.POTION, price, isActive);
+        this.powerBoostPercent = powerBoostPercent;
+        this.isPermanent = isPermanent;
     }
 
     @Override
-    public void activate(){
-        if(isOneTimeUse) {
-            if(isOneTimeUse){
-                throw new IllegalStateException("Napitak je vec bio iskoriscen, i ne moze ponovo da se aktivira");
-            }
-            isActive = true;
-        } else{
-            isActive = true;
-        }
+    public void activate(){}
+    public boolean isPermanent() {
+        return isPermanent;
     }
 
-    @Override
-    public void deactivate(){
-        if(isOneTimeUse){
-            isActive = false;
-            isConsumed = true;
-        } else{
-            isActive = false;
-        }
+    public void setPermanent(boolean permanent) {
+        isPermanent = permanent;
     }
 
-    public boolean isOneTimeUse() {
-        return isOneTimeUse;
+    public int getPowerBoostPercent() {
+        return powerBoostPercent;
     }
 
-    public double getPowerBoost() {
-        return powerBoost;
+    public void setPowerBoostPercent(int powerBoostPercent) {
+        this.powerBoostPercent = powerBoostPercent;
     }
 
-    public boolean isConsumed() {
-        return isConsumed;
+    public boolean isActive() {
+        return isActive;
     }
 
-    public void setOneTimeUse(boolean oneTimeUse) {
-        isOneTimeUse = oneTimeUse;
-    }
-
-    public void setPowerBoost(double powerBoost) {
-        this.powerBoost = powerBoost;
-    }
-
-    public void setConsumed(boolean consumed) {
-        isConsumed = consumed;
+    public void setActive(boolean active) {
+        isActive = active;
     }
 }

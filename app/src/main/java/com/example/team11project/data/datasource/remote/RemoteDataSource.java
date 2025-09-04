@@ -38,6 +38,7 @@ public class RemoteDataSource {
     private static final String TASKS_COLLECTION = "tasks";
     private static final String CATEGORIES_COLLECTION = "categories";
     private static final String INSTANCES_COLLECTION = "task_instances";
+    private static final String EQUIPMENT_COLLECTION = "equipment";
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -159,6 +160,10 @@ public class RemoteDataSource {
                                                     if (verificationTask.isSuccessful()) {
                                                         // Upis korisnika
                                                         user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0));
+                                                        if (user.getEquipment() == null) {
+                                                            user.setEquipment(new ArrayList<>());
+                                                        }
+                                                        user.setCoins(0);
                                                         db.collection(USERS_COLLECTION)
                                                                 .document(uid)
                                                                 .set(user)
@@ -251,6 +256,10 @@ public class RemoteDataSource {
             return;
         }
 
+        if (user.getEquipment() == null) {
+            user.setEquipment(new ArrayList<>());
+        }
+
         db.collection(USERS_COLLECTION)
                 .document(user.getId())
                 .set(user, SetOptions.merge())
@@ -312,114 +321,55 @@ public class RemoteDataSource {
                     // ... logika za parsiranje rezultata u List<TaskInstance> ...
                 });
     }
-
-    public void addEquipment(Equipment equipment, String userId, final DataSourceCallback<Void> callback) {
-        Map<String, Object> metadata = new HashMap<>();
-
-        if (equipment instanceof Potion) {
-            Potion potion = (Potion) equipment;
-            metadata.put("isOneTimeUse", potion.isOneTimeUse());
-            metadata.put("isConsumed", potion.isConsumed());
-            metadata.put("powerBoostPercent", potion.getPowerBoost());
-        } else if (equipment instanceof Clothing) {
-            Clothing clothing = (Clothing) equipment;
-            metadata.put("effectPercent", clothing.getEffectPercent());
-            metadata.put("remainingBattles", clothing.getRemainingBattles());
-        } else if (equipment instanceof Weapon) {
-            Weapon weapon = (Weapon) equipment;
-            metadata.put("permanentBoostPercent", weapon.getPermanentBoostPercent());
-            metadata.put("upgradeProbability", weapon.getUpgradeProbability());
-        }
-
-        Map<String, Object> docData = new HashMap<>();
-        docData.put("id", equipment.getId());
-        docData.put("userId", userId);
-        docData.put("name", equipment.getName());
-        docData.put("type", equipment.getType().name());
-        docData.put("isActive", equipment.isActive());
-        docData.put("metadata", metadata);
-
-        db.collection("equipment")
-                .document(equipment.getId())
-                .set(docData)
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                .addOnFailureListener(callback::onFailure);
+    public void addEquipmentToCollection(Equipment equipment, final DataSourceCallback<String> callback) {
+        db.collection(EQUIPMENT_COLLECTION)
+                .add(equipment)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
+                .addOnFailureListener(e -> callback.onFailure(e));
     }
 
-    public void updateEquipment(Equipment equipment, String userId, final DataSourceCallback<Void> callback) {
-        Map<String, Object> metadata = new HashMap<>();
-
-        if (equipment instanceof Potion) {
-            Potion potion = (Potion) equipment;
-            metadata.put("isOneTimeUse", potion.isOneTimeUse());
-            metadata.put("isConsumed", potion.isConsumed());
-            metadata.put("powerBoostPercent", potion.getPowerBoost());
-        } else if (equipment instanceof Clothing) {
-            Clothing clothing = (Clothing) equipment;
-            metadata.put("effectPercent", clothing.getEffectPercent());
-            metadata.put("remainingBattles", clothing.getRemainingBattles());
-        } else if (equipment instanceof Weapon) {
-            Weapon weapon = (Weapon) equipment;
-            metadata.put("permanentBoostPercent", weapon.getPermanentBoostPercent());
-            metadata.put("upgradeProbability", weapon.getUpgradeProbability());
-        }
-
-        Map<String, Object> docData = new HashMap<>();
-        docData.put("name", equipment.getName());
-        docData.put("type", equipment.getType().name());
-        docData.put("isActive", equipment.isActive());
-        docData.put("metadata", metadata);
-
-        db.collection("equipment")
-                .document(equipment.getId())
-                .update(docData)
+    public void updateEquipmentInCollection(Equipment equipment, final DataSourceCallback<Void> callback) {
+        db.collection(EQUIPMENT_COLLECTION).document(equipment.getId())
+                .set(equipment)
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                .addOnFailureListener(callback::onFailure);
+                .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void deleteEquipmentFromCollection(String equipmentId, final DataSourceCallback<Void> callback) {
+        db.collection(EQUIPMENT_COLLECTION).document(equipmentId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
 
-    public void getEquipmentForUser(String userId, final DataSourceCallback<List<Equipment>> callback) {
-        db.collection("equipment")
-                .whereEqualTo("userId", userId)
+    public void getAllEquipment(final DataSourceCallback<List<Equipment>> callback) {
+        db.collection(EQUIPMENT_COLLECTION)
                 .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    List<Equipment> equipments = new ArrayList<>();
-                    for (QueryDocumentSnapshot doc : querySnapshot) {
-                        String type = doc.getString("type");
-                        Map<String, Object> metadata = (Map<String, Object>) doc.get("metadata");
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Equipment> list = new ArrayList<>();
 
-                        switch (type) {
-                            case "POTION":
-                                equipments.add(new Potion(
-                                        doc.getString("id"),
-                                        doc.getString("name"),
-                                        doc.getString("userId"),
-                                        ((Long) metadata.get("powerBoostPercent")).intValue(),
-                                        (Boolean) metadata.get("isOneTimeUse")
-                                ));
-                                break;
-                            case "CLOTHING":
-                                equipments.add(new Clothing(
-                                        doc.getString("id"),
-                                        doc.getString("name"),
-                                        doc.getString("userId"),
-                                        ((Long) metadata.get("effectPercent")).intValue()
-                                ));
-                                break;
-                            case "WEAPON":
-                                equipments.add(new Weapon(
-                                        doc.getString("id"),
-                                        doc.getString("name"),
-                                        doc.getString("userId"),
-                                        ((Long) metadata.get("permanentBoostPercent")).intValue()
-                                ));
-                                break;
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        String type = doc.getString("type"); // polje u Firestore dokumentu
+                        Equipment equipment = null;
+
+                        if ("weapon".equalsIgnoreCase(type)) {
+                            equipment = doc.toObject(Weapon.class);
+                        } else if ("clothing".equalsIgnoreCase(type)) {
+                            equipment = doc.toObject(Clothing.class);
+                        } else if ("potion".equalsIgnoreCase(type)) {
+                            equipment = doc.toObject(Potion.class);
+                        }
+
+                        if (equipment != null) {
+                            list.add(equipment);
                         }
                     }
-                    callback.onSuccess(equipments);
+
+                    callback.onSuccess(list);
                 })
-                .addOnFailureListener(callback::onFailure);
+                .addOnFailureListener(e -> callback.onFailure(e));
     }
+
 
 
 }

@@ -2,26 +2,23 @@ package com.example.team11project.domain.model;
 
 public class Weapon extends Equipment{
     private int permanentBoostPercent;
-    private double upgradeProbability;
+    private double upgradeChance;
+    private WeaponEffectType effectType;
 
-    public Weapon(String id, String name, String userId, int permanentBoostPercent) {
-        this.id = id;
-        this.name = name;
-        this.type = EquipmentType.WEAPON;
-        this.isActive = true;
+    public Weapon() {}
+
+    public Weapon(String id, String name, double price, int permanentBoostPercent, double upgradeChance, boolean isActive, WeaponEffectType effectType) {
+        super(id, name, EquipmentType.WEAPON, price, isActive);
         this.permanentBoostPercent = permanentBoostPercent;
-        this.upgradeProbability = 0.0;
-        this.userId = userId;
+        this.upgradeChance = upgradeChance;
+        this.effectType = effectType;
     }
 
     @Override
-    public void activate() {
-        isActive = true;
-    }
+    public void activate(){}
 
-    @Override
-    public void deactivate() {
-        isActive = false;
+    public void upgrade() {
+        this.upgradeChance += 0.01;
     }
 
     public int getPermanentBoostPercent() {
@@ -32,11 +29,19 @@ public class Weapon extends Equipment{
         this.permanentBoostPercent = permanentBoostPercent;
     }
 
-    public double getUpgradeProbability() {
-        return upgradeProbability;
+    public double getUpgradeChance() {
+        return upgradeChance;
     }
 
-    public void setUpgradeProbability(double upgradeProbability) {
-        this.upgradeProbability = upgradeProbability;
+    public void setUpgradeChance(double upgradeChance) {
+        this.upgradeChance = upgradeChance;
+    }
+
+    public WeaponEffectType getEffectType() {
+        return effectType;
+    }
+
+    public void setEffectType(WeaponEffectType effectType) {
+        this.effectType = effectType;
     }
 }

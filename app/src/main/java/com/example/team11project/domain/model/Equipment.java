@@ -4,19 +4,19 @@ public abstract class Equipment {
     protected String id;
     protected String name;
     protected EquipmentType type;
-    protected int cost;
+    protected double price;
     protected boolean isActive;
-    protected String userId;
 
-    /*public Equipment(String name, EquipmentType type, int cost, boolean isActive){
+    public Equipment(){}
+
+    public Equipment(String id, String name, EquipmentType type, double price, boolean isActive) {
+        this.id = id;
         this.name = name;
         this.type = type;
-        this.cost = cost;
+        this.price = price;
         this.isActive = isActive;
     }
-*/
     public abstract void activate();
-    public abstract void deactivate();
 
     public String getName() {
         return name;
@@ -26,12 +26,8 @@ public abstract class Equipment {
         return type;
     }
 
-    public int getCost() {
-        return cost;
-    }
-
-    public boolean isActive() {
-        return isActive;
+    public double getPrice() {
+        return price;
     }
 
     public String getId() {
@@ -50,19 +46,15 @@ public abstract class Equipment {
         this.type = type;
     }
 
-    public void setCost(int cost) {
-        this.cost = cost;
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public boolean isActive() {
+        return isActive;
     }
 
     public void setActive(boolean active) {
         isActive = active;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
     }
 }

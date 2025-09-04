@@ -2,37 +2,21 @@ package com.example.team11project.domain.model;
 
 public class Clothing extends Equipment{
     private int effectPercent;
+    private ChlothingEffectType effectType;
     private int remainingBattles;
 
-    public Clothing(String id, String name, String userId, int effectPercent) {
-        this.id = id;
-        this.name = name;
-        this.type = EquipmentType.CLOTHING;
-        this.isActive = false;
+    public Clothing(){}
+    public Clothing(String id, String name, double price, int effectPercent, boolean isActive, ChlothingEffectType effectType) {
+        super(id, name, EquipmentType.WEAPON, price, isActive);
         this.remainingBattles = 0;
         this.effectPercent = effectPercent;
-        this.userId = userId;
+        this.effectType = effectType;
     }
 
     @Override
-    public void activate() {
-        if(!isActive && remainingBattles > 0){
-            isActive = true;
-        }
-    }
-
-    @Override
-    public void deactivate() {
-        isActive = false;
-    }
-
-    public void onBossFightEnd() {
-        if (isActive) {
-            remainingBattles--;
-            if (remainingBattles <= 0) {
-                deactivate();
-            }
-        }
+    public void activate(){
+        this.isActive = true;
+        this.remainingBattles = 2;
     }
 
     public int getEffectPercent() {
@@ -49,5 +33,13 @@ public class Clothing extends Equipment{
 
     public void setRemainingBattles(int remainingBattles) {
         this.remainingBattles = remainingBattles;
+    }
+
+    public ChlothingEffectType getEffectType() {
+        return effectType;
+    }
+
+    public void setEffectType(ChlothingEffectType effectType) {
+        this.effectType = effectType;
     }
 }

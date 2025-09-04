@@ -20,6 +20,7 @@ import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.Weapon;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -645,6 +646,11 @@ public class LocalDataSource {
         values.put(AppContract.UserEntry.COLUMN_AVATAR, user.getAvatar());
         values.put(AppContract.UserEntry.COLUMN_VERIFIED, user.getVerified());
 
+        Gson gson = new Gson();
+        String equipmentJson = gson.toJson(user.getEquipment());
+        values.put(AppContract.UserEntry.COLUMN_EQUIPMENT, equipmentJson);
+
+        values.put(AppContract.UserEntry.COLUMN_COINS, user.getCoins());
         return values;
     }
 
@@ -724,39 +730,81 @@ public class LocalDataSource {
         return count;
     }
 
+
     private ContentValues equipmentToContentValues(Equipment equipment) {
         ContentValues values = new ContentValues();
 
         values.put(AppContract.EquipmentEntry._ID, equipment.getId());
-        values.put(AppContract.EquipmentEntry.COLUMN_USER_ID, equipment.getUserId());
         values.put(AppContract.EquipmentEntry.COLUMN_NAME, equipment.getName());
         values.put(AppContract.EquipmentEntry.COLUMN_TYPE, equipment.getType().name());
-        values.put(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE, equipment.isActive() ? 1 : 0);
+        values.put(AppContract.EquipmentEntry.COLUMN_PRICE, equipment.getPrice());
 
-        // Potion
         if (equipment instanceof Potion) {
             Potion potion = (Potion) equipment;
-            values.put(AppContract.EquipmentEntry.COLUMN_IS_ONE_TIME_USE, potion.isOneTimeUse() ? 1 : 0);
-            values.put(AppContract.EquipmentEntry.COLUMN_IS_CONSUMED, potion.isConsumed() ? 1 : 0);
-            values.put(AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT, potion.getPowerBoost());
+            values.put(AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT, potion.getPowerBoostPercent());
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_PERMANENT, potion.isPermanent() ? 1 : 0);
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE, potion.isActive() ? 1 : 0);
+        } else {
+            values.putNull(AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_IS_PERMANENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE);
         }
 
-        // Clothing
         if (equipment instanceof Clothing) {
             Clothing clothing = (Clothing) equipment;
             values.put(AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT, clothing.getEffectPercent());
             values.put(AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES, clothing.getRemainingBattles());
+            values.put(AppContract.EquipmentEntry.COLUMN_IS_ACTIVE, clothing.isActive() ? 1 : 0);
+            values.put(AppContract.EquipmentEntry.COLUMN_CLOTHING_EFFECT_TYPE, clothing.getEffectType().name());
+        } else if (!(equipment instanceof Potion)) {
+            values.putNull(AppContract.EquipmentEntry.COLUMN_EFFECT_PERCENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_REMAINING_BATTLES);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_CLOTHING_EFFECT_TYPE);
         }
 
-        // Weapon
         if (equipment instanceof Weapon) {
             Weapon weapon = (Weapon) equipment;
             values.put(AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT, weapon.getPermanentBoostPercent());
-            values.put(AppContract.EquipmentEntry.COLUMN_UPGRADE_PROBABILITY, weapon.getUpgradeProbability());
+            values.put(AppContract.EquipmentEntry.COLUMN_UPGRADE_CHANCE, weapon.getUpgradeChance());
+            values.put(AppContract.EquipmentEntry.COLUMN_WEAPON_EFFECT_TYPE, weapon.getEffectType().name());
+        } else {
+            values.putNull(AppContract.EquipmentEntry.COLUMN_PERMANENT_BOOST_PERCENT);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_WEAPON_EFFECT_TYPE);
+            values.putNull(AppContract.EquipmentEntry.COLUMN_UPGRADE_CHANCE);
         }
 
         return values;
     }
 
+    public long addEquipment(Equipment equipment) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = equipmentToContentValues(equipment);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.EquipmentEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE
+        );
+        db.close();
+        return newRowId;
+    }
+
+    public int updateEquipment(Equipment equipment) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = equipmentToContentValues(equipment);
+
+        String selection = AppContract.EquipmentEntry._ID + " = ?";
+        String[] selectionArgs = { equipment.getId() };
+
+        int count = db.update(
+                AppContract.EquipmentEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return count;
+    }
 
 }
