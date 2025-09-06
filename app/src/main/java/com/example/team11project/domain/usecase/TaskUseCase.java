@@ -43,6 +43,11 @@ public class TaskUseCase {
             return;
         }
 
+        if (!isTaskCompleteWithinPeriod(task, instanceDate)) {
+            finalCallback.onFailure(new Exception("Zadatak se može završiti samo u periodu od 3 dana unazad do danas."));
+            return;
+        }
+
         if (!task.isRecurring()) {
             // Regularni zadatak
             completeRegularTask(task, userId, finalCallback);
@@ -453,5 +458,49 @@ public class TaskUseCase {
 
         return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR) &&
                 c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR);
+    }
+
+    private boolean isTaskCompleteWithinPeriod(Task task, Date instanceDate) {
+        Calendar today = Calendar.getInstance();
+        today.add(Calendar.DAY_OF_YEAR, -3);
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        Date todayStart = today.getTime();
+
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        tomorrow.set(Calendar.HOUR_OF_DAY, 0);
+        tomorrow.set(Calendar.MINUTE, 0);
+        tomorrow.set(Calendar.SECOND, 0);
+        tomorrow.set(Calendar.MILLISECOND, 0);
+        Date tomorrowStart = tomorrow.getTime();
+
+        Date taskDate;
+
+        if (task.isRecurring()) {
+            // Za ponavljajuće zadatke koristimo instanceDate
+            taskDate = instanceDate;
+        } else {
+            // Za jednokratne zadatke koristimo executionTime
+            taskDate = task.getExecutionTime();
+        }
+
+        if (taskDate == null) {
+            return false; // Ako nema datum, ne može se završiti
+        }
+
+        // Normalizuj taskDate na početak dana
+        Calendar taskCal = Calendar.getInstance();
+        taskCal.setTime(taskDate);
+        taskCal.set(Calendar.HOUR_OF_DAY, 0);
+        taskCal.set(Calendar.MINUTE, 0);
+        taskCal.set(Calendar.SECOND, 0);
+        taskCal.set(Calendar.MILLISECOND, 0);
+        Date taskDateStart = taskCal.getTime();
+
+        // Proveri da li je taskDate u dozvoljenom periodu (3 dana unazad do danas)
+        return !taskDateStart.before(todayStart) && taskDateStart.before(tomorrowStart);
     }
 }
