@@ -78,5 +78,6 @@
     <string name="oprema">Oprema</string>
     <string name="qr_kod">📲 QR kod</string>
     <string name="promeni_lozinku">Promeni lozinku</string>
+    <string name="prodavnica">Prodavnica</string>
 
 </resources>

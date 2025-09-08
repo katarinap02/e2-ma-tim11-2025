@@ -365,26 +365,6 @@ public class RemoteDataSource {
                     }
                 });
     }
-    public void addEquipmentToCollection(Equipment equipment, final DataSourceCallback<String> callback) {
-        db.collection(EQUIPMENT_COLLECTION)
-                .add(equipment)
-                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
-                .addOnFailureListener(e -> callback.onFailure(e));
-    }
-
-    public void updateEquipmentInCollection(Equipment equipment, final DataSourceCallback<Void> callback) {
-        db.collection(EQUIPMENT_COLLECTION).document(equipment.getId())
-                .set(equipment)
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                .addOnFailureListener(e -> callback.onFailure(e));
-    }
-
-    public void deleteEquipmentFromCollection(String equipmentId, final DataSourceCallback<Void> callback) {
-        db.collection(EQUIPMENT_COLLECTION).document(equipmentId)
-                .delete()
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                .addOnFailureListener(e -> callback.onFailure(e));
-    }
 
     public void getAllEquipment(final DataSourceCallback<List<Equipment>> callback) {
         db.collection(EQUIPMENT_COLLECTION)
@@ -478,6 +458,75 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> {
                     if (callback != null) {
                         callback.onFailure(e);
+                    }
+                });
+    }
+
+    public void getPotionsByUserId(String userId, final DataSourceCallback<List<Potion>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            User user = document.toObject(User.class);
+                            if (user != null && user.getPotions() != null) {
+                                callback.onSuccess(user.getPotions());
+                            } else {
+                                callback.onSuccess(new ArrayList<>()); // nema napitaka
+                            }
+                        } else {
+                            callback.onSuccess(new ArrayList<>()); // user ne postoji
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void getClothingByUserId(String userId, final DataSourceCallback<List<Clothing>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            User user = document.toObject(User.class);
+                            if (user != null && user.getClothing() != null) {
+                                callback.onSuccess(user.getClothing());
+                            } else {
+                                callback.onSuccess(new ArrayList<>()); // nema odece
+                            }
+                        } else {
+                            callback.onSuccess(new ArrayList<>()); // user ne postoji
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void getWeaponByUserId(String userId, final DataSourceCallback<List<Weapon>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            User user = document.toObject(User.class);
+                            if (user != null && user.getWeapons() != null) {
+                                callback.onSuccess(user.getWeapons());
+                            } else {
+                                callback.onSuccess(new ArrayList<>()); // nema oruzja
+                            }
+                        } else {
+                            callback.onSuccess(new ArrayList<>()); // user ne postoji
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
                     }
                 });
     }

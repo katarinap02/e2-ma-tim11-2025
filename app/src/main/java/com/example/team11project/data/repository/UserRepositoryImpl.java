@@ -9,8 +9,11 @@ import android.util.Log;
 import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.Category;
+import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.LoginResult;
+import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.model.Weapon;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.UserRepository;
 
@@ -175,5 +178,121 @@ public class UserRepositoryImpl implements UserRepository {
             });
         });
     }
+
+    @Override
+    public void getPotionsByUserId(String userId, RepositoryCallback<List<Potion>> callback) {
+        databaseExecutor.execute(() -> {
+            List<Potion> localPotions = localDataSource.getPotionsByUserId(userId);
+            if (localPotions != null && !localPotions.isEmpty()) {
+                callback.onSuccess(localPotions);
+            }
+        });
+
+        remoteDataSource.getPotionsByUserId(userId, new RemoteDataSource.DataSourceCallback<List<Potion>>() {
+            @Override
+            public void onSuccess(List<Potion> remotePotions) {
+                databaseExecutor.execute(() -> {
+                    localDataSource.deletePotion(userId);
+                    for (Potion potion : remotePotions) {
+                        localDataSource.addPotion(userId, potion);
+                    }
+                    List<Potion> freshLocalPotions = localDataSource.getPotionsByUserId(userId);
+                    callback.onSuccess(freshLocalPotions);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                System.out.println("Sync potions failed: " + e.getMessage());
+                databaseExecutor.execute(() -> {
+                    List<Potion> fallbackPotions = localDataSource.getPotionsByUserId(userId);
+                    callback.onSuccess(fallbackPotions);
+                });
+            }
+        });
+    }
+
+
+    @Override
+    public void getWeaponsByUserId(String userId, RepositoryCallback<List<Weapon>> callback) {
+        databaseExecutor.execute(() -> {
+            List<Weapon> localWeapons = localDataSource.getWeaponsByUserId(userId);
+            if (localWeapons != null && !localWeapons.isEmpty()) {
+                callback.onSuccess(localWeapons);
+            }
+        });
+
+        remoteDataSource.getWeaponByUserId(userId, new RemoteDataSource.DataSourceCallback<List<Weapon>>() {
+            @Override
+            public void onSuccess(List<Weapon> remoteWeapons) {
+                databaseExecutor.execute(() -> {
+                    localDataSource.deleteWeapon(userId);
+                    for (Weapon weapon : remoteWeapons) {
+                        localDataSource.addWeapon(userId, weapon);
+                    }
+                    List<Weapon> freshLocalWeapons = localDataSource.getWeaponsByUserId(userId);
+                    callback.onSuccess(freshLocalWeapons);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                System.out.println("Sync weapons failed: " + e.getMessage());
+                databaseExecutor.execute(() -> {
+                    List<Weapon> fallbackWeapons = localDataSource.getWeaponsByUserId(userId);
+                    callback.onSuccess(fallbackWeapons);
+                });
+            }
+        });
+    }
+
+    @Override
+    public void getClothingByUserId(String userId, RepositoryCallback<List<Clothing>> callback) {
+        databaseExecutor.execute(() -> {
+            List<Clothing> localClothing = localDataSource.getClothingByUserId(userId);
+            if (localClothing != null && !localClothing.isEmpty()) {
+                callback.onSuccess(localClothing);
+            }
+        });
+
+        remoteDataSource.getClothingByUserId(userId, new RemoteDataSource.DataSourceCallback<List<Clothing>>() {
+            @Override
+            public void onSuccess(List<Clothing> remoteClothing) {
+                databaseExecutor.execute(() -> {
+                    localDataSource.deleteClothing(userId);
+                    for (Clothing clothing : remoteClothing) {
+                        localDataSource.addClothing(userId, clothing);
+                    }
+                    List<Clothing> freshLocalClothing = localDataSource.getClothingByUserId(userId);
+                    callback.onSuccess(freshLocalClothing);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                System.out.println("Sync clothing failed: " + e.getMessage());
+                databaseExecutor.execute(() -> {
+                    List<Clothing> fallbackClothing = localDataSource.getClothingByUserId(userId);
+                    callback.onSuccess(fallbackClothing);
+                });
+            }
+        });
+    }
+
+    @Override
+    public void updateUser(User user, RepositoryCallback<Void> callback) {
+        remoteDataSource.updateUser(user, new RemoteDataSource.DataSourceCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                callback.onSuccess(null);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
 
 }

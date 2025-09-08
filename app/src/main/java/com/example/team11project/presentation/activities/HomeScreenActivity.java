@@ -54,5 +54,11 @@ public class HomeScreenActivity extends BaseActivity {
             startActivity(intent);
         });
 
+        Button btnStore = findViewById(R.id.btnStore);
+        btnStore.setOnClickListener(v -> {
+            Intent intent = new Intent(this, StoreActivity.class);
+            startActivity(intent);
+        });
+
     }
 }

@@ -11,6 +11,7 @@ import com.example.team11project.data.datasource.local.db.DatabaseHelper;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
+import com.example.team11project.domain.model.EquipmentType;
 import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.RecurrenceUnit;
@@ -869,35 +870,165 @@ public class LocalDataSource {
         return values;
     }
 
-    public long addEquipment(Equipment equipment) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = equipmentToContentValues(equipment);
+    private User getUserById(String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        User user = null;
 
-        long newRowId = db.insertWithOnConflict(
-                AppContract.EquipmentEntry.TABLE_NAME,
-                null,
-                values,
-                SQLiteDatabase.CONFLICT_REPLACE
-        );
-        db.close();
-        return newRowId;
+        try {
+            String selection = AppContract.UserEntry._ID + " = ?";
+            String[] selectionArgs = { userId };
+
+            cursor = db.query(
+                    AppContract.UserEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                user = cursorToUser(cursor);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+
+        return user;
     }
 
-    public int updateEquipment(Equipment equipment) {
+
+    public List<Potion> getPotionsByUserId(String userId) {
+        User user = getUserById(userId);
+        if (user != null && user.getPotions() != null) {
+            return new ArrayList<>(user.getPotions());
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+    public void addPotion(String userId, Potion potion) {
+        User user = getUserById(userId);
+        if (user == null) return;
+
+        if (user.getPotions() == null) {
+            user.setPotions(new ArrayList<>());
+        }
+        user.getPotions().add(potion);
+
+        saveUser(user);
+    }
+
+    public void deletePotion(String userId) {
+        User user = getUserById(userId);
+        if (user == null || user.getPotions() == null) return;
+
+        List<Potion> updatedPotions = new ArrayList<>();
+        for (Potion p : user.getPotions()) {
+            updatedPotions.add(p);
+        }
+        user.setPotions(updatedPotions);
+
+        saveUser(user);
+    }
+
+    private void saveUser(User user) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = equipmentToContentValues(equipment);
 
-        String selection = AppContract.EquipmentEntry._ID + " = ?";
-        String[] selectionArgs = { equipment.getId() };
+        try {
+            ContentValues values = new ContentValues();
+            values.put(AppContract.UserEntry.COLUMN_USERNAME, user.getUsername());
+            values.put(AppContract.UserEntry.COLUMN_EMAIL, user.getEmail());
+            values.put(AppContract.UserEntry.COLUMN_PASSWORD, user.getPassword());
+            values.put(AppContract.UserEntry.COLUMN_AVATAR, user.getAvatar());
+            values.put(AppContract.UserEntry.COLUMN_VERIFIED, user.getVerified() ? 1 : 0);
+            values.put(AppContract.UserEntry.COLUMN_COINS, user.getCoins());
 
-        int count = db.update(
-                AppContract.EquipmentEntry.TABLE_NAME,
-                values,
-                selection,
-                selectionArgs
-        );
-        db.close();
-        return count;
+            Gson gson = new Gson();
+            values.put(AppContract.UserEntry.COLUMN_WEAPON, gson.toJson(user.getWeapons()));
+            values.put(AppContract.UserEntry.COLUMN_CLOTHING, gson.toJson(user.getClothing()));
+            values.put(AppContract.UserEntry.COLUMN_POTION, gson.toJson(user.getPotions()));
+
+            String whereClause = AppContract.UserEntry._ID + " = ?";
+            String[] whereArgs = { user.getId() };
+
+            db.update(AppContract.UserEntry.TABLE_NAME, values, whereClause, whereArgs);
+        } finally {
+            if (db != null && db.isOpen()) db.close();
+        }
+    }
+
+
+    public List<Weapon> getWeaponsByUserId(String userId) {
+        User user = getUserById(userId);
+        if (user != null && user.getWeapons() != null) {
+            return new ArrayList<>(user.getWeapons());
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+    public void addWeapon(String userId, Weapon weapon) {
+        User user = getUserById(userId);
+        if (user == null) return;
+
+        if (user.getWeapons() == null) {
+            user.setWeapons(new ArrayList<>());
+        }
+        user.getWeapons().add(weapon);
+
+        saveUser(user);
+    }
+
+    public void deleteWeapon(String userId) {
+        User user = getUserById(userId);
+        if (user == null || user.getWeapons() == null) return;
+
+        List<Weapon> updatedWeapons = new ArrayList<>();
+        for (Weapon w : user.getWeapons()) {
+            updatedWeapons.add(w);
+        }
+        user.setWeapons(updatedWeapons);
+
+        saveUser(user);
+    }
+
+
+    public List<Clothing> getClothingByUserId(String userId) {
+        User user = getUserById(userId);
+        if (user != null && user.getClothing() != null) {
+            return new ArrayList<>(user.getClothing());
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+    public void addClothing(String userId, Clothing clothing) {
+        User user = getUserById(userId);
+        if (user == null) return;
+
+        if (user.getClothing() == null) {
+            user.setClothing(new ArrayList<>());
+        }
+        user.getClothing().add(clothing);
+
+        saveUser(user);
+    }
+
+    public void deleteClothing(String userId) {
+        User user = getUserById(userId);
+        if (user == null || user.getClothing() == null) return;
+
+        List<Clothing> updatedClothing = new ArrayList<>();
+        for (Clothing c : user.getClothing()) {
+            updatedClothing.add(c);
+        }
+        user.setClothing(updatedClothing);
+
+        saveUser(user);
     }
 
 }

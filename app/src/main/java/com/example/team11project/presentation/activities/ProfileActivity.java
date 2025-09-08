@@ -82,6 +82,7 @@ public class ProfileActivity extends BaseActivity {
             textLevel.setText("Level: " + user.getLevelInfo().getLevel());
             textPp.setText("Snaga (PP): " + user.getLevelInfo().getPp());
             textXp.setText("XP: " + user.getLevelInfo().getXp());
+            textCoins.setText("Novčići: " + user.getCoins());
 
             // QR code
             String qrText = user.getId();
