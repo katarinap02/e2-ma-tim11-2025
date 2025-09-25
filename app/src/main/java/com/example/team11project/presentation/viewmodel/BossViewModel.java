@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
+import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.repository.BossBattleRepository;
 import com.example.team11project.domain.repository.BossRepository;
@@ -23,6 +24,9 @@ public class BossViewModel extends ViewModel {
 
     private final MutableLiveData<BossBattle> _bossBattle = new MutableLiveData<>();
     public final LiveData<BossBattle> bossBattle = _bossBattle;
+    private final MutableLiveData<Boss> _boss = new MutableLiveData<>();
+    public final LiveData<Boss> boss = _boss;
+
 
     private final MutableLiveData<Boolean> _isLoading = new MutableLiveData<>();
     public final LiveData<Boolean> isLoading = _isLoading;
@@ -35,24 +39,46 @@ public class BossViewModel extends ViewModel {
         this.bossRepository = bossRepository;
     }
 
-    public void loadBossBattle(String userId, String bossId, int level) {
+    public void loadBattleWithBoss(String userId, String bossId, int level) {
+        if (bossId == null) {
+            _error.setValue("Nevalidna bitka ili bossId");
+            return;
+        }
+
         _isLoading.setValue(true);
         _error.setValue(null);
 
+        // Prvo učitaj BossBattle
         bossBattleRepository.getBattleByUserAndBossAndLevel(userId, bossId, level, new RepositoryCallback<BossBattle>() {
             @Override
             public void onSuccess(BossBattle battle) {
                 _bossBattle.postValue(battle);
-                _isLoading.postValue(false);
+
+                // Kada je BossBattle učitan, učitaj Boss
+                bossRepository.getBossById(userId, bossId, new RepositoryCallback<Boss>() {
+                    @Override
+                    public void onSuccess(Boss bossObj) {
+                        _boss.postValue(bossObj);
+                        _isLoading.postValue(false);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        _error.postValue("Greška pri učitavanju bossa: " + e.getMessage());
+                        _isLoading.postValue(false);
+                    }
+                });
             }
 
             @Override
             public void onFailure(Exception e) {
-                _error.postValue("Greška pri učitavanju bitke: " + e.getMessage());
-                _isLoading.postValue(false);
+                _error.setValue("Greška pri učitavanju bitke: " + e.getMessage());
+                _isLoading.setValue(false);
             }
         });
     }
+
+
 
     public void clearError() {
         _error.setValue(null);
