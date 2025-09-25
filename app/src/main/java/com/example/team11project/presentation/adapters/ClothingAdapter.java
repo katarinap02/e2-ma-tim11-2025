@@ -20,7 +20,6 @@ public class ClothingAdapter extends RecyclerView.Adapter<ClothingAdapter.Clothi
     private List<Clothing> clothingList;
     private final OnClothingBuyClickListener listener;
 
-    // interfejs da Activity/Fragment može da reaguje na klik
     public interface OnClothingBuyClickListener {
         void onBuyClick(Clothing clothing);
     }
@@ -49,7 +48,6 @@ public class ClothingAdapter extends RecyclerView.Adapter<ClothingAdapter.Clothi
         return clothingList != null ? clothingList.size() : 0;
     }
 
-    // metoda za osvežavanje liste
     public void setClothingList(List<Clothing> newClothingList) {
         this.clothingList = newClothingList;
         notifyDataSetChanged();

@@ -2,6 +2,7 @@ package com.example.team11project.presentation.activities;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -15,6 +16,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
 import com.example.team11project.data.repository.UserRepositoryImpl;
+import com.example.team11project.domain.model.Clothing;
+import com.example.team11project.domain.model.Potion;
+import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.model.Weapon;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.presentation.viewmodel.UserViewModel;
 import com.google.zxing.BarcodeFormat;
@@ -73,6 +78,9 @@ public class ProfileActivity extends BaseActivity {
 
         viewModel.getUser().observe(this, user -> {
             if (user == null) return;
+            layoutEquipment.removeAllViews();
+            layoutBadges.removeAllViews();
+
 
             int resId = avatarMap.getOrDefault(user.getAvatar(), R.drawable.avatar1);
             imgAvatar.setImageResource(resId);
@@ -97,27 +105,72 @@ public class ProfileActivity extends BaseActivity {
                 e.printStackTrace();
             }
 
-            // Populate badges and equipment
-            textBadgesCount.setText("Broj bedževa: " + 12);
-            layoutBadges.removeAllViews();
-            layoutEquipment.removeAllViews();
+            // Oprema
+            if (user.getClothing() != null && !user.getClothing().isEmpty()) {
+                TextView clothingTitle = new TextView(this);
+                clothingTitle.setText("Odeca:");
+                clothingTitle.setTextSize(16f);
+                clothingTitle.setTypeface(null, Typeface.BOLD);
+                layoutEquipment.addView(clothingTitle);
 
-            // Sakrij privatne podatke ako nije vlasnik
+                for (Clothing c : user.getClothing()) {
+                    TextView tv = new TextView(this);
+                    tv.setText("Naziv: " + c.getName() + " \nKolicina: " + c.getQuantity() + "\n");
+                    layoutEquipment.addView(tv);
+                }
+            }
+
+            if (user.getPotions() != null && !user.getPotions().isEmpty()) {
+                TextView potionTitle = new TextView(this);
+                potionTitle.setText("Napitci:");
+                potionTitle.setTextSize(16f);
+                potionTitle.setTypeface(null, Typeface.BOLD);
+                layoutEquipment.addView(potionTitle);
+
+                for (Potion p : user.getPotions()) {
+                    TextView tv = new TextView(this);
+                    tv.setText("Naziv: " + p.getName() + "\nKolicina: " + p.getQuantity() + "\n");
+                    layoutEquipment.addView(tv);
+                }
+            }
+
+            if (user.getWeapons() != null && !user.getWeapons().isEmpty()) {
+                TextView weaponTitle = new TextView(this);
+                weaponTitle.setText("Oruzje:");
+                weaponTitle.setTextSize(16f);
+                weaponTitle.setTypeface(null, Typeface.BOLD);
+                layoutEquipment.addView(weaponTitle);
+
+                for (Weapon w : user.getWeapons()) {
+                    TextView tv = new TextView(this);
+                    tv.setText("Naziv: " + w.getName() + "\nKolicina: " + w.getQuantity() + "\n");
+                    layoutEquipment.addView(tv);
+                }
+            }
+
+
+            if ((user.getClothing() == null || user.getClothing().isEmpty()) &&
+                    (user.getPotions() == null || user.getPotions().isEmpty())) {
+                TextView tv = new TextView(this);
+                tv.setText("Trenutno nema opreme");
+                layoutEquipment.addView(tv);
+            }
+
+            // Bedzevi
+            textBadgesCount.setText("Broj bedzeva: " + 12);
+
             if (!isOwner) {
                 textCoins.setVisibility(View.GONE);
                 btnChangePassword.setVisibility(View.GONE);
                 textPp.setVisibility(View.GONE);
-                // Ako postoje dodatna privatna polja, postavi i njih GONE
-                // npr. email, phone, stats koje ne smeju da vide drugi
             }
         });
 
         viewModel.getError().observe(this, message ->
-                Toast.makeText(this, "Greška: " + message, Toast.LENGTH_SHORT).show());
+                Toast.makeText(this, "Greska: " + message, Toast.LENGTH_SHORT).show());
 
         viewModel.loadUser(userId);
 
-        // Dugme za promenu lozinke
         btnChangePassword.setOnClickListener(v -> {
             Intent intent = new Intent(this, ChangePasswordActivity.class);
             startActivity(intent);

@@ -47,7 +47,6 @@ public class PotionStoreFragment extends Fragment {
         storeViewModel.getPotions().observe(getViewLifecycleOwner(), adapter::updateData);
 
         // Load za user-a
-//        storeViewModel.loadEquipment();
         storeViewModel.loadEquipment();
 
         return view;

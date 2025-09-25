@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
+import com.example.team11project.domain.model.ChlothingEffectType;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.Potion;
@@ -85,22 +86,42 @@ public class StoreViewModel extends ViewModel {
     public LiveData<String> getError() {
         return error;
     }
+
     public void buyClothing(String userId, Clothing item) {
         userRepository.getUserById(userId, new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User user) {
+                if (user.getCoins() < item.getPrice()) {
+                    error.postValue("Nemaš dovoljno novca");
+                    return;
+                }
+
                 if (user.getClothing() == null) {
                     user.setClothing(new ArrayList<>());
                 }
 
-                Clothing copy = new Clothing(UUID.randomUUID().toString(), item.getName(), item.getPrice(), item.getEffectPercent(), item.isActive(), item.getEffectType());
-                user.getClothing().add(copy);
+                Clothing existing = null;
+                for (Clothing c : user.getClothing()) {
+                    if (c.getName().equals(item.getName())) {
+                        existing = c;
+                        break;
+                    }
+                }
+
+                if (existing != null) {
+                    existing.setQuantity(existing.getQuantity() + 1);
+                } else {
+                    Clothing copy = new Clothing(UUID.randomUUID().toString(), item.getName(), item.getPrice(),
+                            item.getEffectPercent(), item.isActive(), 1, item.getEffectType());
+                    user.getClothing().add(copy);
+                }
+
+                // Oduzimanje novca
+                user.setCoins((int) (user.getCoins() - item.getPrice()));
 
                 userRepository.updateUser(user, new RepositoryCallback<Void>() {
                     @Override
                     public void onSuccess(Void data) {
-                        // ažuriraj LiveData userove stvari ako želiš
-                        // npr. možeš postovati novu listu u potions/clothing LiveData
                         clothing.postValue(user.getClothing());
                     }
 
@@ -118,21 +139,46 @@ public class StoreViewModel extends ViewModel {
         });
     }
 
+
     public void buyPotion(String userId, Potion item) {
         userRepository.getUserById(userId, new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User user) {
+                if (user.getCoins() < item.getPrice()) {
+                    error.postValue("Nemaš dovoljno novca");
+                    return;
+                }
+
                 if (user.getPotions() == null) {
                     user.setPotions(new ArrayList<>());
                 }
 
-                Potion copy = new Potion(UUID.randomUUID().toString(), item.getName(), item.getPrice(), item.getPowerBoostPercent(), item.isPermanent(), item.isActive());
+                Potion existing = null;
+                for (Potion p : user.getPotions()) {
+                    if (p.getName().equals(item.getName())) {
+                        existing = p;
+                        break;
+                    }
+                }
+
+                if (existing != null) {
+                    existing.setQuantity(existing.getQuantity() + 1);
+                } else {
+                    Potion copy = new Potion(UUID.randomUUID().toString(), item.getName(), item.getPrice(),
+                            item.getPowerBoostPercent(), item.isPermanent(), item.isActive(), 1);
+                    user.getPotions().add(copy);
+                }
+
+                // Oduzimanje novca
+                user.setCoins((int) (user.getCoins() - item.getPrice()));
+
+                Potion copy = new Potion(UUID.randomUUID().toString(), item.getName(), item.getPrice(),
+                        item.getPowerBoostPercent(), item.isPermanent(), item.isActive(), item.getQuantity());
                 user.getPotions().add(copy);
 
                 userRepository.updateUser(user, new RepositoryCallback<Void>() {
                     @Override
                     public void onSuccess(Void data) {
-                        // po želji osveži LiveData
                         potions.postValue(user.getPotions());
                     }
 
@@ -149,6 +195,7 @@ public class StoreViewModel extends ViewModel {
             }
         });
     }
+
 
 
 

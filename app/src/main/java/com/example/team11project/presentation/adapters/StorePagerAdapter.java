@@ -26,6 +26,6 @@ public class StorePagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 2; // Napici + Odeća
+        return 2;
     }
 }

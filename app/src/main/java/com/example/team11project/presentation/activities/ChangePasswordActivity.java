@@ -58,7 +58,7 @@ public class ChangePasswordActivity extends BaseActivity {
 
 
         viewModel.getError().observe(this, message -> {
-            Toast.makeText(this, "Greška: " + message, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Greska: " + message, Toast.LENGTH_SHORT).show();
         });
 
 
