@@ -4,10 +4,14 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.example.team11project.data.datasource.local.db.AppContract;
 import com.example.team11project.data.datasource.local.db.DatabaseHelper;
+import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.model.BossBattle;
+import com.example.team11project.domain.model.BossReward;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
@@ -22,10 +26,11 @@ import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.Weapon;
+import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -825,6 +830,21 @@ public class LocalDataSource {
         return count;
     }
 
+
+    //******************* DEO SA BOSSOM ***************///
+    public long addBoss(Boss boss) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = bossToContentValues(boss);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.BossEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE);
+        db.close();
+        return newRowId;
+    }
+
     private ContentValues equipmentToContentValues(Equipment equipment) {
         ContentValues values = new ContentValues();
 
@@ -1029,6 +1049,415 @@ public class LocalDataSource {
         user.setClothing(updatedClothing);
 
         saveUser(user);
+    }
+
+
+    public List<Boss> getAllBosses(String userId) {
+        List<Boss> bosses = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        // Filtriramo po korisniku
+        String selection = AppContract.BossEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = { userId };
+
+        Cursor cursor = db.query(
+                AppContract.BossEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                AppContract.BossEntry.COLUMN_NAME_LEVEL + " ASC"
+        );
+
+        while (cursor.moveToNext()) {
+            bosses.add(cursorToBoss(cursor));
+        }
+        cursor.close();
+        db.close();
+        return bosses;
+    }
+
+    public Boss getBossById(String userId, String bossId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Boss boss = null;
+
+        // Filtriramo po userId i bossId
+        String selection = AppContract.BossEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossEntry._ID + " = ?";
+        String[] selectionArgs = { userId, String.valueOf(bossId) };
+
+        Cursor cursor = db.query(
+                AppContract.BossEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+
+        if (cursor.moveToFirst()) {
+            boss = cursorToBoss(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return boss;
+    }
+
+
+    public int updateBoss(Boss boss) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = bossToContentValues(boss);
+
+        String selection = AppContract.BossEntry._ID + " = ?";
+        String[] selectionArgs = { boss.getId() };
+
+        int count = db.update(
+                AppContract.BossEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return count;
+    }
+
+    public int updateEquipment(Equipment equipment) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = equipmentToContentValues(equipment);
+
+        String selection = AppContract.EquipmentEntry._ID + " = ?";
+        String[] selectionArgs = { equipment.getId() };
+
+        int count = db.update(
+                AppContract.EquipmentEntry.TABLE_NAME,
+
+                values,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return count;
+    }
+
+    public int deleteAllBossesForUser(String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        try {
+            String selection = AppContract.BossEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { userId };
+            deletedRows = db.delete(
+                    AppContract.BossEntry.TABLE_NAME,
+                    selection,
+                    selectionArgs
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+        return deletedRows;
+    }
+
+
+    private ContentValues bossToContentValues(Boss boss) {
+        ContentValues values = new ContentValues();
+        values.put(AppContract.BossEntry._ID, boss.getId());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID, boss.getUserId());
+        values.put(AppContract.BossEntry.COLUMN_NAME_LEVEL, boss.getLevel());
+        values.put(AppContract.BossEntry.COLUMN_NAME_MAX_HP, boss.getMaxHP());
+        values.put(AppContract.BossEntry.COLUMN_NAME_CURRENT_HP, boss.getCurrentHP());
+        values.put(AppContract.BossEntry.COLUMN_NAME_IS_DEFEATED, boss.isDefeated() ? 1 : 0);
+        values.put(AppContract.BossEntry.COLUMN_NAME_COINS_REWARD, boss.getCoinsReward());
+        return values;
+    }
+
+    private Boss cursorToBoss(Cursor cursor) {
+        Boss boss = new Boss();
+        boss.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossEntry._ID)));
+        boss.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID)));
+        boss.setLevel(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_LEVEL)));
+        boss.setMaxHP(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_MAX_HP)));
+        boss.setCurrentHP(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_CURRENT_HP)));
+        boss.setDefeated(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_IS_DEFEATED)) == 1);
+        boss.setCoinsReward(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossEntry.COLUMN_NAME_COINS_REWARD)));
+        return boss;
+    }
+
+    public long addBossBattle(BossBattle battle) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = battleToContentValues(battle);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.BossBattleEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE);
+        db.close();
+        return newRowId;
+    }
+
+    public List<BossBattle> getAllBossBattles(String userId) {
+        List<BossBattle> battles = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = { userId };
+
+        Cursor cursor = db.query(
+                AppContract.BossBattleEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+
+        while (cursor.moveToNext()) {
+            battles.add(cursorToBossBattle(cursor));
+        }
+        cursor.close();
+        db.close();
+        return battles;
+    }
+
+    public int updateBossBattle(BossBattle battle) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = battleToContentValues(battle);
+
+        String selection = AppContract.BossBattleEntry._ID + " = ? AND " +
+                AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = { battle.getId(), battle.getUserId() };
+
+        int count = db.update(
+                AppContract.BossBattleEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return count;
+    }
+
+    public int deleteAllBossBattlesForUser(String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        try {
+            String selection = AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { userId };
+            deletedRows = db.delete(
+                    AppContract.BossBattleEntry.TABLE_NAME,
+                    selection,
+                    selectionArgs
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+        return deletedRows;
+    }
+
+
+    private ContentValues battleToContentValues(BossBattle battle) {
+        ContentValues values = new ContentValues();
+        values.put(AppContract.BossBattleEntry._ID, battle.getId());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID, battle.getUserId());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID, battle.getBossId());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_LEVEL, battle.getLevel());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_ATTACKS_USED, battle.getAttacksUsed());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_DAMAGE_DEALT, battle.getDamageDealt());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_HIT_CHANCE, battle.getHitChance());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_USER_PP, battle.getUserPP());
+        values.put(AppContract.BossBattleEntry.COLUMN_NAME_BOSS_DEFEATED, battle.isBossDefeated() ? 1 : 0);
+        // activeEquipment → JSON string
+        if (battle.getActiveEquipment() != null) {
+            values.put(AppContract.BossBattleEntry.COLUMN_NAME_ACTIVE_EQUIPMENT,
+                    TextUtils.join(",", battle.getActiveEquipment()));
+        }
+        return values;
+    }
+
+    private BossBattle cursorToBossBattle(Cursor cursor) {
+        BossBattle battle = new BossBattle();
+        battle.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry._ID)));
+        battle.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_USER_ID)));
+        battle.setBossId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID)));
+        battle.setLevel(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_LEVEL)));
+        battle.setAttacksUsed(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_ATTACKS_USED)));
+        battle.setDamageDealt(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_DAMAGE_DEALT)));
+        battle.setHitChance(cursor.getDouble(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_HIT_CHANCE)));
+        battle.setUserPP(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_USER_PP)));
+        battle.setBossDefeated(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_BOSS_DEFEATED)) == 1);
+        String eqStr = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossBattleEntry.COLUMN_NAME_ACTIVE_EQUIPMENT));
+        if (eqStr != null) {
+            battle.setActiveEquipment(Arrays.asList(eqStr.split(",")));
+        }
+        return battle;
+    }
+
+    public long addBossReward(BossReward reward) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = rewardToContentValues(reward);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.BossRewardEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE);
+        db.close();
+        return newRowId;
+    }
+
+    public List<BossReward> getAllBossRewards(String userId) {
+        List<BossReward> rewards = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = { userId };
+
+        Cursor cursor = db.query(
+                AppContract.BossRewardEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+
+        while (cursor.moveToNext()) {
+            rewards.add(cursorToBossReward(cursor));
+        }
+        cursor.close();
+        db.close();
+        return rewards;
+    }
+
+    public int updateBossReward(BossReward reward) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = rewardToContentValues(reward);
+
+        String selection = AppContract.BossRewardEntry._ID + " = ? AND " +
+                AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + " = ?";
+        String[] selectionArgs = { reward.getId(), reward.getUserId() };
+
+        int count = db.update(
+                AppContract.BossRewardEntry.TABLE_NAME,
+                values,
+                selection,
+                selectionArgs
+        );
+        db.close();
+        return count;
+    }
+
+    public int deleteAllBossRewardsForUser(String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = 0;
+
+        try {
+            String selection = AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + " = ?";
+            String[] selectionArgs = { userId };
+            deletedRows = db.delete(
+                    AppContract.BossRewardEntry.TABLE_NAME,
+                    selection,
+                    selectionArgs
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+        return deletedRows;
+    }
+
+    public Boss getBossByUserIdAndLevel(String userId, int level) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossEntry.COLUMN_NAME_LEVEL + " = ?";
+        String[] selectionArgs = {userId, String.valueOf(level)};
+
+        Cursor cursor = db.query(
+                AppContract.BossEntry.TABLE_NAME,
+                null, // sve kolone
+                selection,
+                selectionArgs,
+                null, null, null, "1" // limit 1
+        );
+
+        Boss boss = null;
+        if (cursor.moveToFirst()) {
+            boss = cursorToBoss(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return boss;
+    }
+
+    public BossBattle getBattleByUserAndBossAndLevel(String userId, String bossId, int level) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossBattleEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossBattleEntry.COLUMN_NAME_BOSS_ID + " = ? AND " +
+                AppContract.BossBattleEntry.COLUMN_NAME_LEVEL + " = ?";
+        String[] selectionArgs = {userId, bossId, String.valueOf(level)};
+
+        Cursor cursor = db.query(
+                AppContract.BossBattleEntry.TABLE_NAME,
+                null, // sve kolone
+                selection,
+                selectionArgs,
+                null, null, null, "1" // limit 1
+        );
+
+        BossBattle bossBattle = null;
+        if (cursor.moveToFirst()) {
+            bossBattle = cursorToBossBattle(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return bossBattle;
+    }
+
+
+    private ContentValues rewardToContentValues(BossReward reward) {
+        ContentValues values = new ContentValues();
+        values.put(AppContract.BossRewardEntry._ID, reward.getId());
+        values.put(AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID, reward.getBossId());
+        values.put(AppContract.BossRewardEntry.COLUMN_NAME_USER_ID, reward.getUserId());
+        values.put(AppContract.BossRewardEntry.COLUMN_NAME_LEVEL, reward.getLevel());
+        values.put(AppContract.BossRewardEntry.COLUMN_NAME_COINS_EARNED, reward.getCoinsEarned());
+        values.put(AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID, reward.getEquipmentId());
+        return values;
+    }
+
+    private BossReward cursorToBossReward(Cursor cursor) {
+        BossReward reward = new BossReward();
+        reward.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry._ID)));
+        reward.setBossId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID)));
+        reward.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_USER_ID)));
+        reward.setLevel(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_LEVEL)));
+        reward.setCoinsEarned(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_COINS_EARNED)));
+        reward.setEquipmentId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID)));
+        return reward;
     }
 
 }

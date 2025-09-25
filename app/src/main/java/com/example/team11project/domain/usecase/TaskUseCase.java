@@ -2,6 +2,8 @@ package com.example.team11project.domain.usecase;
 
 import android.util.Log;
 
+import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
@@ -25,17 +27,24 @@ public class TaskUseCase {
     private final UserRepository userRepository;
     private final LevelInfoRepository levelInfoRepository;
     private final TaskInstanceRepository taskInstanceRepository;
+    private final BossUseCase bossUseCase;
 
-    public TaskUseCase(TaskRepository taskRepository, UserRepository userRepository, TaskInstanceRepository taskInstanceRepository, LevelInfoRepository levelInfoRepository) {
+    public TaskUseCase(TaskRepository taskRepository, UserRepository userRepository, TaskInstanceRepository taskInstanceRepository, LevelInfoRepository levelInfoRepository, BossUseCase bossUseCase) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.taskInstanceRepository = taskInstanceRepository;
         this.levelInfoRepository = levelInfoRepository;
+        this.bossUseCase = bossUseCase;
     }
 
     public void completeTask(Task task, String userId, Date instanceDate, RepositoryCallback<Integer> finalCallback) {
         if (task.getStatus() != TaskStatus.ACTIVE) {
             finalCallback.onFailure(new Exception("Samo aktivni zadaci se mogu označiti kao završeni."));
+            return;
+        }
+
+        if (!isTaskCompleteWithinPeriod(task, instanceDate)) {
+            finalCallback.onFailure(new Exception("Zadatak se može završiti samo u periodu od 3 dana unazad do danas."));
             return;
         }
 
@@ -180,10 +189,25 @@ public class TaskUseCase {
             userRepository.getUserById(userId, new RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User user) {
-                    levelInfoRepository.addXp(user, xpAmount, new RepositoryCallback<Void>() {
+                    levelInfoRepository.addXp(user, xpAmount, new RepositoryCallback<LevelInfo>() {
                         @Override
-                        public void onSuccess(Void unused) {
-                            finalCallback.onSuccess(xpAmount);
+                        public void onSuccess(LevelInfo levelInfo) {
+
+                            // 📌 Poziv servisa za pravljenje bossa sa userom i level info
+                           bossUseCase.createBoss(user, levelInfo, new RepositoryCallback<Boss>() {
+                                @Override
+                                public void onSuccess(Boss boss) {
+                                    // Boss uspešno kreiran → prosleđujemo dalje
+                                    finalCallback.onSuccess(xpAmount);
+
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    // Ako kreiranje bossa padne, javljamo fail
+                                    finalCallback.onFailure(e);
+                                }
+                            });
                         }
 
                         @Override
@@ -434,5 +458,49 @@ public class TaskUseCase {
 
         return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR) &&
                 c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR);
+    }
+
+    private boolean isTaskCompleteWithinPeriod(Task task, Date instanceDate) {
+        Calendar today = Calendar.getInstance();
+        today.add(Calendar.DAY_OF_YEAR, -3);
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        Date todayStart = today.getTime();
+
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        tomorrow.set(Calendar.HOUR_OF_DAY, 0);
+        tomorrow.set(Calendar.MINUTE, 0);
+        tomorrow.set(Calendar.SECOND, 0);
+        tomorrow.set(Calendar.MILLISECOND, 0);
+        Date tomorrowStart = tomorrow.getTime();
+
+        Date taskDate;
+
+        if (task.isRecurring()) {
+            // Za ponavljajuće zadatke koristimo instanceDate
+            taskDate = instanceDate;
+        } else {
+            // Za jednokratne zadatke koristimo executionTime
+            taskDate = task.getExecutionTime();
+        }
+
+        if (taskDate == null) {
+            return false; // Ako nema datum, ne može se završiti
+        }
+
+        // Normalizuj taskDate na početak dana
+        Calendar taskCal = Calendar.getInstance();
+        taskCal.setTime(taskDate);
+        taskCal.set(Calendar.HOUR_OF_DAY, 0);
+        taskCal.set(Calendar.MINUTE, 0);
+        taskCal.set(Calendar.SECOND, 0);
+        taskCal.set(Calendar.MILLISECOND, 0);
+        Date taskDateStart = taskCal.getTime();
+
+        // Proveri da li je taskDate u dozvoljenom periodu (3 dana unazad do danas)
+        return !taskDateStart.before(todayStart) && taskDateStart.before(tomorrowStart);
     }
 }

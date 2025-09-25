@@ -1,0 +1,176 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/boss_arena_background"
+    android:padding="16dp">
+
+    <!-- Naslov -->
+    <TextView
+        android:id="@+id/tvBossTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="BORBA SA BOSOM"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:gravity="center"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Battle Info Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- Hit Chance i Preostali Napadi -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/tvHitChance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sansa za pogodak: 68%"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:padding="4dp"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:id="@+id/tvAttacksLeft"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5/5 napada"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
+        <!-- Active Equipment -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aktivna oprema:"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:layout_marginEnd="4dp" />
+
+            <ImageView
+                android:id="@+id/ivEquipment"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="#00FFFFFF" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Bars i Boss -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <!-- PP Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginHorizontal="32dp"
+            android:layout_marginBottom="4dp">
+
+            <ProgressBar
+                android:id="@+id/pbUserPP"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="0dp"
+                android:layout_height="20dp"
+                android:layout_weight="1"
+                android:progressTint="@color/user_pp_color"
+                android:progressBackgroundTint="@color/pp_background"
+                android:progress="100"
+                android:max="100" />
+
+            <TextView
+                android:id="@+id/tvUserPP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="150 PP"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:layout_marginStart="4dp"
+                android:minWidth="50dp" />
+        </LinearLayout>
+
+        <!-- Boss HP Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginHorizontal="32dp"
+            android:layout_marginBottom="8dp">
+
+            <ProgressBar
+                android:id="@+id/pbBossHP"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="0dp"
+                android:layout_height="24dp"
+                android:layout_weight="1"
+                android:progressTint="@color/boss_hp_color"
+                android:progressBackgroundTint="@color/hp_background"
+                android:progress="100"
+                android:max="100" />
+
+            <TextView
+                android:id="@+id/tvBossHP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="200/200 HP"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:layout_marginStart="4dp"
+                android:minWidth="60dp" />
+        </LinearLayout>
+
+        <!-- Boss Image -->
+        <ImageView
+            android:id="@+id/ivBoss"
+            android:layout_width="351dp"
+            android:layout_height="370dp"
+            android:scaleType="centerInside"
+            android:layout_marginLeft="30dp"
+            android:src="@drawable/boss_idle" />
+    </LinearLayout>
+
+    <!-- Dugme -->
+    <Button
+        android:id="@+id/btnAttack"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="NAPAD"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:layout_marginBottom="40dp"
+        android:layout_marginHorizontal="32dp"
+        android:elevation="4dp" />
+</LinearLayout>

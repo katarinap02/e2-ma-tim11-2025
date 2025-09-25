@@ -381,7 +381,11 @@ public class TaskDetailActivity extends BaseActivity {
         switch (task.getStatus()) {
             case ACTIVE:
                 // Svi dugmići su aktivni (osim pauziranja za jednokratne)
-                btnComplete.setEnabled(true);
+                if (!isTaskCompleteWithinPeriod(task)) {
+                    btnComplete.setEnabled(false);
+                } else {
+                    btnComplete.setEnabled(true);
+                }
                 btnCancel.setEnabled(true);
                 btnEdit.setEnabled(true);
                 btnDelete.setEnabled(true);
@@ -462,5 +466,46 @@ public class TaskDetailActivity extends BaseActivity {
         }
         // Za sve ostale klikove (home, logout), pozovi metodu iz BaseActivity-ja
         return super.onOptionsItemSelected(item);
+    }
+
+    //proverava da li je danas
+    private boolean isTaskCompleteWithinPeriod(Task task) {
+        Calendar today = Calendar.getInstance();
+        today.add(Calendar.DAY_OF_YEAR, -3);
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        Date todayStart = today.getTime();
+
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        tomorrow.set(Calendar.HOUR_OF_DAY, 0);
+        tomorrow.set(Calendar.MINUTE, 0);
+        tomorrow.set(Calendar.SECOND, 0);
+        tomorrow.set(Calendar.MILLISECOND, 0);
+        Date tomorrowStart = tomorrow.getTime();
+
+        Date taskDate;
+
+        if (task.isRecurring()) {
+            // Za ponavljajuće zadatke koristimo instanceDate
+            taskDate = instanceDate;
+        } else {
+            // Za jednokratne zadatke koristimo executionTime
+            taskDate = task.getExecutionTime();
+        }
+
+        // Normalizuj taskDate na početak dana
+        Calendar taskCal = Calendar.getInstance();
+        taskCal.setTime(taskDate);
+        taskCal.set(Calendar.HOUR_OF_DAY, 0);
+        taskCal.set(Calendar.MINUTE, 0);
+        taskCal.set(Calendar.SECOND, 0);
+        taskCal.set(Calendar.MILLISECOND, 0);
+        Date taskDateStart = taskCal.getTime();
+
+        // Proveri da li je taskDate danas
+        return !taskDateStart.before(todayStart) && taskDateStart.before(tomorrowStart);
     }
 }

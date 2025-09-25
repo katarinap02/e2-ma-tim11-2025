@@ -4,6 +4,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+
+import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.model.BossBattle;
+import com.example.team11project.domain.model.BossReward;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.LevelInfo;
@@ -38,6 +42,10 @@ public class RemoteDataSource {
     private static final String TASKS_COLLECTION = "tasks";
     private static final String CATEGORIES_COLLECTION = "categories";
     private static final String INSTANCES_COLLECTION = "task_instances";
+
+    private static final String BOSSES_COLLECTION = "bosses";
+    private static final String BOSS_BATTLES_COLLECTION = "bossBattles";
+    private static final String BOSS_REWARDS_COLLECTION = "bossRewards";
     private static final String EQUIPMENT_COLLECTION = "equipment";
 
     public RemoteDataSource() {
@@ -365,6 +373,26 @@ public class RemoteDataSource {
                     }
                 });
     }
+    public void addEquipmentToCollection(Equipment equipment, final DataSourceCallback<String> callback) {
+        db.collection(EQUIPMENT_COLLECTION)
+                .add(equipment)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void updateEquipmentInCollection(Equipment equipment, final DataSourceCallback<Void> callback) {
+        db.collection(EQUIPMENT_COLLECTION).document(equipment.getId())
+                .set(equipment)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void deleteEquipmentFromCollection(String equipmentId, final DataSourceCallback<Void> callback) {
+        db.collection(EQUIPMENT_COLLECTION).document(equipmentId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
 
     public void getAllEquipment(final DataSourceCallback<List<Equipment>> callback) {
         db.collection(EQUIPMENT_COLLECTION)
@@ -460,6 +488,181 @@ public class RemoteDataSource {
                         callback.onFailure(e);
                     }
                 });
+    }
+
+    //*********************DEO SA BOSOM *******************************//
+
+    public void addBoss(Boss boss, final DataSourceCallback<String> callback) {
+        // /users/{userId}/bosses/{bossId}
+        db.collection(USERS_COLLECTION).document(boss.getUserId())
+                .collection(BOSSES_COLLECTION)
+                .add(boss)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllBosses(String userId, final DataSourceCallback<List<Boss>> callback) {
+        db.collection(USERS_COLLECTION).document(userId).collection(BOSSES_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<Boss> bossList = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Boss b = document.toObject(Boss.class);
+                            b.setId(document.getId());
+                            bossList.add(b);
+                        }
+                        callback.onSuccess(bossList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void getBossById(String userId, String bossId, final DataSourceCallback<Boss> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSSES_COLLECTION).document(bossId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            Boss boss = document.toObject(Boss.class);
+                            boss.setId(document.getId());
+                            callback.onSuccess(boss);
+                        } else {
+                            callback.onFailure(new Exception("Boss not found"));
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+
+    public void updateBoss(Boss boss, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(boss.getUserId())
+                .collection(BOSSES_COLLECTION).document(boss.getId())
+                .set(boss)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void addBossBattle(BossBattle battle, final DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(battle.getUserId())
+                .collection(BOSS_BATTLES_COLLECTION)
+                .add(battle)
+                .addOnSuccessListener(docRef -> callback.onSuccess(docRef.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllBossBattles(String userId, final DataSourceCallback<List<BossBattle>> callback) {
+        db.collection(USERS_COLLECTION).document(userId).collection(BOSS_BATTLES_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<BossBattle> battleList = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            BossBattle b = doc.toObject(BossBattle.class);
+                            b.setId(doc.getId());
+                            battleList.add(b);
+                        }
+                        callback.onSuccess(battleList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateBossBattle(BossBattle battle, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(battle.getUserId())
+                .collection(BOSS_BATTLES_COLLECTION).document(battle.getId())
+                .set(battle)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void addBossReward(BossReward reward, final DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(reward.getUserId())
+                .collection(BOSS_REWARDS_COLLECTION)
+                .add(reward)
+                .addOnSuccessListener(docRef -> callback.onSuccess(docRef.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllBossRewards(String userId, final DataSourceCallback<List<BossReward>> callback) {
+        db.collection(USERS_COLLECTION).document(userId).collection(BOSS_REWARDS_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<BossReward> rewardList = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            BossReward r = doc.toObject(BossReward.class);
+                            r.setId(doc.getId());
+                            rewardList.add(r);
+                        }
+                        callback.onSuccess(rewardList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateBossReward(BossReward reward, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(reward.getUserId())
+                .collection(BOSS_REWARDS_COLLECTION).document(reward.getId())
+                .set(reward)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getBossByUserIdAndLevel(String userId, int level, final DataSourceCallback<Boss> callback) {
+        // Tražimo boss-a sa određenim level-om za korisnika
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSSES_COLLECTION)
+                .whereEqualTo("level", level)
+                .limit(1) // Očekujemo samo jedan boss po nivou
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        // Nema boss-a za ovaj nivo
+                        callback.onSuccess(null);
+                    } else {
+                        // Pronađen je boss
+                        DocumentSnapshot document = queryDocumentSnapshots.getDocuments().get(0);
+                        Boss boss = document.toObject(Boss.class);
+                        if (boss != null) {
+                            boss.setId(document.getId()); // Postavimo ID iz dokumenta
+                        }
+                        callback.onSuccess(boss);
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+    public void getBattleByUserAndBossAndLevel(String userId, String bossId, int level, final DataSourceCallback<BossBattle> callback) {
+        // Tražimo boss battle sa određenim parametrima
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSS_BATTLES_COLLECTION)
+                .whereEqualTo("bossId", bossId)
+                .whereEqualTo("level", level)  // NOVO - direktno int umesto levelInfoId string
+                .limit(1) // Očekujemo samo jednu bitku po kombinaciji
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        // Nema boss battle-a za ovu kombinaciju
+                        callback.onSuccess(null);
+                    } else {
+                        // Pronađen je boss battle
+                        DocumentSnapshot document = queryDocumentSnapshots.getDocuments().get(0);
+                        BossBattle bossBattle = document.toObject(BossBattle.class);
+                        if (bossBattle != null) {
+                            bossBattle.setId(document.getId()); // Postavimo ID iz dokumenta
+                        }
+                        callback.onSuccess(bossBattle);
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e));
     }
 
     public void getPotionsByUserId(String userId, final DataSourceCallback<List<Potion>> callback) {

@@ -16,10 +16,16 @@
         android:theme="@style/Theme.Team11Project"
         tools:targetApi="31">
         <activity
+            android:name=".presentation.activities.BossActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.activities.StoreActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.activities.ChangePasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.EquipmentActivity"
             android:exported="false" />
         <activity
             android:name=".presentation.activities.UsersListActivity"
