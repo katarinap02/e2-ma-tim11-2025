@@ -66,8 +66,8 @@ public class BossActivity extends BaseActivity {
 
     private void setupClickListener() {
         btnAttack.setOnClickListener(v -> {
-            ivBoss.setImageResource(R.drawable.boss_hit);
-            ivBoss.postDelayed(() -> ivBoss.setImageResource(R.drawable.boss_idle), 500);
+            ivBoss.setImageResource(R.drawable.boss_hit2);
+            ivBoss.postDelayed(() -> ivBoss.setImageResource(R.drawable.boss_idle2), 500);
 
             // Logika napada bi ovde išla (update BossBattle)
         });
