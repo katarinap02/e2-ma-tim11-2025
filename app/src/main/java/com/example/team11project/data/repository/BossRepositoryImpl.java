@@ -87,6 +87,35 @@ public class BossRepositoryImpl implements BossRepository {
     }
 
     @Override
+    public void getBossById(String userId, String bossId, RepositoryCallback<Boss> callback) {
+        // 1. Prvo iz lokalne baze (instant prikaz)
+        databaseExecutor.execute(() -> {
+            Boss localBoss = localDataSource.getBossById(userId, bossId);
+            if (localBoss != null) {
+                callback.onSuccess(localBoss);
+            }
+        });
+
+        // 2. Onda pokušaj iz remote (Firestore)
+        remoteDataSource.getBossById(userId, bossId, new RemoteDataSource.DataSourceCallback<Boss>() {
+            @Override
+            public void onSuccess(Boss remoteBoss) {
+                databaseExecutor.execute(() -> {
+                    // Upisujemo u lokalnu bazu da osvežimo cache
+                    localDataSource.addBoss(remoteBoss);
+                    callback.onSuccess(remoteBoss);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                System.out.println("Boss fetch failed: " + e.getMessage());
+            }
+        });
+    }
+
+
+    @Override
     public void updateBoss(Boss boss, RepositoryCallback<Void> callback) {
         if (boss.getLevel() <= 0) {
             callback.onFailure(new Exception("Level bosa mora biti veći od 0."));

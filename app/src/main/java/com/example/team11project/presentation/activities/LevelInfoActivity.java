@@ -93,7 +93,6 @@ public class LevelInfoActivity extends BaseActivity {
             Boss availableBoss = viewModel.getAvailableBoss().getValue();
             if (availableBoss != null) {
                 Intent intent = new Intent(this, EquipmentActivity.class);
-                intent.putExtra("bossId", availableBoss.getId());
                 intent.putExtra("userId", userId);
                 startActivity(intent);
             }

@@ -930,6 +930,35 @@ public class LocalDataSource {
         return bosses;
     }
 
+    public Boss getBossById(String userId, String bossId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Boss boss = null;
+
+        // Filtriramo po userId i bossId
+        String selection = AppContract.BossEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossEntry._ID + " = ?";
+        String[] selectionArgs = { userId, String.valueOf(bossId) };
+
+        Cursor cursor = db.query(
+                AppContract.BossEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+
+        if (cursor.moveToFirst()) {
+            boss = cursorToBoss(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return boss;
+    }
+
+
     public int updateBoss(Boss boss) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = bossToContentValues(boss);

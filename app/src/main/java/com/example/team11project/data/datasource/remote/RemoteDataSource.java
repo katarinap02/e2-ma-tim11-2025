@@ -519,6 +519,27 @@ public class RemoteDataSource {
                 });
     }
 
+    public void getBossById(String userId, String bossId, final DataSourceCallback<Boss> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSSES_COLLECTION).document(bossId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            Boss boss = document.toObject(Boss.class);
+                            boss.setId(document.getId());
+                            callback.onSuccess(boss);
+                        } else {
+                            callback.onFailure(new Exception("Boss not found"));
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+
     public void updateBoss(Boss boss, final DataSourceCallback<Void> callback) {
         db.collection(USERS_COLLECTION).document(boss.getUserId())
                 .collection(BOSSES_COLLECTION).document(boss.getId())
