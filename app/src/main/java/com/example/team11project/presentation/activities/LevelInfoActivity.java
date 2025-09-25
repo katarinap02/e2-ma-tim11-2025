@@ -1,5 +1,6 @@
 package com.example.team11project.presentation.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -91,10 +92,10 @@ public class LevelInfoActivity extends BaseActivity {
         btnBossFight.setOnClickListener(v -> {
             Boss availableBoss = viewModel.getAvailableBoss().getValue();
             if (availableBoss != null) {
-                // Otvorite BossFight aktivnost
-                // Intent intent = new Intent(this, BossFightActivity.class);
-                // intent.putExtra("bossId", availableBoss.getId());
-                // startActivity(intent);
+                Intent intent = new Intent(this, EquipmentActivity.class);
+                intent.putExtra("bossId", availableBoss.getId());
+                intent.putExtra("userId", userId);
+                startActivity(intent);
             }
         });
 

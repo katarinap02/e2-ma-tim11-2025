@@ -128,16 +128,16 @@ public class BossUseCase {
         return (int) reward;
     }
 
-    public void getOrCreateBossBattle(User user, Boss boss, int level, RepositoryCallback<BossBattle> callback) {
+    public void getOrCreateBossBattle(User user, Boss boss, RepositoryCallback<BossBattle> callback) {
         // Proveravamo da li već postoji aktivna bitka protiv ovog boss-a
-        bossBattleRepository.getBattleByUserAndBossAndLevel(user.getId(), boss.getId(), level, new RepositoryCallback<BossBattle>() {
+        bossBattleRepository.getBattleByUserAndBossAndLevel(user.getId(), boss.getId(), user.getLevelInfo().getLevel(), new RepositoryCallback<BossBattle>() {
             @Override
             public void onSuccess(BossBattle existingBattle) {
                 if (existingBattle != null && !existingBattle.isBossDefeated()) {
                     // Već postoji aktivna bitka
                     callback.onSuccess(existingBattle);
                 } else {
-                    BossBattle newBattle = createNewBossBattle(user, boss, level);
+                    BossBattle newBattle = createNewBossBattle(user, boss);
                     bossBattleRepository.addBattle(newBattle, new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
@@ -159,11 +159,11 @@ public class BossUseCase {
         });
     }
 
-    private BossBattle createNewBossBattle(User user, Boss boss, int level) {
+    private BossBattle createNewBossBattle(User user, Boss boss) {
         BossBattle battle = new BossBattle();
         battle.setUserId(user.getId());
         battle.setBossId(boss.getId());
-        battle.setLevel(level);
+        battle.setLevel(user.getLevelInfo().getLevel());
         battle.setAttacksUsed(0); // Počinje sa 0 napada (maksimalno 5)
         battle.setDamageDealt(0);
 
