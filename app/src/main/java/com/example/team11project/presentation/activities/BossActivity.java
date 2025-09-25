@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider;
 import android.widget.ProgressBar;
 
 import com.example.team11project.R;
+import com.example.team11project.domain.model.Boss;
 import com.example.team11project.presentation.viewmodel.BossViewModel;
 import com.example.team11project.domain.model.BossBattle;
 
@@ -65,8 +66,8 @@ public class BossActivity extends BaseActivity {
 
     private void setupClickListener() {
         btnAttack.setOnClickListener(v -> {
-            ivBoss.setImageResource(R.drawable.boss_hit);
-            ivBoss.postDelayed(() -> ivBoss.setImageResource(R.drawable.boss_idle), 500);
+            ivBoss.setImageResource(R.drawable.boss_hit2);
+            ivBoss.postDelayed(() -> ivBoss.setImageResource(R.drawable.boss_idle2), 500);
 
             // Logika napada bi ovde išla (update BossBattle)
         });
@@ -76,12 +77,17 @@ public class BossActivity extends BaseActivity {
         BossViewModel.Factory factory = new BossViewModel.Factory(getApplication());
         viewModel = new ViewModelProvider(this, factory).get(BossViewModel.class);
 
-        // Osluškivanje BossBattle
-        viewModel.bossBattle.observe(this, bossBattle -> {
-            if (bossBattle != null) {
-                updateUI(bossBattle);
+        viewModel.boss.observe(this, boss -> {
+            if (boss != null) {
+                viewModel.bossBattle.observe(this, bossBattle -> {
+                    if (bossBattle != null) {
+                        updateUI(bossBattle, boss); // ažurira napade, PP, status borbe itd.
+                    }
+                });
             }
         });
+
+
 
         viewModel.error.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
@@ -93,17 +99,17 @@ public class BossActivity extends BaseActivity {
         viewModel.isLoading.observe(this, isLoading -> btnAttack.setEnabled(!isLoading));
 
         // Učitavanje BossBattle-a
-        viewModel.loadBossBattle(userId, bossId, level);
+        viewModel.loadBattleWithBoss(userId, bossId, level);
     }
 
-    private void updateUI(BossBattle battle) {
+    private void updateUI(BossBattle battle, Boss boss) {
         // PP korisnika
         pbUserPP.setMax(battle.getUserPP());
         pbUserPP.setProgress(battle.getUserPP());
         tvUserPP.setText(battle.getUserPP() + " PP");
 
         // HP bossa
-        int bossHP = 100;
+        int bossHP = boss.getMaxHP();
         pbBossHP.setMax(bossHP);
         pbBossHP.setProgress(bossHP - battle.getDamageDealt());
         tvBossHP.setText((bossHP - battle.getDamageDealt()) + "/" + bossHP + " HP");
