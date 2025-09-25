@@ -88,7 +88,9 @@ public class EquipmentActivity extends BaseActivity {
 
     private void navigateToBossActivity(BossBattle bossBattle) {
         Intent intent = new Intent(this, BossActivity.class);
-        intent.putExtra("bossBattleId", bossBattle.getId());
+        intent.putExtra("bossId", bossBattle.getBossId());
+        intent.putExtra("userId", userId);
+        intent.putExtra("level", bossBattle.getLevel());
         startActivity(intent);
     }
 }
