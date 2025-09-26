@@ -31,7 +31,6 @@
                 android:layout_height="wrap_content"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary"
                 tools:text="@string/task_name_placeholder"/> <!-- tools:text za prikaz u dizajneru -->
 
             <TextView

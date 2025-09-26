@@ -77,5 +77,6 @@
     <color name="secondary_text">#888888</color>
 
     <color name="transparent">#00000000</color>
+    <color name="calendar_date_text">#757575</color>
 </resources>
 

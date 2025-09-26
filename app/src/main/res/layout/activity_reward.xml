@@ -52,8 +52,7 @@
             android:layout_height="wrap_content"
             android:text="0"
             android:textSize="26sp"
-            android:textStyle="bold"
-            android:textColor="@color/black" />
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Container za opremu (skriva se ako nema opreme) -->

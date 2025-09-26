@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Stil za datume -->
+    <style name="CalendarDateText" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textColor">@color/calendar_date_text</item>
+    </style>
+
+    <!-- Stil za dan u nedelji -->
+    <style name="CalendarWeekDay" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textColor">@color/calendar_date_text</item>
+    </style>
+</resources>
