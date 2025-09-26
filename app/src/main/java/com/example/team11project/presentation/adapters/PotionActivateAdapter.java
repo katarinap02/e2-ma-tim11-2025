@@ -80,7 +80,7 @@ public class PotionActivateAdapter extends RecyclerView.Adapter<PotionActivateAd
             super(itemView);
             checkBox = itemView.findViewById(R.id.cbEquipment);
             imgEquipment = itemView.findViewById(R.id.imgEquipment);
-            
+
         }
     }
 }
