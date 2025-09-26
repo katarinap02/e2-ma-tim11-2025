@@ -6,8 +6,8 @@ public class Potion extends Equipment{
 
     public Potion() {}
 
-    public Potion(String id, String name, double price, int powerBoostPercent, boolean isPermanent, boolean isActive, int quantity) {
-        super(id, name, EquipmentType.POTION, price, isActive, quantity);
+    public Potion(String id, String name, double price, int powerBoostPercent, boolean isPermanent, boolean isActive, int quantity, String image) {
+        super(id, name, EquipmentType.POTION, price, isActive, quantity, image);
         this.powerBoostPercent = powerBoostPercent;
         this.isPermanent = isPermanent;
     }

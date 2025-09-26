@@ -6,8 +6,8 @@ public class Clothing extends Equipment{
     private int remainingBattles;
 
     public Clothing(){}
-    public Clothing(String id, String name, double price, int effectPercent, boolean isActive, int quantity, ChlothingEffectType effectType) {
-        super(id, name, EquipmentType.CLOTHING, price, isActive, quantity);
+    public Clothing(String id, String name, double price, int effectPercent, boolean isActive, int quantity, ChlothingEffectType effectType, String image) {
+        super(id, name, EquipmentType.CLOTHING, price, isActive, quantity, image);
         this.remainingBattles = 2;
         this.effectPercent = effectPercent;
         this.effectType = effectType;

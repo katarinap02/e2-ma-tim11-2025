@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -12,7 +13,9 @@ import com.example.team11project.R;
 import com.example.team11project.domain.model.Potion;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PotionActivateAdapter extends RecyclerView.Adapter<PotionActivateAdapter.PotionViewHolder> {
 
@@ -36,9 +39,20 @@ public class PotionActivateAdapter extends RecyclerView.Adapter<PotionActivateAd
         return new PotionViewHolder(view);
     }
 
+    private static final Map<String, Integer> quipmentMap = new HashMap<String, Integer>() {{
+        put("clothing_boots", R.drawable.clothing_boots);
+        put("clothing_gloves", R.drawable.clothing_gloves);
+        put("clothing_shield", R.drawable.clothing_shield);
+        put("potion_10", R.drawable.potion_10);
+    }};
+
     @Override
     public void onBindViewHolder(@NonNull PotionViewHolder holder, int position) {
         Potion potion = potions.get(position);
+
+        int resId = quipmentMap.get(potion.getImage());
+        holder.imgEquipment.setImageResource(resId);
+
         holder.checkBox.setText(potion.getName() + " x" + potion.getQuantity() +
                 " (" + potion.getPowerBoostPercent() + "% PP)");
         holder.checkBox.setChecked(selectedPotions.contains(potion));
@@ -59,10 +73,14 @@ public class PotionActivateAdapter extends RecyclerView.Adapter<PotionActivateAd
 
     static class PotionViewHolder extends RecyclerView.ViewHolder {
         CheckBox checkBox;
+        ImageView imgEquipment;
+
 
         public PotionViewHolder(@NonNull View itemView) {
             super(itemView);
             checkBox = itemView.findViewById(R.id.cbEquipment);
+            imgEquipment = itemView.findViewById(R.id.imgEquipment);
+            
         }
     }
 }

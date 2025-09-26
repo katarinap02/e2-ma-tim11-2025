@@ -7,8 +7,8 @@ public class Weapon extends Equipment{
 
     public Weapon() {}
 
-    public Weapon(String id, String name, double price, int permanentBoostPercent, double upgradeChance, boolean isActive, int quantity, WeaponEffectType effectType) {
-        super(id, name, EquipmentType.WEAPON, price, isActive, quantity);
+    public Weapon(String id, String name, double price, int permanentBoostPercent, double upgradeChance, boolean isActive, int quantity, WeaponEffectType effectType, String image) {
+        super(id, name, EquipmentType.WEAPON, price, isActive, quantity, image);
         this.permanentBoostPercent = permanentBoostPercent;
         this.upgradeChance = upgradeChance;
         this.effectType = effectType;

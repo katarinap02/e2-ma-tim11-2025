@@ -852,6 +852,8 @@ public class LocalDataSource {
         values.put(AppContract.EquipmentEntry.COLUMN_NAME, equipment.getName());
         values.put(AppContract.EquipmentEntry.COLUMN_TYPE, equipment.getType().name());
         values.put(AppContract.EquipmentEntry.COLUMN_PRICE, equipment.getPrice());
+        values.put(AppContract.EquipmentEntry.COLUMN_QUANTITY, equipment.getQuantity());
+        values.put(AppContract.EquipmentEntry.COLUMN_IMAGE, equipment.getImage());
 
         if (equipment instanceof Potion) {
             Potion potion = (Potion) equipment;
