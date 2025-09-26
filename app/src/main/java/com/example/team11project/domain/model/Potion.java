@@ -13,7 +13,9 @@ public class Potion extends Equipment{
     }
 
     @Override
-    public void activate(){}
+    public void activate(){
+        this.isActive = true;
+    }
     public boolean isPermanent() {
         return isPermanent;
     }

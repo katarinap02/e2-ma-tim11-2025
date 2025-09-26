@@ -15,7 +15,9 @@ public class Weapon extends Equipment{
     }
 
     @Override
-    public void activate(){}
+    public void activate(){
+        this.isActive = true;
+    }
 
     public void upgrade() {
         this.upgradeChance += 0.01;
