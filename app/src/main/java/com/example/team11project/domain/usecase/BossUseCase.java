@@ -3,6 +3,7 @@ package com.example.team11project.domain.usecase;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.Equipment;
+import com.example.team11project.domain.model.EquipmentType;
 import com.example.team11project.domain.model.LevelInfo;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.BossBattleRepository;
@@ -72,17 +73,28 @@ public class BossUseCase {
                         // Kreiramo novi boss jer ne postoji za ovaj nivo
                         Boss newBoss = createNewBoss(user, levelInfo);
 
-                        // Čuvamo boss u bazi koristeći addBoss metodu
-                        bossRepository.addBoss(newBoss, new RepositoryCallback<Void>() {
+                        calculateCoinsReward(user.getId(), levelInfo.getLevel(), new RepositoryCallback<Integer>() {
                             @Override
-                            public void onSuccess(Void unused) {
-                                // ID je sada postavljen od strane remote data source-a
-                                callback.onSuccess(newBoss);
+                            public void onSuccess(Integer reward) {
+                                newBoss.setCoinsReward(reward);
+
+                                // Kada se coinsReward izračuna, tek tada čuvamo u bazi
+                                bossRepository.addBoss(newBoss, new RepositoryCallback<Void>() {
+                                    @Override
+                                    public void onSuccess(Void unused) {
+                                        callback.onSuccess(newBoss);
+                                    }
+
+                                    @Override
+                                    public void onFailure(Exception e) {
+                                        callback.onFailure(e);
+                                    }
+                                });
                             }
 
                             @Override
                             public void onFailure(Exception e) {
-                                callback.onFailure(e);
+                                callback.onFailure(e); // ako ne može da se izračuna reward
                             }
                         });
                     }
@@ -107,7 +119,7 @@ public class BossUseCase {
         boss.setMaxHP(baseHP);
         boss.setCurrentHP(baseHP);
         boss.setDefeated(false);
-        boss.setCoinsReward(calculateCoinsReward(levelInfo.getLevel()));
+        //boss.setCoinsReward(calculateCoinsReward(user.getId(),levelInfo.getLevel()));
 
         return boss;
     }
@@ -120,12 +132,24 @@ public class BossUseCase {
         return hp;
     }
 
-    private int calculateCoinsReward(int level) {
-        double reward = 200.0; // Prvi boss
-        for (int i = 2; i <= level; i++) {
-            reward *= 1.2;
+    private void calculateCoinsReward(String userId, int level, RepositoryCallback<Integer> callback) {
+        if (level == 1) {
+            callback.onSuccess(200);
+            return;
         }
-        return (int) reward;
+
+        bossRepository.getBossByUserIdAndLevel(userId, level - 1, new RepositoryCallback<Boss>() {
+            @Override
+            public void onSuccess(Boss previousBoss) {
+                int reward = (int) (previousBoss.getCoinsReward() * 1.2);
+                callback.onSuccess(reward);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(new Exception("Nije moguće učitati prethodnog bossa: " + e.getMessage()));
+            }
+        });
     }
 
     public void getOrCreateBossBattle(User user, Boss boss, RepositoryCallback<BossBattle> callback) {
@@ -181,6 +205,165 @@ public class BossUseCase {
         battle.setBossDefeated(false);
 
         return battle;
+    }
+
+    public void performAttack(BossBattle battle, Boss boss, RepositoryCallback<Boolean> callback) {
+        if (battle.getAttacksUsed() >= 5) {
+            callback.onFailure(new Exception("Maksimalan broj napada je već izvršen"));
+            return;
+        }
+
+        // Proveravamo da li je napad uspešan na osnovu hitChance
+        boolean isHit = Math.random() < battle.getHitChance();
+
+        if (isHit) {
+            // Napad je uspešan - oduzimamo PP od boss HP-a
+            int damage = battle.getUserPP();
+            int newHP = Math.max(0, boss.getCurrentHP() - damage);
+
+            boss.setCurrentHP(newHP);
+            battle.setDamageDealt(battle.getDamageDealt() + damage);
+
+            // Proveravamo da li je boss poražen
+            if (newHP == 0) {
+                boss.setDefeated(true);
+                battle.setBossDefeated(true);
+            }
+        }
+
+        // Ažuriramo broj korišćenih napada
+        battle.setAttacksUsed(battle.getAttacksUsed() + 1);
+
+        // Proveravamo da li je ovo poslednji napad
+        boolean isFinalAttack = battle.getAttacksUsed() >= 5;
+
+        if (isFinalAttack) {
+            // Završavamo borbu i računamo nagrade
+            processBattleEnd(battle, boss, new RepositoryCallback<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    // Ažuriramo boss i battle u bazi
+                    updateBattleAndBoss(battle, boss, new RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            callback.onSuccess(isHit); // true ako je poslednji napad pogodio
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            callback.onFailure(e);
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        } else {
+            // Ažuriramo battle u bazi
+            updateBattleAndBoss(battle, boss, new RepositoryCallback<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    callback.onSuccess(isHit);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        }
+    }
+
+    private void updateBattleAndBoss(BossBattle battle, Boss boss, RepositoryCallback<Void> callback) {
+        // Ažuriraj battle
+        bossBattleRepository.updateBattle(battle, new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                // Ažuriraj boss
+                bossRepository.updateBoss(boss, new RepositoryCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        callback.onSuccess(null);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    private void processBattleEnd(BossBattle battle, Boss boss, RepositoryCallback<Void> callback) {
+        int coinsEarned = 0;
+        String equipmentId = null;
+
+        if (battle.isBossDefeated()) {
+            // Boss je poražen - puna nagrada
+            coinsEarned = boss.getCoinsReward();
+
+            // 20% šanse za opremu
+            if (Math.random() < 0.2) {
+               equipmentId = generateRandomEquipmentId();
+            }
+        } else {
+            // Boss nije poražen - proveravamo da li je umanjen za 50% HP
+            double damagePercent = (double) battle.getDamageDealt() / boss.getMaxHP();
+
+            if (damagePercent >= 0.5) {
+                // Umanjen je za 50% ili više - polovina nagrade
+                coinsEarned = boss.getCoinsReward() / 2;
+
+                // 10% šanse za opremu
+                if (Math.random() < 0.1) {
+                   equipmentId = generateRandomEquipmentId();
+                }
+            }
+        }
+
+        // Kreiraj boss reward ako ima nagrade
+        if (coinsEarned > 0 || equipmentId != null) {
+          //  createBossReward(battle, boss, coinsEarned, equipmentId, callback);
+        } else {
+            callback.onSuccess(null);
+        }
+    }
+
+    private String generateRandomEquipmentId() {
+        // 95% šanse za odeću, 5% za oružje
+        EquipmentType equipmentType = Math.random() < 0.95 ? EquipmentType.CLOTHING : EquipmentType.WEAPON;
+
+        // OVDE TREBA DA IDE LOGIKA ZA DOBIJANJE OPREME
+        return equipmentType + "_" + System.currentTimeMillis();
+    }
+
+    public boolean isBattleFinished(BossBattle battle) {
+        return battle.getAttacksUsed() >= 5 || battle.isBossDefeated();
+    }
+
+    public void getBattleStatus(BossBattle battle, Boss boss, RepositoryCallback<String> callback) {
+        StringBuilder status = new StringBuilder();
+
+        status.append("Napad: ").append(battle.getAttacksUsed()).append("/5\n");
+        status.append("Boss HP: ").append(boss.getCurrentHP()).append("/").append(boss.getMaxHP()).append("\n");
+        status.append("Šteta nanešena: ").append(battle.getDamageDealt()).append("\n");
+
+        if (battle.isBossDefeated()) {
+            status.append("Boss je poražen!");
+        } else if (battle.getAttacksUsed() >= 5) {
+            status.append("Borba završena - boss nije poražen");
+        }
+
+        callback.onSuccess(status.toString());
     }
 
 

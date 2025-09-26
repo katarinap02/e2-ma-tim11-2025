@@ -69,7 +69,7 @@ public class BossActivity extends BaseActivity {
             ivBoss.setImageResource(R.drawable.boss_hit2);
             ivBoss.postDelayed(() -> ivBoss.setImageResource(R.drawable.boss_idle2), 500);
 
-            // Logika napada bi ovde išla (update BossBattle)
+            viewModel.performAttack();
         });
     }
 
@@ -77,18 +77,41 @@ public class BossActivity extends BaseActivity {
         BossViewModel.Factory factory = new BossViewModel.Factory(getApplication());
         viewModel = new ViewModelProvider(this, factory).get(BossViewModel.class);
 
+        viewModel.bossBattle.observe(this, bossBattle -> {
+            if (bossBattle != null) {
+                Boss boss = viewModel.boss.getValue();
+                if (boss != null) {
+                    updateUI(bossBattle, boss);
+                }
+            }
+        });
+
         viewModel.boss.observe(this, boss -> {
             if (boss != null) {
-                viewModel.bossBattle.observe(this, bossBattle -> {
-                    if (bossBattle != null) {
-                        updateUI(bossBattle, boss); // ažurira napade, PP, status borbe itd.
-                    }
-                });
+                BossBattle bossBattle = viewModel.bossBattle.getValue();
+                if (bossBattle != null) {
+                    updateUI(bossBattle, boss);
+                }
             }
         });
 
 
+        viewModel.attackResult.observe(this, result -> {
+            if (result != null && !result.isEmpty()) {
+                showToast(result);
+                viewModel.clearAttackResult();
+            }
+        });
 
+        // Observiranje završetka borbe
+        viewModel.battleFinished.observe(this, isFinished -> {
+            if (isFinished != null && isFinished) {
+                btnAttack.setEnabled(false);
+                btnAttack.setText("Borba završena");
+            }
+        });
+
+        // Observiranje grešaka
         viewModel.error.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
                 showToast(error);
@@ -96,7 +119,18 @@ public class BossActivity extends BaseActivity {
             }
         });
 
-        viewModel.isLoading.observe(this, isLoading -> btnAttack.setEnabled(!isLoading));
+        // Observiranje loading stanja
+        viewModel.isLoading.observe(this, isLoading -> {
+            btnAttack.setEnabled(!isLoading);
+            if (isLoading) {
+                btnAttack.setText("Napad...");
+            } else {
+                Boolean battleFinished = viewModel.battleFinished.getValue();
+                if (battleFinished == null || !battleFinished) {
+                    btnAttack.setText("Napad");
+                }
+            }
+        });
 
         // Učitavanje BossBattle-a
         viewModel.loadBattleWithBoss(userId, bossId, level);
