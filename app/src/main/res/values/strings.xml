@@ -79,5 +79,11 @@
     <string name="qr_kod">📲 QR kod</string>
     <string name="promeni_lozinku">Promeni lozinku</string>
     <string name="prodavnica">Prodavnica</string>
+    <string name="borba_sa_bosom">BORBA SA BOSOM</string>
+    <string name="_5_5_napada">5/5 napada</string>
+    <string name="aktivna_oprema">Aktivna oprema:</string>
+    <string name="_150_pp">150 PP</string>
+    <string name="_200_200_hp">200/200 HP</string>
+    <string name="napad">NAPAD</string>
 
 </resources>

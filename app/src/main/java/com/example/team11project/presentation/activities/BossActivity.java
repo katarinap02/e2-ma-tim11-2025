@@ -1,8 +1,10 @@
 package com.example.team11project.presentation.activities;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -106,8 +108,7 @@ public class BossActivity extends BaseActivity {
         // Observiranje završetka borbe
         viewModel.battleFinished.observe(this, isFinished -> {
             if (isFinished != null && isFinished) {
-                btnAttack.setEnabled(false);
-                btnAttack.setText("Borba završena");
+                showBattleEndAnimation();
             }
         });
 
@@ -161,5 +162,109 @@ public class BossActivity extends BaseActivity {
 
     private void showToast(String message) {
         android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
+    }
+
+    private void showBattleEndAnimation() {
+        BossBattle battle = viewModel.bossBattle.getValue();
+        Boss boss = viewModel.boss.getValue();
+
+        if (battle == null || boss == null) return;
+
+        // Sakrij battle UI elemente
+        hideBattleUI();
+
+        String battleEndMessage;
+        if (battle.isBossDefeated()) {
+            battleEndMessage = "POBEDA!\nBoss je poražen!";
+        } else {
+            double damagePercent = (double) battle.getDamageDealt() / boss.getMaxHP();
+            if (damagePercent >= 0.5) {
+                battleEndMessage = "DELIMIČNA POBEDA!\nNanešeno više od 50% štete";
+            } else {
+                battleEndMessage = "PORAZ!\nBoss nije dovoljno oslabljen";
+            }
+        }
+
+        // Prikaži poruku
+        TextView tvBossTitle = findViewById(R.id.tvBossTitle);
+        tvBossTitle.setText(battleEndMessage);
+        tvBossTitle.setTextSize(24);
+
+        // Animacija sa kovčegom
+        showChestAnimation();
+    }
+
+    private void hideBattleUI() {
+        pbUserPP.setVisibility(View.GONE);
+        pbBossHP.setVisibility(View.GONE);
+        tvUserPP.setVisibility(View.GONE);
+        tvBossHP.setVisibility(View.GONE);
+        btnAttack.setVisibility(View.GONE);
+        ivEquipment.setVisibility(View.GONE);
+        tvHitChance.setVisibility(View.GONE);
+        tvAttacksLeft.setVisibility(View.GONE);
+
+        // Sakrij ceo layout battle info ako želiš
+        LinearLayout layoutBattleInfo = findViewById(R.id.layoutBattleInfo);
+        LinearLayout layoutEquipment = findViewById(R.id.layoutEquipment);
+        if (layoutBattleInfo != null) {
+            layoutBattleInfo.setVisibility(View.GONE);
+        }
+        if (layoutEquipment != null) {
+            layoutEquipment.setVisibility(View.GONE);
+        }
+
+        // Sakrij boss sliku
+        ivBoss.setVisibility(View.GONE);
+    }
+
+    private void showChestAnimation() {
+        // Postavi kovčeg na poziciju boss-a
+        ivBoss.setVisibility(android.view.View.VISIBLE);
+        ivBoss.setImageResource(R.drawable.chest_closed);
+
+        ivBoss.setTranslationX(-70f);
+        ivBoss.setTranslationY(70f);
+
+        // Animacija skale za dramatičnost
+        ivBoss.setScaleX(0.5f);
+        ivBoss.setScaleY(0.5f);
+        ivBoss.animate()
+                .scaleX(0.8f)
+                .scaleY(0.8f)
+                .setDuration(500)
+                .start();
+
+        // Nakon 1.5 sekunde otvori kovčeg
+        ivBoss.postDelayed(() -> {
+            ivBoss.setImageResource(R.drawable.chest_open);
+
+            // Animacija "bounce" efekta prilikom otvaranja
+            ivBoss.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(200)
+                    .withEndAction(() -> {
+                        ivBoss.animate()
+                                .scaleX(0.8f)
+                                .scaleY(0.8f)
+                                .setDuration(200)
+                                .start();
+                    })
+                    .start();
+
+            showContinueButton();
+        }, 1500);
+    }
+
+    private void showContinueButton() {
+        btnAttack.setVisibility(android.view.View.VISIBLE);
+        btnAttack.setText("NASTAVI");
+        btnAttack.setEnabled(true);
+
+        btnAttack.setOnClickListener(v -> {
+            // Vrati se na prethodnu aktivnost ili zatvori
+            finish();
+        });
     }
 }

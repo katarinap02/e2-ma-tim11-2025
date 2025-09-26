@@ -329,13 +329,14 @@ public class BossUseCase {
                 }
             }
         }
+        callback.onSuccess(null);
 
         // Kreiraj boss reward ako ima nagrade
-        if (coinsEarned > 0 || equipmentId != null) {
-          //  createBossReward(battle, boss, coinsEarned, equipmentId, callback);
-        } else {
-            callback.onSuccess(null);
-        }
+//        if (coinsEarned > 0 || equipmentId != null) {
+//          //  createBossReward(battle, boss, coinsEarned, equipmentId, callback);
+//        } else {
+//            callback.onSuccess(null);
+//        }
     }
 
     private String generateRandomEquipmentId() {
