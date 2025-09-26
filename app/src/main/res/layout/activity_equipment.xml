@@ -2,8 +2,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center">
+    android:padding="8dp">
+
     <include
         android:id="@+id/navbar"
         layout="@layout/navbar"/>
@@ -57,7 +57,6 @@
         android:id="@+id/rvClothing"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-
 
     <Button
         android:id="@+id/btnStartBossFight"

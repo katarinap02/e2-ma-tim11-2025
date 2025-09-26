@@ -15,12 +15,16 @@ import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.repository.BossBattleRepository;
 import com.example.team11project.domain.repository.BossRepository;
+import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.usecase.BossUseCase;
 
 public class BossViewModel extends ViewModel {
 
     private final BossBattleRepository bossBattleRepository;
     private final BossRepository bossRepository;
+
+    private final BossUseCase bossUseCase;
 
     private final MutableLiveData<BossBattle> _bossBattle = new MutableLiveData<>();
     public final LiveData<BossBattle> bossBattle = _bossBattle;
@@ -34,9 +38,16 @@ public class BossViewModel extends ViewModel {
     private final MutableLiveData<String> _error = new MutableLiveData<>();
     public final LiveData<String> error = _error;
 
-    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository) {
+    private final MutableLiveData<String> _attackResult = new MutableLiveData<>();
+    public final LiveData<String> attackResult = _attackResult;
+
+    private final MutableLiveData<Boolean> _battleFinished = new MutableLiveData<>();
+    public final LiveData<Boolean> battleFinished = _battleFinished;
+
+    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository, BossRewardRepository bossRewardRepository) {
         this.bossBattleRepository = bossBattleRepository;
         this.bossRepository = bossRepository;
+        this.bossUseCase = new BossUseCase(bossRepository, bossBattleRepository, bossRewardRepository);
     }
 
     public void loadBattleWithBoss(String userId, String bossId, int level) {
@@ -60,6 +71,11 @@ public class BossViewModel extends ViewModel {
                     public void onSuccess(Boss bossObj) {
                         _boss.postValue(bossObj);
                         _isLoading.postValue(false);
+
+                        // Provjeri da li je borba već završena
+                        if (bossUseCase.isBattleFinished(battle)) {
+                            _battleFinished.postValue(true);
+                        }
                     }
 
                     @Override
@@ -78,7 +94,72 @@ public class BossViewModel extends ViewModel {
         });
     }
 
+    public void performAttack() {
+        BossBattle currentBattle = _bossBattle.getValue();
+        Boss currentBoss = _boss.getValue();
 
+        if (currentBattle == null || currentBoss == null) {
+            _error.setValue("Nema aktivne borbe");
+            return;
+        }
+
+        if (bossUseCase.isBattleFinished(currentBattle)) {
+            _error.setValue("Borba je već završena");
+            return;
+        }
+
+        _isLoading.setValue(true);
+
+        bossUseCase.performAttack(currentBattle, currentBoss, new RepositoryCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isHit) {
+                // Ažuriraj LiveData sa novim stanjem
+                _bossBattle.postValue(currentBattle);
+                _boss.postValue(currentBoss);
+
+                // Postavi rezultat napada
+                String result;
+                if (isHit) {
+                    result = "Pogodak! Nanešena šteta: " + currentBattle.getUserPP();
+                    if (currentBoss.getCurrentHP() <= 0) {
+                        result += "\nBoss je poražen!";
+                    }
+                } else {
+                    result = "Promašaj!";
+                }
+                _attackResult.postValue(result);
+
+                // Provjeri da li je borba završena
+                if (bossUseCase.isBattleFinished(currentBattle)) {
+                    _battleFinished.postValue(true);
+
+                    // Dodaj informaciju o završetku borbe
+                    if (currentBattle.isBossDefeated()) {
+                        _attackResult.postValue(result + "\n\nBorba završena - POBEDA!");
+                    } else {
+                        double damagePercent = (double) currentBattle.getDamageDealt() / currentBoss.getMaxHP();
+                        if (damagePercent >= 0.5) {
+                            _attackResult.postValue(result + "\n\nBorba završena - Delimična pobeda!");
+                        } else {
+                            _attackResult.postValue(result + "\n\nBorba završena - Poraz!");
+                        }
+                    }
+                }
+
+                _isLoading.postValue(false);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                _error.postValue("Greška pri napadu: " + e.getMessage());
+                _isLoading.postValue(false);
+            }
+        });
+    }
+
+    public void clearAttackResult() {
+        _attackResult.setValue(null);
+    }
 
     public void clearError() {
         _error.setValue(null);
@@ -98,12 +179,14 @@ public class BossViewModel extends ViewModel {
                 try {
                     BossBattleRepository battleRepo = new BossBattleRepositoryImpl(application);
                     BossRepository bossRepo = new BossRepositoryImpl(application);
+                    BossRewardRepository rewardRepo = new BossRewardRepositoryImpl(application);
 
                     @SuppressWarnings("unchecked")
                     T viewModel = (T) modelClass.getConstructor(
                                     BossBattleRepository.class,
-                                    BossRepository.class)
-                            .newInstance(battleRepo, bossRepo);
+                                    BossRepository.class,
+                                    BossRewardRepository.class)
+                            .newInstance(battleRepo, bossRepo, rewardRepo);
                     return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);
