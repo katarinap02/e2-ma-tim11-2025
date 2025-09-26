@@ -112,7 +112,7 @@ public class StoreViewModel extends ViewModel {
                     existing.setQuantity(existing.getQuantity() + 1);
                 } else {
                     Clothing copy = new Clothing(UUID.randomUUID().toString(), item.getName(), item.getPrice(),
-                            item.getEffectPercent(), item.isActive(), 1, item.getEffectType());
+                            item.getEffectPercent(), item.isActive(), 1, item.getEffectType(), item.getImage());
                     user.getClothing().add(copy);
                 }
 
@@ -165,7 +165,7 @@ public class StoreViewModel extends ViewModel {
                     existing.setQuantity(existing.getQuantity() + 1);
                 } else {
                     Potion copy = new Potion(UUID.randomUUID().toString(), item.getName(), item.getPrice(),
-                            item.getPowerBoostPercent(), item.isPermanent(), item.isActive(), 1);
+                            item.getPowerBoostPercent(), item.isPermanent(), item.isActive(), 1, item.getImage());
                     user.getPotions().add(copy);
                 }
 
@@ -173,7 +173,7 @@ public class StoreViewModel extends ViewModel {
                 user.setCoins((int) (user.getCoins() - item.getPrice()));
 
                 Potion copy = new Potion(UUID.randomUUID().toString(), item.getName(), item.getPrice(),
-                        item.getPowerBoostPercent(), item.isPermanent(), item.isActive(), item.getQuantity());
+                        item.getPowerBoostPercent(), item.isPermanent(), item.isActive(), item.getQuantity(), item.getImage());
                 user.getPotions().add(copy);
 
                 userRepository.updateUser(user, new RepositoryCallback<Void>() {

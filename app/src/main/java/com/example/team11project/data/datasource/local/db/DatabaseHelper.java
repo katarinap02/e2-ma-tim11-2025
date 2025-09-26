@@ -179,6 +179,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.EquipmentEntry.COLUMN_TYPE + " TEXT NOT NULL," +
                     AppContract.EquipmentEntry.COLUMN_PRICE + " REAL NOT NULL," +
                     AppContract.EquipmentEntry.COLUMN_IS_ACTIVE + " INTEGER," + // 0 = false, 1 = true
+                    AppContract.EquipmentEntry.COLUMN_QUANTITY + " INTEGER, " +
+                    AppContract.EquipmentEntry.COLUMN_IMAGE + " TEXT, " +
 
                     // Potion
                     AppContract.EquipmentEntry.COLUMN_POWER_BOOST_PERCENT + " INTEGER," +

@@ -112,6 +112,8 @@ public final class AppContract {
         public static final String COLUMN_TYPE = "type"; // POTION, CLOTHING, WEAPON
         public static final String COLUMN_PRICE = "price";
         public static final String COLUMN_IS_ACTIVE = "is_active";
+        public static final String COLUMN_QUANTITY = "quantity";
+        public static final String COLUMN_IMAGE = "image";
 
         // Potion
         public static final String COLUMN_POWER_BOOST_PERCENT = "power_boost_percent";
