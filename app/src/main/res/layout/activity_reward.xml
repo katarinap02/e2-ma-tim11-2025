@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    tools:context=".presentation.activities.RewardActivity">
+
+    <!-- Navbar -->
+    <include
+        android:id="@+id/navbar"
+        layout="@layout/navbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Naslov -->
+    <TextView
+        android:id="@+id/tvReward"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Nagrade"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp"
+        android:layout_gravity="center_horizontal" />
+
+    <!-- Osvojeni novčići -->
+    <LinearLayout
+        android:id="@+id/coinsContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="16dp"
+        android:layout_gravity="center_horizontal">
+
+        <!-- Slika novčića -->
+        <ImageView
+            android:id="@+id/ivCoin"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/coin"
+            android:contentDescription="Novčić"
+            android:layout_marginEnd="12dp" />
+
+        <!-- Tekst sa brojem novčića -->
+        <TextView
+            android:id="@+id/tvCoins"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="@color/black" />
+    </LinearLayout>
+
+    <!-- Container za opremu (skriva se ako nema opreme) -->
+    <LinearLayout
+        android:id="@+id/equipmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone"
+        android:layout_marginTop="32dp">
+
+        <!-- Tekst o opremi -->
+        <TextView
+            android:id="@+id/tvEquipment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Čestitamo! Dobili ste opremu!"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"
+            android:gravity="center" />
+
+        <!-- Slika opreme -->
+        <ImageView
+            android:id="@+id/ivEquipment"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:scaleType="centerCrop"
+            android:padding="8dp"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="Slika opreme"
+            tools:src="@drawable/potion_5" />
+
+        <!-- Ime opreme -->
+        <TextView
+            android:id="@+id/tvEquipmentName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Naziv opreme"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- Dugme za preuzimanje nagrade -->
+    <Button
+        android:id="@+id/btnClaimReward"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Preuzmi nagradu"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:layout_marginTop="102dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:elevation="4dp" />
+
+    <!-- Progress Bar (centar ekrana, overlay) -->
+    <ProgressBar
+        android:id="@+id/progressBarReward"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_gravity="center" />
+
+</LinearLayout>

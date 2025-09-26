@@ -665,6 +665,31 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void getRewardByUserAndBossAndLevel(String userId, String bossId, int level, final DataSourceCallback<BossReward> callback) {
+        // Tražimo boss reward sa određenim parametrima
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSS_REWARDS_COLLECTION)
+                .whereEqualTo("bossId", bossId)
+                .whereEqualTo("level", level)
+                .limit(1) // Očekujemo samo jednu nagradu po kombinaciji
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        callback.onSuccess(null);
+                    } else {
+                        // Pronađen je boss reward
+                        DocumentSnapshot document = queryDocumentSnapshots.getDocuments().get(0);
+                        BossReward bossReward = document.toObject(BossReward.class);
+                        if (bossReward != null) {
+                            bossReward.setId(document.getId());
+                        }
+                        callback.onSuccess(bossReward);
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+
     public void getPotionsByUserId(String userId, final DataSourceCallback<List<Potion>> callback) {
         db.collection(USERS_COLLECTION)
                 .document(userId)

@@ -1,8 +1,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="8dp">
+    android:orientation="vertical">
 
     <include
         android:id="@+id/navbar"
@@ -13,6 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Izaberite opremu"
+        android:layout_marginTop="16dp"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textAlignment="center"
@@ -23,6 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Oružje"
+        android:layout_marginLeft="10dp"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginTop="16dp"/>
@@ -36,6 +37,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Napitci"
+        android:layout_marginLeft="10dp"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginTop="16dp"/>
@@ -49,6 +51,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Odeća"
+        android:layout_marginLeft="10dp"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginTop="16dp"/>
@@ -66,6 +69,8 @@
         android:textSize="18sp"
         android:textStyle="bold"
         android:padding="16dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
         android:layout_marginTop="16dp" />
 
 </LinearLayout>

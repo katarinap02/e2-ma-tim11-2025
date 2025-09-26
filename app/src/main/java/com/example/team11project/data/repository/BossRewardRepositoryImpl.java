@@ -95,4 +95,41 @@ public class BossRewardRepositoryImpl implements BossRewardRepository {
             });
         });
     }
+
+    @Override
+    public void getRewardByUserAndBossAndLevel(String userId, String bossId, int level, RepositoryCallback<BossReward> callback) {
+        databaseExecutor.execute(() -> {
+            // Prvo pokušamo iz remote data source-a
+            remoteDataSource.getRewardByUserAndBossAndLevel(userId, bossId, level, new RemoteDataSource.DataSourceCallback<BossReward>() {
+                @Override
+                public void onSuccess(BossReward bossReward) {
+                    if (bossReward != null) {
+                        databaseExecutor.execute(() -> {
+                            callback.onSuccess(bossReward);
+                        });
+                    } else {
+                        databaseExecutor.execute(() -> {
+                            BossReward localBossReward = localDataSource.getRewardByUserAndBossAndLevel(userId, bossId, level);
+                            callback.onSuccess(localBossReward);
+                        });
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    databaseExecutor.execute(() -> {
+                        BossReward localBossReward = localDataSource.getRewardByUserAndBossAndLevel(userId, bossId, level);
+                        if (localBossReward != null) {
+                            // Pronađen u lokalnoj bazi
+                            callback.onSuccess(localBossReward);
+                        } else {
+                            // Nije pronađen nigde
+                            callback.onFailure(e);
+                        }
+                    });
+                }
+            });
+        });
+    }
+
 }

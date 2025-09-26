@@ -12,10 +12,12 @@ import com.example.team11project.R;
 import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
+import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.BossUseCase;
@@ -52,7 +54,8 @@ public class LevelInfoActivity extends BaseActivity {
         BossRepositoryImpl bossRepository = new BossRepositoryImpl(getApplicationContext());
         BossBattleRepositoryImpl battleRepository = new BossBattleRepositoryImpl(getApplicationContext());
         BossRewardRepositoryImpl rewardRepository = new BossRewardRepositoryImpl(getApplicationContext());
-        BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository);
+        EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(getApplicationContext());
+        BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository, equipmentRepository);
         LevelInfoViewModel.Factory factory = new LevelInfoViewModel.Factory(repository, userRepository, bossUseCase, userId);
         viewModel = new ViewModelProvider(this, factory).get(LevelInfoViewModel.class);
 

@@ -1,5 +1,6 @@
 package com.example.team11project.presentation.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -244,27 +245,26 @@ public class BossActivity extends BaseActivity {
                     .scaleX(0.9f)
                     .scaleY(0.9f)
                     .setDuration(200)
-                    .withEndAction(() -> {
-                        ivBoss.animate()
-                                .scaleX(0.8f)
-                                .scaleY(0.8f)
-                                .setDuration(200)
-                                .start();
-                    })
+                    .withEndAction(() -> ivBoss.animate()
+                            .scaleX(0.8f)
+                            .scaleY(0.8f)
+                            .setDuration(200)
+                            .start())
                     .start();
 
-            showContinueButton();
-        }, 1500);
+            // Nakon još 1 sekunde automatski pređi na RewardActivity
+            ivBoss.postDelayed(() -> {
+                Intent intent = new Intent(this, RewardActivity.class);
+
+                // Prosledi iste parametre kao pre
+                intent.putExtra("bossId", getIntent().getStringExtra("bossId"));
+                intent.putExtra("userId", getIntent().getStringExtra("userId"));
+                intent.putExtra("level", getIntent().getIntExtra("level", 1));
+
+                startActivity(intent);
+                finish();
+            }, 1000); // 1 sekunda kasnije
+        }, 1500); // otvaranje kovčega
     }
 
-    private void showContinueButton() {
-        btnAttack.setVisibility(android.view.View.VISIBLE);
-        btnAttack.setText("NASTAVI");
-        btnAttack.setEnabled(true);
-
-        btnAttack.setOnClickListener(v -> {
-            // Vrati se na prethodnu aktivnost ili zatvori
-            finish();
-        });
-    }
 }

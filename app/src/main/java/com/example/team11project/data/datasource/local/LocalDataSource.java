@@ -1439,6 +1439,33 @@ public class LocalDataSource {
         return bossBattle;
     }
 
+    public BossReward getRewardByUserAndBossAndLevel(String userId, String bossId, int level) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID + " = ? AND " +
+                AppContract.BossRewardEntry.COLUMN_NAME_LEVEL + " = ?";
+        String[] selectionArgs = {userId, bossId, String.valueOf(level)};
+
+        Cursor cursor = db.query(
+                AppContract.BossRewardEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null, null, null, "1"
+        );
+
+        BossReward bossReward = null;
+        if (cursor.moveToFirst()) {
+            bossReward = cursorToBossReward(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return bossReward;
+    }
+
+
 
     private ContentValues rewardToContentValues(BossReward reward) {
         ContentValues values = new ContentValues();

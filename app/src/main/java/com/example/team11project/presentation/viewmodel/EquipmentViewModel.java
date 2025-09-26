@@ -12,6 +12,7 @@ import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
 import com.example.team11project.data.repository.CategoryRepositoryImpl;
+import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
@@ -28,6 +29,7 @@ import com.example.team11project.domain.repository.BossBattleRepository;
 import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.CategoryRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
@@ -143,7 +145,8 @@ public class EquipmentViewModel extends ViewModel {
                     BossRepository bossRepository = new BossRepositoryImpl(application);
                     BossBattleRepository battleRepository = new BossBattleRepositoryImpl(application);
                     BossRewardRepository rewardRepository = new BossRewardRepositoryImpl(application);
-                    BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository);
+                    EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(application);
+                    BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository, equipmentRepository);
 
 
                     @SuppressWarnings("unchecked")

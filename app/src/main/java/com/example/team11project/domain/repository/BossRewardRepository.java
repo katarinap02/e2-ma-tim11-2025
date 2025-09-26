@@ -9,4 +9,6 @@ public interface BossRewardRepository {
     void getRewards(String userId, RepositoryCallback<List<BossReward>> callback);
 
     void updateReward(BossReward reward, RepositoryCallback<Void> callback);
+
+    void getRewardByUserAndBossAndLevel(String userId, String bossId, int level, RepositoryCallback<BossReward> callback);
 }
