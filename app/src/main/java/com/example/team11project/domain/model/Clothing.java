@@ -6,9 +6,9 @@ public class Clothing extends Equipment{
     private int remainingBattles;
 
     public Clothing(){}
-    public Clothing(String id, String name, double price, int effectPercent, boolean isActive, ChlothingEffectType effectType) {
-        super(id, name, EquipmentType.WEAPON, price, isActive);
-        this.remainingBattles = 0;
+    public Clothing(String id, String name, double price, int effectPercent, boolean isActive, int quantity, ChlothingEffectType effectType) {
+        super(id, name, EquipmentType.CLOTHING, price, isActive, quantity);
+        this.remainingBattles = 2;
         this.effectPercent = effectPercent;
         this.effectType = effectType;
     }
@@ -16,7 +16,6 @@ public class Clothing extends Equipment{
     @Override
     public void activate(){
         this.isActive = true;
-        this.remainingBattles = 2;
     }
 
     public int getEffectPercent() {

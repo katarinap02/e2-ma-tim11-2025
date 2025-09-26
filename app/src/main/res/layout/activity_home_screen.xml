@@ -61,6 +61,13 @@
             android:text="@string/napredak_kroz_nivoe"
             android:layout_marginBottom="16dp"/>
 
+        <Button
+            android:id="@+id/btnStore"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/prodavnica"
+            android:layout_marginBottom="16dp"/>
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

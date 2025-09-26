@@ -7,15 +7,17 @@ public class Weapon extends Equipment{
 
     public Weapon() {}
 
-    public Weapon(String id, String name, double price, int permanentBoostPercent, double upgradeChance, boolean isActive, WeaponEffectType effectType) {
-        super(id, name, EquipmentType.WEAPON, price, isActive);
+    public Weapon(String id, String name, double price, int permanentBoostPercent, double upgradeChance, boolean isActive, int quantity, WeaponEffectType effectType) {
+        super(id, name, EquipmentType.WEAPON, price, isActive, quantity);
         this.permanentBoostPercent = permanentBoostPercent;
         this.upgradeChance = upgradeChance;
         this.effectType = effectType;
     }
 
     @Override
-    public void activate(){}
+    public void activate(){
+        this.isActive = true;
+    }
 
     public void upgrade() {
         this.upgradeChance += 0.01;

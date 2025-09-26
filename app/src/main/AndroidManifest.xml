@@ -19,6 +19,9 @@
             android:name=".presentation.activities.BossActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.activities.StoreActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.activities.ChangePasswordActivity"
             android:exported="false" />
         <activity

@@ -6,15 +6,17 @@ public abstract class Equipment {
     protected EquipmentType type;
     protected double price;
     protected boolean isActive;
+    protected int quantity;
 
     public Equipment(){}
 
-    public Equipment(String id, String name, EquipmentType type, double price, boolean isActive) {
+    public Equipment(String id, String name, EquipmentType type, double price, boolean isActive, int quantity) {
         this.id = id;
         this.name = name;
         this.type = type;
         this.price = price;
         this.isActive = isActive;
+        this.quantity = quantity;
     }
     public abstract void activate();
 
@@ -56,5 +58,13 @@ public abstract class Equipment {
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
     }
 }
