@@ -17,6 +17,7 @@ import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.model.ChlothingEffectType;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.Potion;
@@ -203,29 +204,38 @@ public class EquipmentViewModel extends ViewModel {
 
         if (currentUser.getWeapons() != null && selectedWeapons != null) {
             for (Weapon w : selectedWeapons) {
+                if (w.getQuantity() <= 0) continue; // nemoj aktivirati ako nema na stanju
                 w.setActive(true);
+                currentUser.getLevelInfo().setPp(w.getPermanentBoostPercent() + currentUser.getLevelInfo().getPp());
                 w.setQuantity(w.getQuantity() - 1);
-               // if (w.getQuantity() > 0) w.setQuantity(w.getQuantity() - 1);
             }
         }
 
         if (currentUser.getPotions() != null && selectedPotions != null) {
-
             for (Potion p : selectedPotions) {
+                if (p.getQuantity() <= 0) continue;
                 p.setActive(true);
-                p.setQuantity(p.getQuantity() - 1);
-
-               // if (p.getQuantity() > 0) p.setQuantity(p.getQuantity() - 1);
+                if (p.isPermanent()) {
+                    currentUser.getLevelInfo().setPp(p.getPowerBoostPercent() + currentUser.getLevelInfo().getPp());
+                } else {
+                    //TODO: dodaj logiku za privremeno povecanje
+                    p.setQuantity(p.getQuantity() - 1);
+                }
             }
         }
 
         if (currentUser.getClothing() != null && selectedClothing != null) {
             for (Clothing c : selectedClothing) {
+                if (c.getQuantity() <= 0) continue;
                 c.setActive(true);
+                if(c.getEffectType() == ChlothingEffectType.STRENGTH)
+                    currentUser.getLevelInfo().setPp(c.getEffectPercent() + currentUser.getLevelInfo().getPp());
+                else if(c.getEffectType() == ChlothingEffectType.SUCCESS_RATE) continue;
+                    //TODO: dodaj logiku
+                else continue;
+                    //TODO: dodaj logiku
+                c.setRemainingBattles(2);
                 c.setQuantity(c.getQuantity() - 1);
-
-                //if (c.getQuantity() > 0) c.setQuantity(c.getQuantity() - 1);
-               // if (c.getRemainingBattles() > 0) c.setRemainingBattles(c.getRemainingBattles() - 1);
             }
         }
 
@@ -241,7 +251,7 @@ public class EquipmentViewModel extends ViewModel {
 
             @Override
             public void onFailure(Exception e) {
-                _error.postValue("Neuspešna aktivacija: " + e.getMessage());
+                _error.postValue("Neuspesna aktivacija: " + e.getMessage());
             }
         });
 

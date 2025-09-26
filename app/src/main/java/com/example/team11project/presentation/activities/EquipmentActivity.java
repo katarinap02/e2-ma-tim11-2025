@@ -2,6 +2,7 @@ package com.example.team11project.presentation.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -87,7 +88,7 @@ public class EquipmentActivity extends BaseActivity {
         }
     }
 
-    private void setupClickListeners() {
+    /*private void setupClickListeners() {
         btnStartBossFight.setOnClickListener(v -> {
             if (userId != null) {
                 List<Weapon> selectedWeapons = weaponAdapter.getSelectedWeapons();
@@ -101,7 +102,25 @@ public class EquipmentActivity extends BaseActivity {
                 Toast.makeText(this, "Greška: Nedostaju podaci o korisniku", Toast.LENGTH_SHORT).show();
             }
         });
+    }*/
+
+    private void setupClickListeners() {
+        btnStartBossFight.setOnClickListener(v -> {
+            if (userId != null) {
+                List<Weapon> selectedWeapons = weaponAdapter.getSelectedWeapons();
+                List<Potion> selectedPotions = potionAdapter.getSelectedPotions();
+                List<Clothing> selectedClothing = clothingAdapter.getSelectedClothing();
+
+                viewModel.activateEquipment(selectedWeapons, selectedPotions, selectedClothing);
+                viewModel.startBossFight(userId);
+
+            } else {
+                Log.e("BossFight", "Greška: userId je null");
+                Toast.makeText(this, "Greška: Nedostaju podaci o korisniku", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
 
     private void observeViewModel() {
         viewModel.bossBattle.observe(this, bossBattle -> {
