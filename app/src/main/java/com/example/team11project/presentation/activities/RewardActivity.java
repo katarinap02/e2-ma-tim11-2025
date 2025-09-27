@@ -85,8 +85,11 @@ public class RewardActivity extends BaseActivity{
                     tvEquipment.setText("Nema opreme ovaj put");
                     equipmentContainer.setVisibility(View.GONE);
                 }
+                updateClaimButtonState(bossReward);
             }
         });
+
+
 
         // Observer za opremu
         rewardViewModel.equipment.observe(this, equipment -> {
@@ -116,12 +119,38 @@ public class RewardActivity extends BaseActivity{
             }
         });
 
+        rewardViewModel.successMessage.observe(this, message -> {
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            }
+        });
+
+        // Observer za status preuzimanja nagrade
+        rewardViewModel.rewardClaimed.observe(this, claimed -> {
+            if (claimed != null && claimed) {
+                btnClaimReward.setEnabled(false);
+                btnClaimReward.setText("Preuzeto");
+            }
+        });
+
         // Click listener za dugme
         btnClaimReward.setOnClickListener(v -> {
-            // Ovde možeš dodati logiku za preuzimanje nagrade
-            // Na primer, zatvaranje aktivnosti ili navigacija
-            finish();
+            rewardViewModel.claimReward(userId, bossId, level);
         });
+    }
+
+    private void updateClaimButtonState(com.example.team11project.domain.model.BossReward bossReward) {
+        // Provjeri da li nagrada ima sadržaj za preuzimanje
+        boolean hasReward = (bossReward.getCoinsEarned() > 0) ||
+                (bossReward.getEquipmentId() != null && !bossReward.getEquipmentId().isEmpty());
+
+        if (hasReward) {
+            btnClaimReward.setEnabled(true);
+            btnClaimReward.setText("Preuzmi nagradu");
+        } else {
+            btnClaimReward.setEnabled(false);
+            btnClaimReward.setText("Preuzeto");
+        }
     }
 
     private void showEquipmentDetails(Equipment equipment) {

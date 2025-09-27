@@ -69,7 +69,6 @@ public class BossActivity extends BaseActivity {
         tvHitChance = findViewById(R.id.tvHitChance);
         tvAttacksLeft = findViewById(R.id.tvAttacksLeft);
         btnAttack = findViewById(R.id.btnAttack);
-        layoutEquipment = findViewById(R.id.layoutEquipment);
         layoutActiveEquipment = findViewById(R.id.layoutActiveEquipment);
 
     }
@@ -224,7 +223,7 @@ public class BossActivity extends BaseActivity {
         tvUserPP.setVisibility(View.GONE);
         tvBossHP.setVisibility(View.GONE);
         btnAttack.setVisibility(View.GONE);
-        layoutEquipment.setVisibility(View.GONE);
+        layoutActiveEquipment.setVisibility(View.GONE);
         tvHitChance.setVisibility(View.GONE);
         tvAttacksLeft.setVisibility(View.GONE);
 
