@@ -152,7 +152,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_WEAPON + " TEXT, " +
                     AppContract.UserEntry.COLUMN_CLOTHING + " TEXT, " +
                     AppContract.UserEntry.COLUMN_POTION + " TEXT, " +
-                    AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0" +
+                    AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0, " +
+                    AppContract.UserEntry.COLUMN_FRIENDS + " TEXT" +
                     ")";
 
     private static final String SQL_CREATE_LEVELINFO_TABLE =

@@ -68,6 +68,14 @@
             android:text="@string/prodavnica"
             android:layout_marginBottom="16dp"/>
 
+        <Button
+            android:id="@+id/btnFriends"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/prijatelji"
+            android:layout_marginBottom="16dp"/>
+
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

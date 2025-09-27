@@ -85,5 +85,7 @@
     <string name="_150_pp">150 PP</string>
     <string name="_200_200_hp">200/200 HP</string>
     <string name="napad">NAPAD</string>
+    <string name="prijatelji">Prijatelji</string>
+    <string name="pretra_i_korisnike">Pretraži korisnike</string>
 
 </resources>

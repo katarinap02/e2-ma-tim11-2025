@@ -43,6 +43,7 @@ public final class AppContract {
         public static final String COLUMN_WEAPON = "weapon";
         public static final String COLUMN_POTION = "potion";
         public static final String COLUMN_COINS = "coins";
+        public static final String COLUMN_FRIENDS = "friends";
     }
 
 

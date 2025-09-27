@@ -13,21 +13,35 @@ import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.UserRepository;
+import com.example.team11project.domain.usecase.FriendsUseCase;
 
 import java.util.List;
 
 public class UserViewModel extends ViewModel {
 
     private UserRepository repository;
+    private FriendsUseCase friendsUseCase;
     private MutableLiveData<User> user = new MutableLiveData<>();
     private MutableLiveData<List<User>> allUsers = new MutableLiveData<>();
     private MutableLiveData<String> error = new MutableLiveData<>();
     private MutableLiveData<Boolean> updateSuccess = new MutableLiveData<>();
 
+    // LiveData za listu prijatelja
+    private MutableLiveData<List<User>> friends = new MutableLiveData<>();
+
+    public LiveData<List<User>> getFriendsLiveData() { return friends; }
+
+    // LiveData za listu korisnika koji nisu prijatelji
+    private MutableLiveData<List<User>> nonFriends = new MutableLiveData<>();
+
+    public LiveData<List<User>> getNonFriendsLiveData() { return nonFriends; }
+
+
     public LiveData<String> getError() { return error; }
 
     public UserViewModel(UserRepository repository){
         this.repository = repository;
+        this.friendsUseCase = friendsUseCase = new FriendsUseCase(repository);
     }
 
     public LiveData<User> getUser() {
@@ -108,6 +122,48 @@ public class UserViewModel extends ViewModel {
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }
+    }
+
+    public void loadFriends(String currentUserId) {
+        friendsUseCase.getFriends(currentUserId, new RepositoryCallback<List<User>>() {
+            @Override
+            public void onSuccess(List<User> data) {
+                friends.postValue(data);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue(e.getMessage());
+            }
+        });
+    }
+
+    public void loadNonFriends(String currentUserId) {
+        friendsUseCase.getNonFriends(currentUserId, new RepositoryCallback<List<User>>() {
+            @Override
+            public void onSuccess(List<User> data) {
+                nonFriends.postValue(data);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue(e.getMessage());
+            }
+        });
+    }
+
+    public void addFriend(String currentUserId, String newFriendId) {
+        friendsUseCase.addFriend(currentUserId, newFriendId, new RepositoryCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+                loadFriends(currentUserId);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue(e.getMessage());
+            }
+        });
     }
 
 

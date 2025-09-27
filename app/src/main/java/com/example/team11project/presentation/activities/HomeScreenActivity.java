@@ -11,6 +11,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.team11project.R;
+import com.example.team11project.presentation.adapters.FriendsAdapter;
 
 public class HomeScreenActivity extends BaseActivity {
 
@@ -57,6 +58,12 @@ public class HomeScreenActivity extends BaseActivity {
         Button btnStore = findViewById(R.id.btnStore);
         btnStore.setOnClickListener(v -> {
             Intent intent = new Intent(this, StoreActivity.class);
+            startActivity(intent);
+        });
+
+        Button btnFriends = findViewById(R.id.btnFriends);
+        btnFriends.setOnClickListener(v -> {
+            Intent intent = new Intent(this, FriendsActivity.class);
             startActivity(intent);
         });
 
