@@ -40,11 +40,11 @@
                 android:id="@+id/tvHitChance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sansa za pogodak: 68%"
+                android:text="@string/sansa_za_pogodak"
                 android:textColor="@color/white"
                 android:textSize="18sp"
                 android:padding="4dp"
-                android:layout_marginEnd="16dp" />
+                android:layout_marginEnd="8dp" />
 
             <TextView
                 android:id="@+id/tvAttacksLeft"
@@ -59,27 +59,32 @@
 
         <!-- Active Equipment -->
         <LinearLayout
-            android:id="@+id/layoutEquipment"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_marginTop="16dp">
 
+            <!-- Tekst iznad opreme -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/aktivna_oprema"
                 android:textColor="@color/white"
                 android:textSize="18sp"
-                android:layout_marginEnd="4dp" />
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:gravity="center"/>
 
-            <ImageView
-                android:id="@+id/ivEquipment"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="#00FFFFFF" />
-
+            <!-- Layout za slike opreme -->
+            <LinearLayout
+                android:id="@+id/layoutActiveEquipment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center" />
         </LinearLayout>
+
     </LinearLayout>
 
     <!-- Bars i Boss -->
@@ -88,8 +93,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:gravity="center"
-        android:layout_marginTop="8dp">
+        android:gravity="center">
 
         <!-- PP Bar -->
         <LinearLayout

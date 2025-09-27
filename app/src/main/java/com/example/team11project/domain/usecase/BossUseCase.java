@@ -162,7 +162,7 @@ public class BossUseCase {
         });
     }
 
-    public void getOrCreateBossBattle(User user, Boss boss, RepositoryCallback<BossBattle> callback) {
+    public void getOrCreateBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages, RepositoryCallback<BossBattle> callback) {
         // Proveravamo da li već postoji aktivna bitka protiv ovog boss-a
         bossBattleRepository.getBattleByUserAndBossAndLevel(user.getId(), boss.getId(), user.getLevelInfo().getLevel(), new RepositoryCallback<BossBattle>() {
             @Override
@@ -171,7 +171,7 @@ public class BossUseCase {
                     // Već postoji aktivna bitka
                     callback.onSuccess(existingBattle);
                 } else {
-                    BossBattle newBattle = createNewBossBattle(user, boss);
+                    BossBattle newBattle = createNewBossBattle(user, boss, activeEquipmentImages);
                     bossBattleRepository.addBattle(newBattle, new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
@@ -193,7 +193,7 @@ public class BossUseCase {
         });
     }
 
-    private BossBattle createNewBossBattle(User user, Boss boss) {
+    private BossBattle createNewBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages) {
         BossBattle battle = new BossBattle();
         battle.setUserId(user.getId());
         battle.setBossId(boss.getId());
@@ -201,14 +201,12 @@ public class BossUseCase {
         battle.setAttacksUsed(0); // Počinje sa 0 napada (maksimalno 5)
         battle.setDamageDealt(0);
 
+
         // Šansa za pogodak se računa na osnovu uspešnosti rešavanja zadataka u etapi
         //battle.setHitChance(calculateHitChanceFromTaskSuccess(user));
 
         battle.setHitChance(0.67);
-
-        List<String> equipments= new ArrayList<String>(); // za sada nema nista u equipment
-        battle.setActiveEquipment(equipments);
-
+        battle.setActiveEquipment(activeEquipmentImages);
         int totalPP = user.getLevelInfo().getPp();
         battle.setUserPP(totalPP);
 

@@ -80,7 +80,7 @@ public class EquipmentViewModel extends ViewModel {
         this.bossRepository = bossRepository;
     }
 
-    public void startBossFight(String userId) {
+    public void startBossFight(String userId, ArrayList<String> activeEquipmentImages) {
         _isLoading.setValue(true);
         _error.setValue(null); // resetuj greške
 
@@ -93,7 +93,7 @@ public class EquipmentViewModel extends ViewModel {
                     @Override
                     public void onSuccess(Boss boss) {
                         // Konačno kreiramo ili dobijamo postojeći BossBattle
-                        bossUseCase.getOrCreateBossBattle(user, boss, new RepositoryCallback<BossBattle>() {
+                        bossUseCase.getOrCreateBossBattle(user, boss, activeEquipmentImages, new RepositoryCallback<BossBattle>() {
                             @Override
                             public void onSuccess(BossBattle bossBattle) {
                                 _bossBattle.postValue(bossBattle);
@@ -198,7 +198,7 @@ public class EquipmentViewModel extends ViewModel {
             }
         });
     }
-    public void activateEquipment(List<Weapon> selectedWeapons, List<Potion> selectedPotions, List<Clothing> selectedClothing) {
+    public void activateEquipment(List<Weapon> selectedWeapons, List<Potion> selectedPotions, List<Clothing> selectedClothing, Runnable onComplete) {
         User currentUser = _user.getValue();
         if (currentUser == null) {
             _error.postValue("Korisnik nije učitan");
@@ -250,6 +250,7 @@ public class EquipmentViewModel extends ViewModel {
                 _weapon.postValue(currentUser.getWeapons());
                 _potion.postValue(currentUser.getPotions());
                 _clothing.postValue(currentUser.getClothing());
+                onComplete.run();
             }
 
             @Override
@@ -258,8 +259,38 @@ public class EquipmentViewModel extends ViewModel {
             }
         });
 
+    }
 
+    public ArrayList<String> getActiveEquipmentImages() {
+        ArrayList<String> images = new ArrayList<>();
+        User currentUser1 = _user.getValue();
+        if (currentUser1 == null) return images;
 
+        if (currentUser1.getWeapons() != null) {
+            for (Weapon w : currentUser1.getWeapons()) {
+                if (w.isActive() && w.getImage() != null) {
+                    images.add(w.getImage());
+                }
+            }
+        }
+
+        if (currentUser1.getPotions() != null) {
+            for (Potion p : currentUser1.getPotions()) {
+                if (p.isActive() && p.getImage() != null) {
+                    images.add(p.getImage());
+                }
+            }
+        }
+
+        if (currentUser1.getClothing() != null) {
+            for (Clothing c : currentUser1.getClothing()) {
+                if (c.isActive() && c.getImage() != null) {
+                    images.add(c.getImage());
+                }
+            }
+        }
+
+        return images;
     }
 
 }
