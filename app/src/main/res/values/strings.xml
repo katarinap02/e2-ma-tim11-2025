@@ -90,5 +90,7 @@
     <string name="dodaj">Dodaj</string>
     <string name="scan_qr">Scan QR</string>
     <string name="ime_usera">Ime usera</string>
+    <string name="kreiraj_savez">Kreiraj savez</string>
+    <string name="savez">Savez</string>
 
 </resources>

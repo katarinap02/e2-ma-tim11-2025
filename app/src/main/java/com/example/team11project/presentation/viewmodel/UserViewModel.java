@@ -73,6 +73,11 @@ public class UserViewModel extends ViewModel {
         });
     }
 
+    public void getUserById(String id, RepositoryCallback<User> callback) {
+        repository.getUserById(id, callback);
+    }
+
+
     public void loadAllUsers() {
         repository.getAllUsers(new RepositoryCallback<List<User>>() {
             @Override

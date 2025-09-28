@@ -3,6 +3,7 @@ package com.example.team11project.presentation.activities;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.lifecycle.ViewModelProvider;
@@ -67,6 +68,12 @@ public class FriendsActivity extends BaseActivity {
 
         fab.setOnClickListener(v -> {
             Intent intent = new Intent(FriendsActivity.this, AddFriendsActivity.class);
+            startActivity(intent);
+        });
+
+        Button btnCreateAlliance = findViewById(R.id.btnCreateAlliance);
+        btnCreateAlliance.setOnClickListener(v -> {
+            Intent intent = new Intent(this, CreateAllianceActivity.class);
             startActivity(intent);
         });
     }

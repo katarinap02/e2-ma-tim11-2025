@@ -17,6 +17,7 @@ public class User {
     private List<Clothing> clothing = new ArrayList<>();
     private int coins;
     private List<String> friends = new ArrayList<>();
+    private Alliance currentAlliance;
 
     public User(){}
 
@@ -33,6 +34,7 @@ public class User {
         clothing = new ArrayList<>();
         this.coins = coins;
         friends = new ArrayList<>();
+        currentAlliance = null;
     }
 
     public String getId(){
@@ -133,4 +135,11 @@ public class User {
         this.friends = friends;
     }
 
+    public Alliance getCurrentAlliance() {
+        return currentAlliance;
+    }
+
+    public void setCurrentAlliance(Alliance currentAlliance) {
+        this.currentAlliance = currentAlliance;
+    }
 }

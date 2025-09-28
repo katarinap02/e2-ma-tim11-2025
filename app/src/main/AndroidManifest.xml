@@ -17,6 +17,12 @@
         android:theme="@style/Theme.Team11Project"
         tools:targetApi="31">
         <activity
+            android:name=".presentation.activities.AllianceDetailsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.CreateAllianceActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.activities.AddFriendsActivity"
             android:exported="false" />
         <activity

@@ -3,15 +3,19 @@ package com.example.team11project.presentation.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
+import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.presentation.adapters.FriendsAdapter;
+import com.example.team11project.presentation.viewmodel.UserViewModel;
 
 public class HomeScreenActivity extends BaseActivity {
 
@@ -66,6 +70,28 @@ public class HomeScreenActivity extends BaseActivity {
             Intent intent = new Intent(this, FriendsActivity.class);
             startActivity(intent);
         });
+
+        Button btnAlliance = findViewById(R.id.btnAlliance);
+        UserViewModel userViewModel = new ViewModelProvider(this,
+                new UserViewModel.Factory(new UserRepositoryImpl(getApplicationContext())))
+                .get(UserViewModel.class);
+
+        userViewModel.loadUser(userId);
+        userViewModel.getUser().observe(this, user -> {
+            if (user != null && user.getCurrentAlliance() != null && user.getCurrentAlliance().getId() != null) {
+                btnAlliance.setOnClickListener(v -> {
+                    Intent intent = new Intent(this, AllianceDetailsActivity.class);
+                    intent.putExtra("allianceId", user.getCurrentAlliance().getId());
+                    startActivity(intent);
+                });
+            } else {
+                btnAlliance.setOnClickListener(v ->
+                        Toast.makeText(this, "Nemate savez ili niste član nijednog saveza.", Toast.LENGTH_SHORT).show()
+                );
+            }
+        });
+
+
 
     }
 }
