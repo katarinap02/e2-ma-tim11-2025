@@ -180,6 +180,35 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     @Override
+    public void getTasksInPeriod(String userId, Date startDate, Date endDate, RepositoryCallback<List<Task>> callback) {
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("UserID is null or empty"));
+            return;
+        }
+
+        databaseExecutor.execute(() -> {
+            remoteDataSource.getTasksInPeriod(userId, startDate, endDate, new RemoteDataSource.DataSourceCallback<List<Task>>() {
+                @Override
+                public void onSuccess(List<Task> tasks) {
+                    databaseExecutor.execute(() -> {
+                        // Ažuriramo lokalnu bazu
+                        for (Task t : tasks) {
+                            localDataSource.updateTask(t);
+                        }
+                        callback.onSuccess(tasks);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+
+    @Override
     public void pauseTask(Task task, RepositoryCallback<Void> callback) {
         if (task.getStatus() != TaskStatus.ACTIVE) {
             callback.onFailure(new Exception("Zadatak mora biti aktivan da bi se pauzirao."));

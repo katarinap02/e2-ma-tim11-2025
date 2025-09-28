@@ -39,23 +39,26 @@ public class BossUseCase {
         this.equipmentRepository = equipmentRepository;
     }
 
-    public void findUndefeatedBossRecursive(String userId, int level, RepositoryCallback<Boss> callback) {
-        int minLevel = 1;
-        if (minLevel > level) {
+    public void findUndefeatedBossRecursive(String userId, int maxLevel, RepositoryCallback<Boss> callback) {
+        findUndefeatedBossFromLevel(userId, 1, maxLevel, callback);
+    }
+
+    private void findUndefeatedBossFromLevel(String userId, int currentLevel, int maxLevel, RepositoryCallback<Boss> callback) {
+        if (currentLevel > maxLevel) {
             // Nema nepobeđenih boss-ova
             callback.onSuccess(null);
             return;
         }
 
-        bossRepository.getBossByUserIdAndLevel(userId, minLevel, new RepositoryCallback<Boss>() {
+        bossRepository.getBossByUserIdAndLevel(userId, currentLevel, new RepositoryCallback<Boss>() {
             @Override
             public void onSuccess(Boss boss) {
                 if (boss != null && !boss.isDefeated()) {
                     // Našli smo nepobeđenog boss-a
                     callback.onSuccess(boss);
                 } else {
-                    // Proveravamo niži nivo
-                    findUndefeatedBossRecursive(userId, minLevel + 1, callback);
+                    // Proveravamo sledeći nivo
+                    findUndefeatedBossFromLevel(userId, currentLevel + 1, maxLevel, callback);
                 }
             }
 
@@ -162,7 +165,7 @@ public class BossUseCase {
         });
     }
 
-    public void getOrCreateBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages, RepositoryCallback<BossBattle> callback) {
+    public void getOrCreateBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages, double successRate, RepositoryCallback<BossBattle> callback) {
         // Proveravamo da li već postoji aktivna bitka protiv ovog boss-a
         bossBattleRepository.getBattleByUserAndBossAndLevel(user.getId(), boss.getId(), user.getLevelInfo().getLevel(), new RepositoryCallback<BossBattle>() {
             @Override
@@ -171,7 +174,7 @@ public class BossUseCase {
                     // Već postoji aktivna bitka
                     callback.onSuccess(existingBattle);
                 } else {
-                    BossBattle newBattle = createNewBossBattle(user, boss, activeEquipmentImages);
+                    BossBattle newBattle = createNewBossBattle(user, boss, activeEquipmentImages, successRate);
                     bossBattleRepository.addBattle(newBattle, new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
@@ -193,7 +196,7 @@ public class BossUseCase {
         });
     }
 
-    private BossBattle createNewBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages) {
+    private BossBattle createNewBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages, double successRate) {
         BossBattle battle = new BossBattle();
         battle.setUserId(user.getId());
         battle.setBossId(boss.getId());
@@ -205,7 +208,7 @@ public class BossUseCase {
         // Šansa za pogodak se računa na osnovu uspešnosti rešavanja zadataka u etapi
         //battle.setHitChance(calculateHitChanceFromTaskSuccess(user));
 
-        battle.setHitChance(0.67);
+        battle.setHitChance(successRate);
         battle.setActiveEquipment(activeEquipmentImages);
         int totalPP = user.getLevelInfo().getPp();
         battle.setUserPP(totalPP);
@@ -342,7 +345,7 @@ public class BossUseCase {
                 }
             } else {
                 // Nema nagrade
-                callback.onSuccess(null);
+                finalizeBattleReward(battle, boss, 0, null, callback);
             }
         }
     }
@@ -409,11 +412,11 @@ public class BossUseCase {
 
     private void finalizeBattleReward(BossBattle battle, Boss boss, int coinsEarned, String equipmentId, RepositoryCallback<Void> callback) {
         // Kreiraj boss reward ako ima nagrade
-        if (coinsEarned > 0 || equipmentId != null) {
+        if (coinsEarned >= 0 || equipmentId != null) {
             BossReward reward = new BossReward();
             reward.setBossId(boss.getId());
             reward.setUserId(battle.getUserId());
-            reward.setLevel(boss.getLevel());
+            reward.setLevel(battle.getLevel());
             reward.setCoinsEarned(coinsEarned);
             reward.setEquipmentId(equipmentId);
             bossRewardRepository.addReward(reward, callback);

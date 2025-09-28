@@ -29,11 +29,13 @@ import com.example.team11project.domain.model.Weapon;
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Klasa koja upravlja svim operacijama sa lokalnom SQLite bazom podataka.
@@ -384,6 +386,61 @@ public class LocalDataSource {
         return task;
     }
 
+    public List<Task> getTasksInPeriod(String userId, Date startDate, Date endDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        List<Task> tasks = new ArrayList<>();
+
+        try {
+            String selection;
+            String[] selectionArgs;
+
+            if (startDate != null) {
+                // Zadatci između startDate i endDate
+                selection = AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                        AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " BETWEEN ? AND ?";
+                selectionArgs = new String[]{
+                        userId,
+                        String.valueOf(startDate.getTime()),
+                        String.valueOf(endDate.getTime())
+                };
+            } else {
+                // Svi zadatci pre endDate
+                selection = AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                        AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " <= ?";
+                selectionArgs = new String[]{
+                        userId,
+                        String.valueOf(endDate.getTime())
+                };
+            }
+
+            cursor = db.query(
+                    AppContract.TaskEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " ASC" // opcionalno sortiranje
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    Task task = cursorToTask(cursor);
+                    tasks.add(task);
+                } while (cursor.moveToNext());
+            }
+
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+
+        return tasks;
+    }
+
+
+
     // DEO SA TASKINSTANCES
 
     public long addTaskInstance(TaskInstance instance) {
@@ -708,6 +765,18 @@ public class LocalDataSource {
         values.put(AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY, levelInfo.getXpTaskDifficulty());
         values.put(AppContract.LevelInfoEntry.COLUMN_PP, levelInfo.getPp());
         values.put(AppContract.LevelInfoEntry.COLUMN_TITLE, levelInfo.getTitle().name());
+
+        if (levelInfo.getCurrentLevelStartDate() != null) {
+            values.put(AppContract.LevelInfoEntry.COLUMN_CURRENT_LEVEL_START_DATE,
+                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                            .format(levelInfo.getCurrentLevelStartDate()));
+        }
+
+        if (levelInfo.getPreviousLevelStartDate() != null) {
+            values.put(AppContract.LevelInfoEntry.COLUMN_PREVIOUS_LEVEL_START_DATE,
+                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                            .format(levelInfo.getPreviousLevelStartDate()));
+        }
 
         return values;
     }

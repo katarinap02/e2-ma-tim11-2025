@@ -27,10 +27,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +109,47 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void getTasksInPeriod(String userId, Date startDate, Date endDate, final DataSourceCallback<List<Task>> callback) {
+        CollectionReference tasksRef = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(TASKS_COLLECTION);
+
+        if (endDate == null) {
+            callback.onFailure(new Exception("End date must not be null"));
+            return;
+        }
+        Query query = tasksRef;
+
+        if (startDate != null) {
+            query = query.whereGreaterThanOrEqualTo("executionTime", startDate);
+        }
+        query = query.whereLessThanOrEqualTo("executionTime", endDate);
+
+        // orderBy na kraju (ili ga ukloni ako nije potrebno)
+        query = query.orderBy("executionTime");
+
+        query.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Task> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        try {
+                            Task t = doc.toObject(Task.class);
+                            t.setId(doc.getId());
+                            list.add(t);
+                        } catch (Exception e) {
+                            // Log greške ali nastavi sa ostalim taskovima
+                            Log.w("FirestoreDataSource", "Error parsing task: " + doc.getId(), e);
+                        }
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FirestoreDataSource", "Error fetching tasks in period", e);
+                    callback.onFailure(e);
+                });
+    }
+
+
     public void addCategory(Category category, final DataSourceCallback<String> callback) {
         // Struktura: /users/{userId}/categories/{categoryId}
         db.collection(USERS_COLLECTION).document(category.getUserId())
@@ -177,7 +220,7 @@ public class RemoteDataSource {
                                                 .addOnCompleteListener(verificationTask -> {
                                                     if (verificationTask.isSuccessful()) {
                                                         // Upis korisnika
-                                                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0));
+                                                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0, new Date(), null));
                                                         if (user.getClothing() == null) {
                                                             user.setClothing(new ArrayList<>());
                                                         }
@@ -328,7 +371,7 @@ public class RemoteDataSource {
                         }
                         user.getLevelInfo().setTitle(titleEnum);
                     } else {
-                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0)); // default LevelInfo
+                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0, new Date(), null)); // default LevelInfo
                     }
 
                     callback.onSuccess(user);

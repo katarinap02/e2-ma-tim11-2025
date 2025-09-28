@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskDifficulty;
 import com.example.team11project.domain.model.TaskImportance;
@@ -16,6 +17,7 @@ import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,6 +38,308 @@ public class TaskUseCase {
         this.levelInfoRepository = levelInfoRepository;
         this.bossUseCase = bossUseCase;
     }
+
+    //*************************DEO GDE JE OBRADA ZA BOSS-A*******************//
+    public void calculateSuccessRateForCurrentStage(String userId, LevelInfo levelInfo, RepositoryCallback<Double> callback) {
+        Date stageStartDate = levelInfo.getPreviousLevelStartDate();
+        Date stageEndDate = levelInfo.getCurrentLevelStartDate();
+        if (stageEndDate == null) {
+            return;
+        }
+
+
+        calculateSuccessRateForPeriod(userId, stageStartDate, stageEndDate, callback);
+    }
+
+    private void calculateSuccessRateForPeriod(String userId, Date startDate, Date endDate, RepositoryCallback<Double> callback) {
+        // Dohvati sve zadatke u periodu (kreiranje ili izvršavanje)
+        taskRepository.getTasksInPeriod(userId, startDate, endDate, new RepositoryCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> allTasks) {
+
+                // Asinhrono filtriraj zadatke
+                filterRelevantTasks(allTasks, userId, new RepositoryCallback<List<Task>>() {
+                    @Override
+                    public void onSuccess(List<Task> relevantTasks) {
+
+                        if (relevantTasks.isEmpty()) {
+                            callback.onSuccess(100.0); // Ako nema zadataka, smatra se da je uspešnost 100%
+                            return;
+                        }
+
+                        // Broji ukupne zadatke (instance) i uspešno završene
+                        AtomicInteger totalTaskInstances = new AtomicInteger(0);
+                        AtomicInteger completedTaskInstances = new AtomicInteger(0);
+                        AtomicInteger processedTasks = new AtomicInteger(0);
+
+                        for (Task task : relevantTasks) {
+                            if (task.isRecurring()) {
+                                // Za ponavljajuće zadatke, svaka instanca se računa kao poseban zadatak
+                                processRecurringTaskInstances(task, userId, startDate, endDate, new RepositoryCallback<TaskInstanceStats>() {
+                                    @Override
+                                    public void onSuccess(TaskInstanceStats stats) {
+
+                                        totalTaskInstances.addAndGet(stats.getTotalInstances());
+                                        completedTaskInstances.addAndGet(stats.getCompletedInstances());
+
+                                        int processed = processedTasks.incrementAndGet();
+                                        if (processed == relevantTasks.size()) {
+                                            // Svi zadaci su obrađeni
+                                            double successRate = calculateSuccessPercentage(completedTaskInstances.get(), totalTaskInstances.get());
+                                            callback.onSuccess(successRate);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Exception e) {
+                                        callback.onFailure(e);
+                                    }
+                                });
+                            } else {
+                                // Za regularne zadatke - svaki zadatak se računa kao jedna instanca
+                                totalTaskInstances.incrementAndGet();
+
+                                if (task.getStatus() == TaskStatus.COMPLETED) {
+                                    // Zadatak je već prošao filter, znači je doneo XP
+                                    completedTaskInstances.incrementAndGet();
+                                }
+
+                                int processed = processedTasks.incrementAndGet();
+                                if (processed == relevantTasks.size()) {
+                                    double successRate = calculateSuccessPercentage(completedTaskInstances.get(), totalTaskInstances.get());
+                                    callback.onSuccess(successRate);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    private void filterRelevantTasks(List<Task> allTasks, String userId, RepositoryCallback<List<Task>> callback) {
+        List<Task> basicFiltered = new ArrayList<>();
+
+        // Prvo osnovni filter
+        for (Task task : allTasks) {
+            if (task.getStatus() != TaskStatus.PAUSED && task.getStatus() != TaskStatus.CANCELED) {
+                basicFiltered.add(task);
+            }
+        }
+
+        if (basicFiltered.isEmpty()) {
+            callback.onSuccess(basicFiltered);
+            return;
+        }
+
+        // Sada asinhrono proveravaj XP za completed zadatke
+        List<Task> finalRelevant = new ArrayList<>();
+        AtomicInteger processedCount = new AtomicInteger(0);
+
+        for (Task task : basicFiltered) {
+            if (task.getStatus() == TaskStatus.COMPLETED) {
+                // Za završene zadatke, proveri da li su doneli XP
+                checkIfTaskEarnedXp(task, userId, new RepositoryCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean earnedXp) {
+                        if (earnedXp) {
+                            synchronized (finalRelevant) {
+                                finalRelevant.add(task);
+                            }
+                        }
+
+                        int processed = processedCount.incrementAndGet();
+                        if (processed == basicFiltered.size()) {
+                            callback.onSuccess(finalRelevant);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            } else {
+                // Za nezavršene zadatke, dodaj direktno
+                synchronized (finalRelevant) {
+                    finalRelevant.add(task);
+                }
+
+                int processed = processedCount.incrementAndGet();
+                if (processed == basicFiltered.size()) {
+                    callback.onSuccess(finalRelevant);
+                }
+            }
+        }
+    }
+
+    private void processRecurringTaskInstances(Task task, String userId, Date startDate, Date endDate, RepositoryCallback<TaskInstanceStats> callback) {
+        // Prvo izračunaj koliko se instance očekuju u periodu
+        int expectedInstances = calculateExpectedRecurrences(task, startDate, endDate);
+
+        // Dohvati postojeće instance
+
+        taskInstanceRepository.getTaskInstancesForTask(userId, task.getId(), new RepositoryCallback<List<TaskInstance>>() {
+            @Override
+            public void onSuccess(List<TaskInstance> instances) {
+                int completedInstances = 0;
+                int canceledInstances = 0;
+
+                // Filtiraj instance u periodu
+                for (TaskInstance instance : instances) {
+                    if (isDateInPeriod(instance.getOriginalDate(), startDate, endDate)) {
+                        if (instance.getNewStatus() == TaskStatus.COMPLETED) {
+                            // Proveri da li je instanca donela XP
+                                completedInstances++;
+
+                        } else if (instance.getNewStatus() == TaskStatus.CANCELED) {
+                            canceledInstances++;
+                        }
+                    }
+                }
+
+                // Ukupan broj instanci = očekivane instance - otkazane instance
+                int totalInstances = expectedInstances - canceledInstances;
+
+                TaskInstanceStats stats = new TaskInstanceStats();
+                stats.setTotalInstances(Math.max(0, totalInstances));
+                stats.setCompletedInstances(completedInstances);
+                stats.setCanceledInstances(canceledInstances);
+
+                callback.onSuccess(stats);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    private int calculateExpectedRecurrences(Task task, Date periodStart, Date periodEnd) {
+        if (!task.isRecurring()) {
+            return 1;
+        }
+
+        Date taskStart = task.getRecurrenceStartDate();
+        Date taskEnd = task.getRecurrenceEndDate();
+
+        if (taskStart == null || periodEnd == null) {
+            Log.w("TaskUseCase", "taskStart or periodEnd is null");
+            return 0;
+        }
+        Date effectiveStart;
+        if (periodStart == null) {
+            effectiveStart = taskStart;
+            Log.d("TaskUseCase", "periodStart is null, using taskStart as effectiveStart");
+        } else {
+            effectiveStart = taskStart.after(periodStart) ? taskStart : periodStart;
+        }
+
+        Date effectiveEnd = (taskEnd != null && taskEnd.before(periodEnd)) ? taskEnd : periodEnd;
+
+        Log.d("TaskUseCase", String.format("Calculating recurrences: effectiveStart=%s, effectiveEnd=%s",
+                effectiveStart.toString(), effectiveEnd.toString()));
+
+        if (effectiveStart.after(effectiveEnd)) {
+            Log.w("TaskUseCase", "effectiveStart is after effectiveEnd, returning 0");
+            return 0;
+        }
+
+        // Izračunaj broj ponavljanja na osnovu intervala
+        long periodMillis = effectiveEnd.getTime() - effectiveStart.getTime();
+        long intervalMillis = getRecurrenceIntervalInMillis(task);
+
+        if (intervalMillis <= 0) {
+            Log.w("TaskUseCase", "intervalMillis is <= 0, returning 1");
+            return 1;
+        }
+
+        int expectedCount = (int) Math.max(1, (periodMillis / intervalMillis) + 1);
+
+        Log.d("TaskUseCase", String.format("Expected recurrences: %d (periodMillis: %d, intervalMillis: %d)",
+                expectedCount, periodMillis, intervalMillis));
+
+        return expectedCount;
+    }
+
+    private long getRecurrenceIntervalInMillis(Task task) {
+        int interval = task.getRecurrenceInterval();
+        RecurrenceUnit unit = task.getRecurrenceUnit();
+
+        switch (unit) {
+            case DAY:
+                return interval * 24 * 60 * 60 * 1000L;
+            case WEEK:
+                return interval * 7 * 24 * 60 * 60 * 1000L;
+            default:
+                return 24 * 60 * 60 * 1000L; // default na dan
+        }
+    }
+
+    private void checkIfTaskEarnedXp(Task task, String userId, RepositoryCallback<Boolean> callback) {
+        Date completionDate = task.getCompletionDate();
+        if (completionDate == null) {
+            callback.onSuccess(false);
+            return;
+        }
+
+        // Simuliraj računanje XP kao u completeTask metodi
+        calculateXpForDifficulty(task, userId, task.getExecutionTime(), new RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer difficultyXp) {
+                calculateXpForImportance(task, userId, task.getExecutionTime(),new RepositoryCallback<Integer>() {
+                    @Override
+                    public void onSuccess(Integer importanceXp) {
+                        boolean earnedXp = (difficultyXp + importanceXp) > 0;
+                        callback.onSuccess(earnedXp);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    private double calculateSuccessPercentage(int completed, int total) {
+        if (total == 0) {
+            return 1.0;
+        }
+        return Math.round((completed * 100.0 / total)) / 100.0;
+    }
+
+    private boolean isDateInPeriod(Date date, Date startDate, Date endDate) {
+        if (date == null || endDate == null) {
+            return false;
+        }
+        if (startDate == null) {
+            return !date.after(endDate);
+        }
+
+        return !date.before(startDate) && !date.after(endDate);
+    }
+
+
+
+        ///********************* DEO GDE JE OBRADA ZADATAKA ************//
 
     public void completeTask(Task task, String userId, Date instanceDate, RepositoryCallback<Integer> finalCallback) {
         if (task.getStatus() != TaskStatus.ACTIVE) {
@@ -66,13 +370,13 @@ public class TaskUseCase {
         AtomicInteger calculatedXp = new AtomicInteger(0);
 
         // Izračunavanje XP za težinu
-        calculateXpForDifficulty(task, userId, new RepositoryCallback<Integer>() {
+        calculateXpForDifficulty(task, userId, new Date(),new RepositoryCallback<Integer>() {
             @Override
             public void onSuccess(Integer difficultyXp) {
                 calculatedXp.addAndGet(difficultyXp);
 
                 // Izračunavanje XP za bitnost
-                calculateXpForImportance(task, userId, new RepositoryCallback<Integer>() {
+                calculateXpForImportance(task, userId, new Date(), new RepositoryCallback<Integer>() {
                     @Override
                     public void onSuccess(Integer importanceXp) {
                         calculatedXp.addAndGet(importanceXp);
@@ -128,12 +432,12 @@ public class TaskUseCase {
                 // Izračunavanje XP za ponavljajući zadatak
                 AtomicInteger calculatedXp = new AtomicInteger(0);
 
-                calculateXpForDifficulty(task, userId, new RepositoryCallback<Integer>() {
+                calculateXpForDifficulty(task, userId, new Date(),new RepositoryCallback<Integer>() {
                     @Override
                     public void onSuccess(Integer difficultyXp) {
                         calculatedXp.addAndGet(difficultyXp);
 
-                        calculateXpForImportance(task, userId, new RepositoryCallback<Integer>() {
+                        calculateXpForImportance(task, userId, new Date(), new RepositoryCallback<Integer>() {
                             @Override
                             public void onSuccess(Integer importanceXp) {
                                 calculatedXp.addAndGet(importanceXp);
@@ -229,12 +533,16 @@ public class TaskUseCase {
     }
 
 
-    private void calculateXpForDifficulty(Task task, String userId, RepositoryCallback<Integer> callback) {
+    private void calculateXpForDifficulty(Task task, String userId, Date day, RepositoryCallback<Integer> callback) {
         TaskDifficulty difficulty = task.getDifficulty();
-        Date todayStart = getStartOfDay(new Date());
-        Date todayEnd = getEndOfDay(new Date());
-        Date weekStart = getStartOfWeek(new Date());
-        Date weekEnd = getEndOfWeek(new Date());
+        if(day == null)
+        {
+            day = new Date();
+        }
+        Date todayStart = getStartOfDay(day);
+        Date todayEnd = getEndOfDay(day);
+        Date weekStart = getStartOfWeek(day);
+        Date weekEnd = getEndOfWeek(day);
 
         // Primer za dnevnu kvotu
         if (difficulty == TaskDifficulty.VERY_EASY || difficulty == TaskDifficulty.EASY || difficulty == TaskDifficulty.HARD) {
@@ -278,13 +586,17 @@ public class TaskUseCase {
         }
     }
 
-    private void calculateXpForImportance(Task task, String userId, RepositoryCallback<Integer> callback) {
+    private void calculateXpForImportance(Task task, String userId, Date day, RepositoryCallback<Integer> callback) {
 
         TaskImportance importance = task.getImportance();
-        Date todayStart = getStartOfDay(new Date());
-        Date todayEnd = getEndOfDay(new Date());
-        Date monthStart = getStartOfMonth(new Date());
-        Date monthEnd = getEndOfMonth(new Date());
+        if(day == null)
+        {
+            day = new Date();
+        }
+        Date todayStart = getStartOfDay(day);
+        Date todayEnd = getEndOfDay(day);
+        Date monthStart = getStartOfMonth(day);
+        Date monthEnd = getEndOfMonth(day);
 
         if (importance == TaskImportance.NORMAL || importance == TaskImportance.IMPORTANT || importance == TaskImportance.VERY_IMPORTANT) {
             int dailyLimit = (importance == TaskImportance.VERY_IMPORTANT) ? 2 : 5;
@@ -502,5 +814,46 @@ public class TaskUseCase {
 
         // Proveri da li je taskDate u dozvoljenom periodu (3 dana unazad do danas)
         return !taskDateStart.before(todayStart) && taskDateStart.before(tomorrowStart);
+    }
+
+    public static class TaskInstanceStats {
+        private int totalInstances;
+        private int completedInstances;
+        private int canceledInstances;
+
+        public TaskInstanceStats() {}
+
+        public int getTotalInstances() {
+            return totalInstances;
+        }
+
+        public void setTotalInstances(int totalInstances) {
+            this.totalInstances = totalInstances;
+        }
+
+        public int getCompletedInstances() {
+            return completedInstances;
+        }
+
+        public void setCompletedInstances(int completedInstances) {
+            this.completedInstances = completedInstances;
+        }
+
+        public int getCanceledInstances() {
+            return canceledInstances;
+        }
+
+        public void setCanceledInstances(int canceledInstances) {
+            this.canceledInstances = canceledInstances;
+        }
+
+        @Override
+        public String toString() {
+            return "TaskInstanceStats{" +
+                    "totalInstances=" + totalInstances +
+                    ", completedInstances=" + completedInstances +
+                    ", canceledInstances=" + canceledInstances +
+                    '}';
+        }
     }
 }
