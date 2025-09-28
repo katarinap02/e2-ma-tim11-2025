@@ -248,7 +248,7 @@ public class BossUseCase {
         // Proveravamo da li je ovo poslednji napad
         boolean isFinalAttack = battle.getAttacksUsed() >= 5;
 
-        if (isFinalAttack) {
+        if (isFinalAttack || boss.isDefeated()) {
             // Završavamo borbu i računamo nagrade
             processBattleEnd(battle, boss, new RepositoryCallback<Void>() {
                 @Override
