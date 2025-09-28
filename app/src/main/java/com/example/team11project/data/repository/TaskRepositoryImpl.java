@@ -186,26 +186,33 @@ public class TaskRepositoryImpl implements TaskRepository {
             return;
         }
 
-        databaseExecutor.execute(() -> {
-            remoteDataSource.getTasksInPeriod(userId, startDate, endDate, new RemoteDataSource.DataSourceCallback<List<Task>>() {
-                @Override
-                public void onSuccess(List<Task> tasks) {
-                    databaseExecutor.execute(() -> {
-                        // Ažuriramo lokalnu bazu
-                        for (Task t : tasks) {
-                            localDataSource.updateTask(t);
-                        }
-                        callback.onSuccess(tasks);
-                    });
-                }
+        // Dohvat sa remote baze
+        remoteDataSource.getTasksInPeriod(userId, startDate, endDate, new RemoteDataSource.DataSourceCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> remoteTasks) {
+                databaseExecutor.execute(() -> {
+                    // Ažuriraj lokalnu bazu: dodaj ili update svaki task
+                    for (Task task : remoteTasks) {
+                        localDataSource.updateTask(task); // updateTask treba da radi insert ako ne postoji
+                    }
 
-                @Override
-                public void onFailure(Exception e) {
-                    callback.onFailure(e);
-                }
-            });
+                    // Vrati callback sa sinhronizovanim taskovima
+                    callback.onSuccess(remoteTasks);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Ako remote fail-uje, barem vrati lokalne taskove
+                databaseExecutor.execute(() -> {
+                    List<Task> localTasks = localDataSource.getTasksInPeriod(userId, startDate, endDate);
+                    callback.onSuccess(localTasks);
+                });
+            }
         });
     }
+
+
 
 
     @Override

@@ -52,29 +52,38 @@ public class BossBattleRepositoryImpl implements BossBattleRepository {
 
     @Override
     public void getBattles(String userId, RepositoryCallback<List<BossBattle>> callback) {
-        databaseExecutor.execute(() -> {
-            List<BossBattle> localBattles = localDataSource.getAllBossBattles(userId);
-            callback.onSuccess(localBattles);
-        });
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("UserID is null or empty"));
+            return;
+        }
 
+        // Dohvat sa remote baze
         remoteDataSource.getAllBossBattles(userId, new RemoteDataSource.DataSourceCallback<List<BossBattle>>() {
             @Override
             public void onSuccess(List<BossBattle> remoteBattles) {
                 databaseExecutor.execute(() -> {
-                    localDataSource.deleteAllBossBattlesForUser(userId);
-                    for (BossBattle b : remoteBattles) {
-                        localDataSource.addBossBattle(b);
+                    // Ažuriraj lokalnu bazu: dodaj ili update svaki battle
+                    for (BossBattle battle : remoteBattles) {
+                        localDataSource.updateBossBattle(battle); // updateBossBattle treba da radi insert ako ne postoji
                     }
-                    callback.onSuccess(localDataSource.getAllBossBattles(userId));
+
+                    // Vrati callback sa sinhronizovanim battle-ima
+                    List<BossBattle> syncedBattles = localDataSource.getAllBossBattles(userId);
+                    callback.onSuccess(syncedBattles);
                 });
             }
 
             @Override
             public void onFailure(Exception e) {
-                System.out.println("BossBattle sync failed: " + e.getMessage());
+                // Ako remote fail-uje, barem vrati lokalne battle-e
+                databaseExecutor.execute(() -> {
+                    List<BossBattle> localBattles = localDataSource.getAllBossBattles(userId);
+                    callback.onSuccess(localBattles);
+                });
             }
         });
     }
+
 
     @Override
     public void updateBattle(BossBattle battle, RepositoryCallback<Void> callback) {

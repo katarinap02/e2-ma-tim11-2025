@@ -392,42 +392,39 @@ public class LocalDataSource {
         List<Task> tasks = new ArrayList<>();
 
         try {
-            String selection;
-            String[] selectionArgs;
+            StringBuilder selection = new StringBuilder(AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?");
+            List<String> selectionArgsList = new ArrayList<>();
+            selectionArgsList.add(userId);
 
             if (startDate != null) {
-                // Zadatci između startDate i endDate
-                selection = AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
-                        AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " BETWEEN ? AND ?";
-                selectionArgs = new String[]{
-                        userId,
-                        String.valueOf(startDate.getTime()),
-                        String.valueOf(endDate.getTime())
-                };
-            } else {
-                // Svi zadatci pre endDate
-                selection = AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ? AND " +
-                        AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " <= ?";
-                selectionArgs = new String[]{
-                        userId,
-                        String.valueOf(endDate.getTime())
-                };
+                selection.append(" AND " + AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " >= ?");
+                selectionArgsList.add(String.valueOf(startDate.getTime()));
             }
+            if (endDate != null) {
+                selection.append(" AND " + AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " <= ?");
+                selectionArgsList.add(String.valueOf(endDate.getTime()));
+            }
+
+            String[] selectionArgs = selectionArgsList.toArray(new String[0]);
 
             cursor = db.query(
                     AppContract.TaskEntry.TABLE_NAME,
                     null,
-                    selection,
+                    selection.toString(),
                     selectionArgs,
                     null,
                     null,
-                    AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " ASC" // opcionalno sortiranje
+                    AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " ASC"
             );
 
             if (cursor != null && cursor.moveToFirst()) {
                 do {
-                    Task task = cursorToTask(cursor);
-                    tasks.add(task);
+                    try {
+                        Task task = cursorToTask(cursor);
+                        tasks.add(task);
+                    } catch (Exception e) {
+                        Log.w("SQLiteDataSource", "Error parsing task from cursor", e);
+                    }
                 } while (cursor.moveToNext());
             }
 
@@ -438,6 +435,7 @@ public class LocalDataSource {
 
         return tasks;
     }
+
 
 
 
