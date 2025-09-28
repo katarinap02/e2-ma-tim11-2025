@@ -98,13 +98,43 @@ public class FriendsUseCase {
                 userRepository.getUserById(newFriendId, new RepositoryCallback<User>() {
                     @Override
                     public void onSuccess(User newFriend) {
+                        boolean updated = false;
+
                         if (!currentUser.getFriends().contains(newFriendId)) {
                             currentUser.getFriends().add(newFriendId);
+                            updated = true;
                         }
+
                         if (!newFriend.getFriends().contains(currentUserId)) {
                             newFriend.getFriends().add(currentUserId);
+                            updated = true;
                         }
-                        callback.onSuccess(true);
+
+                        if (updated) {
+                            userRepository.updateUser(currentUser, new RepositoryCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void data) {
+                                    userRepository.updateUser(newFriend, new RepositoryCallback<Void>() {
+                                        @Override
+                                        public void onSuccess(Void data) {
+                                            callback.onSuccess(true);
+                                        }
+
+                                        @Override
+                                        public void onFailure(Exception e) {
+                                            callback.onFailure(e);
+                                        }
+                                    });
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    callback.onFailure(e);
+                                }
+                            });
+                        } else {
+                            callback.onSuccess(true);
+                        }
                     }
 
                     @Override
@@ -120,4 +150,5 @@ public class FriendsUseCase {
             }
         });
     }
+
 }

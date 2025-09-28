@@ -87,5 +87,8 @@
     <string name="napad">NAPAD</string>
     <string name="prijatelji">Prijatelji</string>
     <string name="pretra_i_korisnike">Pretraži korisnike</string>
+    <string name="dodaj">Dodaj</string>
+    <string name="scan_qr">Scan QR</string>
+    <string name="ime_usera">Ime usera</string>
 
 </resources>

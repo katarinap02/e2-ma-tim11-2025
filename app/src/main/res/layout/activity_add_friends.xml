@@ -1,19 +1,26 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-    <EditText
-        android:id="@+id/searchEditText"
+    <include
+        android:id="@+id/navbar"
+        layout="@layout/navbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/pretra_i_korisnike"
-        android:inputType="text"/>
+        android:layout_height="wrap_content"/>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/nonFriendsRecyclerView"
+        android:id="@+id/rvUsers"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:layout_marginTop="56dp" /> <!-- ako navbar ima visinu 56dp -->
+
+    <Button
+        android:id="@+id/btnScanQr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/scan_qr"
+        android:layout_gravity="center|bottom"
+        android:layout_marginBottom="16dp"/>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

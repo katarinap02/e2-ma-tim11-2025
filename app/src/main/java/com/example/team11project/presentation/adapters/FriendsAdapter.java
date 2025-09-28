@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.team11project.R;
 import com.example.team11project.domain.model.User;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendViewHolder> {
@@ -25,18 +24,11 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendVi
     }
 
     public FriendsAdapter(){}
-
-    public FriendsAdapter(OnFriendClickListener listener) {
-        this.friends = new ArrayList<>();
-        this.listener = listener;
+    public FriendsAdapter(List<User> friends) {
+        this.friends = friends;
     }
-
     public FriendsAdapter(List<User> friends, OnFriendClickListener listener) {
         this.friends = friends;
-        this.listener = listener;
-    }
-
-    public void setOnFriendClickListener(OnFriendClickListener listener) {
         this.listener = listener;
     }
 

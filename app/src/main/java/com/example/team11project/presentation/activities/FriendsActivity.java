@@ -17,6 +17,8 @@ import com.example.team11project.presentation.adapters.FriendsAdapter;
 import com.example.team11project.presentation.viewmodel.UserViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.ArrayList;
+
 public class FriendsActivity extends BaseActivity {
 
     private UserViewModel viewModel;
@@ -36,7 +38,7 @@ public class FriendsActivity extends BaseActivity {
         currentUserId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
                 .getString("userId", null);
 
-        adapter = new FriendsAdapter(friend -> {
+        adapter = new FriendsAdapter(new ArrayList<>(), friend -> {
             Intent intent = new Intent(this, ProfileActivity.class);
             intent.putExtra("userId", friend.getId());
             startActivity(intent);
@@ -64,13 +66,8 @@ public class FriendsActivity extends BaseActivity {
         viewModel.loadFriends(currentUserId);
 
         fab.setOnClickListener(v -> {
-//            Intent intent = new Intent(FriendsActivity.this, AddFriendsActivity.class);
-//            intent.putExtra("CURRENT_USER_ID", currentUserId);
-//            startActivity(intent);
-            Toast.makeText(FriendsActivity.this,
-                    "Dodacemo usera, polako ",
-                    Toast.LENGTH_SHORT).show();
-
+            Intent intent = new Intent(FriendsActivity.this, AddFriendsActivity.class);
+            startActivity(intent);
         });
     }
 
