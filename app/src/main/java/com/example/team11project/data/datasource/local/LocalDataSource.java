@@ -959,7 +959,7 @@ public class LocalDataSource {
         saveUser(user);
     }
 
-    private void saveUser(User user) {
+    public void saveUser(User user) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         try {

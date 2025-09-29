@@ -18,6 +18,7 @@ import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.UserTitle;
 import com.example.team11project.domain.model.Weapon;
+import com.example.team11project.domain.repository.RepositoryCallback;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class RemoteDataSource {
 
@@ -809,13 +811,20 @@ public class RemoteDataSource {
     }
 
     public void addAllianceInvite(AllianceInvite invite, final DataSourceCallback<String> callback) {
-        // Struktura: /users/{toUserId}/alliance_invites/{inviteId}
-        db.collection(USERS_COLLECTION).document(invite.getToUser().getId())
+        // Ako invite.id još nije setovan, generiši UUID i koristi ga kao docId
+        if (invite.getId() == null || invite.getId().isEmpty()) {
+            invite.setId(UUID.randomUUID().toString());
+        }
+
+        db.collection(USERS_COLLECTION)
+                .document(invite.getToUser().getId())
                 .collection(ALLIANCE_INVITATION_COLLECTION)
-                .add(invite)
-                .addOnSuccessListener(docRef -> callback.onSuccess(docRef.getId()))
+                .document(invite.getId()) // koristi invite.id kao docId
+                .set(invite)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(invite.getId()))
                 .addOnFailureListener(callback::onFailure);
     }
+
 
     public void setAllianceInviteWithId(AllianceInvite invite, String inviteId, final DataSourceCallback<String> callback) {
         db.collection(USERS_COLLECTION).document(invite.getToUser().getId())
@@ -891,13 +900,110 @@ public class RemoteDataSource {
     }
 
     public void updateAllianceInvite(AllianceInvite invite, final DataSourceCallback<Void> callback) {
-        db.collection(USERS_COLLECTION).document(invite.getToUser().getId())
+        db.collection(USERS_COLLECTION)
+                .document(invite.getToUser().getId())
                 .collection(ALLIANCE_INVITATION_COLLECTION)
                 .document(invite.getId())
-                .set(invite)
+                .update(
+                        "accepted", invite.isAccepted(),
+                        "responded", invite.isResponded()
+                )
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
 
+
+    public void getPendingInvites(String userId, final DataSourceCallback<List<AllianceInvite>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection("alliance_invitations")
+                .whereEqualTo("responded", false)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<AllianceInvite> invites = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        AllianceInvite invite = doc.toObject(AllianceInvite.class);
+                        invites.add(invite);
+                    }
+                    callback.onSuccess(invites);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+
+    public void acceptInvite(String userId, String inviteId, RepositoryCallback<Void> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .update("accepted", true, "responded", true)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void rejectInvite(String userId, String inviteId, RepositoryCallback<Void> callback) {
+        HashMap<String, Object> updates = new HashMap<>();
+        updates.put("accepted", false);
+        updates.put("responded", true);
+
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .set(updates, SetOptions.merge()) // merge: kreira dokument ako ne postoji
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void updateAllianceInviteByFieldId(AllianceInvite invite, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(invite.getToUser().getId())
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .whereEqualTo("id", invite.getId()) // polje id unutar dokumenta
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // uzimamo prvi dokument koji odgovara
+                        DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
+                        db.collection(USERS_COLLECTION)
+                                .document(invite.getToUser().getId())
+                                .collection(ALLIANCE_INVITATION_COLLECTION)
+                                .document(doc.getId()) // stvarni documentId u Firestore
+                                .set(invite) // update-ujemo ceo dokument ili samo potrebna polja
+                                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                                .addOnFailureListener(callback::onFailure);
+                    } else {
+                        callback.onFailure(new Exception("Invite not found for field id: " + invite.getId()));
+                    }
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+
+    public void getAllianceInviteById(String userId, String inviteId, final DataSourceCallback<AllianceInvite> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot doc = task.getResult();
+                        if (doc.exists()) {
+                            AllianceInvite invite = doc.toObject(AllianceInvite.class);
+                            if (invite != null) {
+                                invite.setId(doc.getId());
+                                callback.onSuccess(invite);
+                            } else {
+                                callback.onFailure(new Exception("Invite object is null"));
+                            }
+                        } else {
+                            callback.onFailure(new Exception("Invite not found"));
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
 
 }

@@ -58,7 +58,6 @@ public class CreateAllianceUseCase {
                                             }
 
                                             AllianceInvite invite = new AllianceInvite();
-                                            invite.setId(java.util.UUID.randomUUID().toString());
                                             invite.setAlliance(alliance);
                                             invite.setFromUser(leader);
                                             invite.setToUser(toUser);
