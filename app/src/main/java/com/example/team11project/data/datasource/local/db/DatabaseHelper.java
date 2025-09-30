@@ -117,6 +117,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_BOSS_TABLE);
         db.execSQL(SQL_CREATE_BOSS_BATTLE_TABLE);
         db.execSQL(SQL_CREATE_BOSS_REWARD_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCES_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_MEMBERS_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_INVITES_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -131,6 +134,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_BOSS_REWARD_TABLE);
         db.execSQL(SQL_DELETE_BOSS_BATTLE_TABLE);
         db.execSQL(SQL_DELETE_BOSS_TABLE);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceInviteEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceMemberEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceEntry.TABLE_NAME);
+
         onCreate(db);
     }
 
@@ -152,7 +159,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_WEAPON + " TEXT, " +
                     AppContract.UserEntry.COLUMN_CLOTHING + " TEXT, " +
                     AppContract.UserEntry.COLUMN_POTION + " TEXT, " +
-                    AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0" +
+                    AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0, " +
+                    AppContract.UserEntry.COLUMN_FRIENDS + " TEXT, " +
+                    AppContract.UserEntry.COLUMN_NAME_CURRENT_ALLIANCE_ID + " TEXT" +
                     ")";
 
     private static final String SQL_CREATE_LEVELINFO_TABLE =
@@ -199,6 +208,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.EquipmentEntry.COLUMN_WEAPON_EFFECT_TYPE + " TEXT" +
                     ")";
 
+
+    private static final String SQL_CREATE_ALLIANCES_TABLE =
+            "CREATE TABLE " + AppContract.AllianceEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceEntry.COLUMN_NAME_NAME + " TEXT NOT NULL," +
+                    AppContract.AllianceEntry.COLUMN_NAME_MISSION_ACTIVE + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
+                    ")";
+
+    private static final String SQL_CREATE_ALLIANCE_MEMBERS_TABLE =
+            "CREATE TABLE " + AppContract.AllianceMemberEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceMemberEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceMemberEntry.COLUMN_NAME_ALLIANCE_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMemberEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL" +
+                    ")";
+
+    private static final String SQL_CREATE_ALLIANCE_INVITES_TABLE =
+            "CREATE TABLE " + AppContract.AllianceInviteEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceInviteEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED + " INTEGER NOT NULL DEFAULT 0," + // 0 = false, 1 = true
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
+                    ")";
 
 
 }

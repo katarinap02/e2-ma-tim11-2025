@@ -43,6 +43,8 @@ public final class AppContract {
         public static final String COLUMN_WEAPON = "weapon";
         public static final String COLUMN_POTION = "potion";
         public static final String COLUMN_COINS = "coins";
+        public static final String COLUMN_FRIENDS = "friends";
+        public static final String COLUMN_NAME_CURRENT_ALLIANCE_ID = "current_alliance_id";
     }
 
 
@@ -132,5 +134,28 @@ public final class AppContract {
         public static final String COLUMN_WEAPON_EFFECT_TYPE = "weapon_effect_type";
     }
 
+
+    public static class AllianceEntry implements BaseColumns {
+        public static final String TABLE_NAME = "alliances";
+        public static final String COLUMN_NAME_LEADER_ID = "leader_id";
+        public static final String COLUMN_NAME_NAME = "name";
+        public static final String COLUMN_NAME_MISSION_ACTIVE = "mission_active";
+    }
+
+    public static class AllianceMemberEntry implements BaseColumns {
+        public static final String TABLE_NAME = "alliance_members";
+        public static final String COLUMN_NAME_ALLIANCE_ID = "alliance_id";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
+    }
+
+    public static class AllianceInviteEntry implements BaseColumns {
+        public static final String TABLE_NAME = "alliance_invites";
+        public static final String COLUMN_NAME_ACCEPTED = "accepted";
+        public static final String COLUMN_NAME_RESPONDED = "responded";
+        public static final String COLUMN_NAME_ALLIANCE = "alliance";
+        public static final String COLUMN_NAME_FROM_USER = "from_user";
+        public static final String COLUMN_NAME_TO_USER = "to_user";
+
+    }
 
 }

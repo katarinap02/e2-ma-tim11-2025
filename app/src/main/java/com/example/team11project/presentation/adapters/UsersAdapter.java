@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -59,6 +60,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UserViewHold
         int resId = avatarMap.getOrDefault(user.getAvatar(), R.drawable.avatar1);
         holder.imgAvatar.setImageResource(resId);
         holder.itemView.setOnClickListener(v -> listener.onUserClick(user));
+
     }
 
     @Override
