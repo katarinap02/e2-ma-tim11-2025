@@ -92,5 +92,6 @@
     <string name="ime_usera">Ime usera</string>
     <string name="kreiraj_savez">Kreiraj savez</string>
     <string name="savez">Savez</string>
+    <string name="izbrisi_savez">Izbrisi savez</string>
 
 </resources>

@@ -894,7 +894,7 @@ public class LocalDataSource {
         return values;
     }
 
-    private User getUserById(String userId) {
+    public User getUserById(String userId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = null;
         User user = null;
@@ -1538,21 +1538,28 @@ public class LocalDataSource {
     }
     private AllianceInvite cursorToAllianceInvite(Cursor cursor) {
         AllianceInvite invite = new AllianceInvite();
+        Gson gson = new Gson();
+
         invite.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry._ID)));
-        Alliance alliance = new Alliance();
-        alliance.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE_ID)));
+
+        String allianceJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE));
+        Alliance alliance = gson.fromJson(allianceJson, Alliance.class);
         invite.setAlliance(alliance);
-        User fromUser = new User();
-        fromUser.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER_ID)));
+
+        String fromUserJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER));
+        User fromUser = gson.fromJson(fromUserJson, User.class);
         invite.setFromUser(fromUser);
-        User toUser = new User();
-        toUser.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER_ID)));
+
+        String toUserJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER));
+        User toUser = gson.fromJson(toUserJson, User.class);
         invite.setToUser(toUser);
+
         invite.setAccepted(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED)) == 1);
         invite.setResponded(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED)) == 1);
 
         return invite;
     }
+
 
 
 
@@ -1606,55 +1613,33 @@ public class LocalDataSource {
         return alliances;
     }
 
-    public AllianceInvite getInviteById(String userId, String inviteId) {
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        String selection = AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER_ID + " = ? AND " +
-                AppContract.AllianceInviteEntry._ID + " = ?";
-        String[] selectionArgs = { userId, inviteId };
-
-        Cursor cursor = db.query(
-                AppContract.AllianceInviteEntry.TABLE_NAME,
-                null,
-                selection,
-                selectionArgs,
-                null, null, null,
-                "1"
-        );
-
-        AllianceInvite invite = null;
-        if (cursor.moveToFirst()) {
-            invite = cursorToAllianceInvite(cursor);
-        }
-
-        cursor.close();
-        db.close();
-        return invite;
-    }
 
     public List<AllianceInvite> getAllInvites(String userId) {
         List<AllianceInvite> invites = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        String selection = AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER_ID + " = ?";
-        String[] selectionArgs = { userId };
+        Gson gson = new Gson();
 
         Cursor cursor = db.query(
                 AppContract.AllianceInviteEntry.TABLE_NAME,
                 null,
-                selection,
-                selectionArgs,
+                null, // ne filtriramo odmah, jer je toUser JSON
+                null,
                 null, null, null
         );
 
         while (cursor.moveToNext()) {
-            invites.add(cursorToAllianceInvite(cursor));
+            AllianceInvite invite = cursorToAllianceInvite(cursor);
+
+            if (invite.getToUser() != null && userId.equals(invite.getToUser().getId())) {
+                invites.add(invite);
+            }
         }
 
         cursor.close();
         db.close();
         return invites;
     }
+
 
 
     // ==== Alliance CRUD ====
@@ -1685,27 +1670,47 @@ public class LocalDataSource {
         db.close();
     }
 
-
     public void addAllianceInvite(AllianceInvite invite) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
+
         values.put(AppContract.AllianceInviteEntry._ID, invite.getId());
-        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE_ID, invite.getAlliance().getId());
-        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER_ID, invite.getFromUser().getId());
-        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER_ID, invite.getToUser().getId());
         values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED, invite.isAccepted() ? 1 : 0);
         values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED, invite.isResponded() ? 1 : 0);
-        db.insertWithOnConflict(AppContract.AllianceInviteEntry.TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+
+        Gson gson = new Gson();
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE, gson.toJson(invite.getAlliance()));
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER, gson.toJson(invite.getFromUser()));
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER, gson.toJson(invite.getToUser()));
+
+        db.insert(AppContract.AllianceInviteEntry.TABLE_NAME, null, values);
         db.close();
     }
 
+
     public void deleteAllAllianceInvitesForUser(String userId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete(AppContract.AllianceInviteEntry.TABLE_NAME,
-                AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER_ID + " = ?",
-                new String[]{userId});
+        Cursor cursor = db.query(
+                AppContract.AllianceInviteEntry.TABLE_NAME,
+                null,
+                null, null, null, null, null
+        );
+
+        while (cursor.moveToNext()) {
+            AllianceInvite invite = cursorToAllianceInvite(cursor);
+            if (invite.getToUser() != null && userId.equals(invite.getToUser().getId())) {
+                db.delete(
+                        AppContract.AllianceInviteEntry.TABLE_NAME,
+                        AppContract.AllianceInviteEntry._ID + " = ?",
+                        new String[]{invite.getId()}
+                );
+            }
+        }
+
+        cursor.close();
         db.close();
     }
+
 
     public void updateAllianceInvite(AllianceInvite invite) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -1721,10 +1726,29 @@ public class LocalDataSource {
 
     public void deleteAllianceInvite(String inviteId, String userId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete(AppContract.AllianceInviteEntry.TABLE_NAME,
-                AppContract.AllianceInviteEntry._ID + " = ? AND " + AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER_ID + " = ?",
-                new String[]{inviteId, userId});
+        Cursor cursor = db.query(
+                AppContract.AllianceInviteEntry.TABLE_NAME,
+                null,
+                AppContract.AllianceInviteEntry._ID + " = ?",
+                new String[]{inviteId},
+                null, null, null
+        );
+
+        if (cursor.moveToFirst()) {
+            AllianceInvite invite = cursorToAllianceInvite(cursor);
+            if (invite.getToUser() != null && userId.equals(invite.getToUser().getId())) {
+                db.delete(
+                        AppContract.AllianceInviteEntry.TABLE_NAME,
+                        AppContract.AllianceInviteEntry._ID + " = ?",
+                        new String[]{inviteId}
+                );
+            }
+        }
+
+        cursor.close();
         db.close();
     }
+
+
 
 }

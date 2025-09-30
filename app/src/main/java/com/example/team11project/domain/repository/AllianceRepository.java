@@ -12,6 +12,8 @@ public interface AllianceRepository {
     void updateAlliance(Alliance alliance, RepositoryCallback<Void> callback);
     void deleteAlliance(String allianceId, String userId, RepositoryCallback<Void> callback);
 
+    void getAllianceInviteById(String userId, String allianceInviteId, RepositoryCallback<AllianceInvite> callback);
+
     void addAllianceInvite(AllianceInvite invite, RepositoryCallback<Void> callback);
     void getAllAllianceInvites(String userId, RepositoryCallback<List<AllianceInvite>> callback);
     void updateAllianceInvite(AllianceInvite invite, RepositoryCallback<Void> callback);
@@ -19,5 +21,6 @@ public interface AllianceRepository {
     void getPendingInvites(String userId, RepositoryCallback<List<AllianceInvite>> callback);
     void acceptInvite(String userId, String inviteId, RepositoryCallback<Void> callback);
     void rejectInvite(String userId, String inviteId, RepositoryCallback<Void> callback);
+    void disbandAlliance(String allianceId, String leaderId, RepositoryCallback<Void> callback);
 
 }

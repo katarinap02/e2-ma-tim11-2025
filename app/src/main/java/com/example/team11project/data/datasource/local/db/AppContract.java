@@ -148,11 +148,12 @@ public final class AppContract {
 
     public static class AllianceInviteEntry implements BaseColumns {
         public static final String TABLE_NAME = "alliance_invites";
-        public static final String COLUMN_NAME_ALLIANCE_ID = "alliance_id";
-        public static final String COLUMN_NAME_FROM_USER_ID = "from_user_id";
-        public static final String COLUMN_NAME_TO_USER_ID = "to_user_id";
         public static final String COLUMN_NAME_ACCEPTED = "accepted";
         public static final String COLUMN_NAME_RESPONDED = "responded";
+        public static final String COLUMN_NAME_ALLIANCE = "alliance";
+        public static final String COLUMN_NAME_FROM_USER = "from_user";
+        public static final String COLUMN_NAME_TO_USER = "to_user";
+
     }
 
 }

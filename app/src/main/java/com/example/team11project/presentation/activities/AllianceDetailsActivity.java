@@ -2,6 +2,7 @@ package com.example.team11project.presentation.activities;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -69,6 +70,36 @@ public class AllianceDetailsActivity extends BaseActivity {
         setupRecyclerView();
         setupObservers();
 
+
+        Button btnDisband = findViewById(R.id.btnDisbandAlliance);
+
+        btnDisband.setOnClickListener(v -> {
+            Alliance currentAlliance = userViewModel.getUser().getValue() != null
+                    ? userViewModel.getUser().getValue().getCurrentAlliance()
+                    : null;
+
+            if (currentAlliance == null) {
+                Toast.makeText(this, "You are not part of any alliance", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!currentAlliance.getLeader().equals(userId)) {
+                Toast.makeText(this, "Only the leader can disband the alliance", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Confirmation dialog
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Disband Alliance")
+                    .setMessage("Are you sure you want to disband this alliance? All members will lose their membership.")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        allianceViewModel.disbandAlliance(currentAlliance);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
+
+
         // učitavanje korisnika da dobijemo currentAlliance
         if (userId != null) {
             userViewModel.loadUser(userId);
@@ -84,11 +115,11 @@ public class AllianceDetailsActivity extends BaseActivity {
     }
 
     private void setupObservers() {
-        // učitavanje korisnika
+        // observe za trenutnog korisnika
         userViewModel.getUser().observe(this, user -> {
             if (user == null) return;
 
-            Alliance alliance = user.getCurrentAlliance(); // uzimamo savez direktno iz korisnika
+            Alliance alliance = user.getCurrentAlliance();
             if (alliance != null) {
                 tvAllianceName.setText(alliance.getName());
                 members.clear();
@@ -107,17 +138,36 @@ public class AllianceDetailsActivity extends BaseActivity {
                         loadUserAndAddToMembers(memberId);
                     }
                 }
+
             } else {
                 tvLeaderName.setText("Trenutno niste član nijednog saveza");
+                members.clear();
+                adapter.notifyDataSetChanged();
             }
         });
 
-        // greške
+        // observe za promene saveza (npr. disband)
+        allianceViewModel.getAlliance().observe(this, alliance -> {
+            if (alliance == null) {
+                tvAllianceName.setText("");
+                tvLeaderName.setText("No alliance");
+                members.clear();
+                adapter.notifyDataSetChanged();
+                Toast.makeText(this, "Alliance has been disbanded", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // observe za greške
+        allianceViewModel.getErrorMessage().observe(this, error -> {
+            if (error != null) {
+                Toast.makeText(this, "Error: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
         userViewModel.getError().observe(this, message ->
                 Toast.makeText(this, "Greška: " + message, Toast.LENGTH_SHORT).show()
         );
     }
-
 
     private void loadUserAndAddToMembers(String id) {
         if (loadedMemberIds.contains(id)) return;

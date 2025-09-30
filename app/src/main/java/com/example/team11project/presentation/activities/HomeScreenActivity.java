@@ -44,7 +44,7 @@ public class HomeScreenActivity extends BaseActivity {
         invitationViewModel = new ViewModelProvider(this,
                 new AllianceInvitationViewModel.Factory(
                         new AllianceRepositoryImpl(getApplicationContext()),
-                        executor
+                        executor, new UserRepositoryImpl(getApplicationContext())
                 )).get(AllianceInvitationViewModel.class);
 
         if (userId != null) {
@@ -117,17 +117,37 @@ public class HomeScreenActivity extends BaseActivity {
     }
 
     private void showInviteNotification(AllianceInvite invite) {
-        new AlertDialog.Builder(this)
-                .setTitle("Poziv za savez")
-                .setMessage(invite.getFromUser().getUsername() + " vas je pozvao u savez: " +
-                        invite.getAlliance().getName())
-                .setCancelable(false)
-                .setPositiveButton("Prihvati", (dialog, which) -> {
-                    invitationViewModel.acceptInvite(invite.getId(), userId);
-                })
-                .setNegativeButton("Odbij", (dialog, which) -> {
-                    invitationViewModel.rejectInvite(invite.getId(), userId);
-                })
-                .show();
+        userViewModel.getUser().observe(this, user -> {
+            if (user == null) return;
+
+            boolean hasCurrentAlliance = user.getCurrentAlliance() != null;
+            boolean missionActive = hasCurrentAlliance && user.getCurrentAlliance().isMissionActive();
+
+            String message = invite.getFromUser().getUsername() + " vas je pozvao u savez: " +
+                    invite.getAlliance().getName();
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                    .setTitle("Poziv za savez")
+                    .setCancelable(false);
+
+            if (hasCurrentAlliance && !missionActive) {
+                message += "\n\nPrihvatanjem ovog poziva napuštate trenutni savez: " +
+                        user.getCurrentAlliance().getName() + ". Da li želite da nastavite?";
+                builder.setMessage(message)
+                        .setPositiveButton("Prihvati", (dialog, which) -> invitationViewModel.acceptInvite(invite.getId(), userId))
+                        .setNegativeButton("Odbij", (dialog, which) -> invitationViewModel.rejectInvite(invite.getId(), userId));
+            } else if (missionActive) {
+                message += "\n\nNe možete napustiti trenutni savez jer je pokrenuta misija!";
+                builder.setMessage(message)
+                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+            } else {
+                builder.setMessage(message)
+                        .setPositiveButton("Prihvati", (dialog, which) -> invitationViewModel.acceptInvite(invite.getId(), userId))
+                        .setNegativeButton("Odbij", (dialog, which) -> invitationViewModel.rejectInvite(invite.getId(), userId));
+            }
+
+            builder.show();
+        });
     }
+
 }

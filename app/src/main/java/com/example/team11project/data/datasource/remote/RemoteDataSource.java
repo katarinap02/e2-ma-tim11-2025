@@ -288,24 +288,35 @@ public class RemoteDataSource {
             return;
         }
 
-        if (user.getClothing() == null) {
-            user.setClothing(new ArrayList<>());
-        }
+        if (user.getClothing() == null) user.setClothing(new ArrayList<>());
+        if (user.getWeapons() == null) user.setWeapons(new ArrayList<>());
+        if (user.getPotions() == null) user.setPotions(new ArrayList<>());
 
-        if (user.getWeapons() == null) {
-            user.setWeapons(new ArrayList<>());
-        }
-
-        if (user.getPotions() == null) {
-            user.setPotions(new ArrayList<>());
-        }
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("clothing", user.getClothing());
+        userMap.put("weapons", user.getWeapons());
+        userMap.put("potions", user.getPotions());
+        userMap.put("currentAlliance", convertAllianceToMap(user.getCurrentAlliance()));
 
         db.collection(USERS_COLLECTION)
                 .document(user.getId())
-                .set(user, SetOptions.merge())
+                .set(userMap, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
+
+    // Pomoćna metoda koja konvertuje Alliance u mapu
+    private Map<String, Object> convertAllianceToMap(Alliance alliance) {
+        if (alliance == null) return null;
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", alliance.getId());
+        map.put("name", alliance.getName());
+        map.put("leader", alliance.getLeader());
+        map.put("members", alliance.getMembers() != null ? alliance.getMembers() : new ArrayList<>());
+        map.put("missionActive", alliance.isMissionActive());
+        return map;
+    }
+
 
     public void getUserById(String userId, DataSourceCallback<User> callback) {
         if (userId == null || userId.isEmpty()) {
@@ -846,12 +857,17 @@ public class RemoteDataSource {
                             AllianceInvite invite = doc.toObject(AllianceInvite.class);
                             invite.setId(doc.getId());
                             inviteList.add(invite);
+                            Log.d("InviteDebug", "invite: " + invite.getId()
+                                    + ", alliance=" + (invite.getAlliance() != null ? invite.getAlliance().getName() : "NULL")
+                                    + ", fromUser=" + (invite.getFromUser() != null ? invite.getFromUser().getUsername() : "NULL"));
+
                         }
                         callback.onSuccess(inviteList);
                     } else {
                         callback.onFailure(task.getException());
                     }
                 });
+
     }
 
     public void deleteAllianceInvite(String inviteId, String userId, final DataSourceCallback<Void> callback) {

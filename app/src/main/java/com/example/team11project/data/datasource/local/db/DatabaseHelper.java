@@ -225,9 +225,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_CREATE_ALLIANCE_INVITES_TABLE =
             "CREATE TABLE " + AppContract.AllianceInviteEntry.TABLE_NAME + " (" +
                     AppContract.AllianceInviteEntry._ID + " TEXT PRIMARY KEY," +
-                    AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE_ID + " TEXT NOT NULL," +
-                    AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER_ID + " TEXT NOT NULL," +
-                    AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER + " TEXT NOT NULL," +
                     AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED + " INTEGER NOT NULL DEFAULT 0," + // 0 = false, 1 = true
                     AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
                     ")";
