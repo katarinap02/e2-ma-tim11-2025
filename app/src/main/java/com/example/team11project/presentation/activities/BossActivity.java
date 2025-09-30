@@ -21,16 +21,19 @@ import com.example.team11project.domain.model.Boss;
 import com.example.team11project.presentation.viewmodel.BossViewModel;
 import com.example.team11project.domain.model.BossBattle;
 
+import java.util.ArrayList;
+
 public class BossActivity extends BaseActivity {
 
     private ImageView ivBoss;
-    private ImageView ivEquipment;
     private ProgressBar pbUserPP;
     private ProgressBar pbBossHP;
     private TextView tvUserPP;
     private TextView tvBossHP;
     private TextView tvHitChance;
     private TextView tvAttacksLeft;
+    LinearLayout layoutEquipment;
+    LinearLayout layoutActiveEquipment;
     private Button btnAttack;
 
     private String bossId;
@@ -49,6 +52,8 @@ public class BossActivity extends BaseActivity {
         userId = getIntent().getStringExtra("userId");
         level = getIntent().getIntExtra("level", 1);
 
+
+
         initializeViews();
         setupClickListener();
         setupViewModel();
@@ -57,7 +62,6 @@ public class BossActivity extends BaseActivity {
 
     private void initializeViews() {
         ivBoss = findViewById(R.id.ivBoss);
-        ivEquipment = findViewById(R.id.ivEquipment);
         pbUserPP = findViewById(R.id.pbUserPP);
         pbBossHP = findViewById(R.id.pbBossHP);
         tvUserPP = findViewById(R.id.tvUserPP);
@@ -65,6 +69,8 @@ public class BossActivity extends BaseActivity {
         tvHitChance = findViewById(R.id.tvHitChance);
         tvAttacksLeft = findViewById(R.id.tvAttacksLeft);
         btnAttack = findViewById(R.id.btnAttack);
+        layoutActiveEquipment = findViewById(R.id.layoutActiveEquipment);
+
     }
 
     private void setupClickListener() {
@@ -156,9 +162,25 @@ public class BossActivity extends BaseActivity {
         int attacksLeft = maxAttacks - battle.getAttacksUsed();
         tvAttacksLeft.setText(attacksLeft + "/" + maxAttacks + " napada");
 
+        layoutActiveEquipment.removeAllViews();
+
         if (battle.getActiveEquipment() != null && !battle.getActiveEquipment().isEmpty()) {
-            String equipmentName = battle.getActiveEquipment().get(0);
+            for (String imageName : battle.getActiveEquipment()) {
+                ImageView iv = new ImageView(this);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(110, 110);
+                params.setMargins(8, 0, 8, 0);
+                iv.setLayoutParams(params);
+
+                int resId = getResources().getIdentifier(imageName, "drawable", getPackageName());
+                if (resId != 0) {
+                    iv.setImageResource(resId);
+                } else {
+                }
+
+                layoutActiveEquipment.addView(iv);
+            }
         }
+
     }
 
     private void showToast(String message) {
@@ -201,7 +223,7 @@ public class BossActivity extends BaseActivity {
         tvUserPP.setVisibility(View.GONE);
         tvBossHP.setVisibility(View.GONE);
         btnAttack.setVisibility(View.GONE);
-        ivEquipment.setVisibility(View.GONE);
+        layoutActiveEquipment.setVisibility(View.GONE);
         tvHitChance.setVisibility(View.GONE);
         tvAttacksLeft.setVisibility(View.GONE);
 
@@ -266,5 +288,8 @@ public class BossActivity extends BaseActivity {
             }, 1000); // 1 sekunda kasnije
         }, 1500); // otvaranje kovčega
     }
+
+
+
 
 }

@@ -174,6 +174,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_PP + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_TITLE + " TEXT NOT NULL" +
+                    AppContract.LevelInfoEntry.COLUMN_CURRENT_LEVEL_START_DATE + " TEXT, " +
+                    AppContract.LevelInfoEntry.COLUMN_PREVIOUS_LEVEL_START_DATE + " TEXT, " +
                     "FOREIGN KEY (" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +
                     AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
                     ")";

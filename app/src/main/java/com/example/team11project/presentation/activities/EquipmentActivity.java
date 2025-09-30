@@ -21,6 +21,7 @@ import com.example.team11project.presentation.adapters.PotionActivateAdapter;
 import com.example.team11project.presentation.adapters.WeaponActivateAdapter;
 import com.example.team11project.presentation.viewmodel.EquipmentViewModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class EquipmentActivity extends BaseActivity {
@@ -35,6 +36,8 @@ public class EquipmentActivity extends BaseActivity {
 
     private EquipmentViewModel viewModel;
     private String userId;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,8 +114,11 @@ public class EquipmentActivity extends BaseActivity {
                 List<Potion> selectedPotions = potionAdapter.getSelectedPotions();
                 List<Clothing> selectedClothing = clothingAdapter.getSelectedClothing();
 
-                viewModel.activateEquipment(selectedWeapons, selectedPotions, selectedClothing);
-                viewModel.startBossFight(userId);
+                viewModel.activateEquipment(selectedWeapons, selectedPotions, selectedClothing, () -> {
+                    ArrayList<String> activeEquipmentImages = viewModel.getActiveEquipmentImages();
+                    viewModel.startBossFight(userId, activeEquipmentImages);
+                });
+
 
             } else {
                 Log.e("BossFight", "Greška: userId je null");
@@ -162,4 +168,8 @@ public class EquipmentActivity extends BaseActivity {
         intent.putExtra("level", bossBattle.getLevel());
         startActivity(intent);
     }
+
+
+
+
 }

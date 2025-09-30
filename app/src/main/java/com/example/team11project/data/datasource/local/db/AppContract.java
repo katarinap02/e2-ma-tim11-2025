@@ -59,6 +59,8 @@ public final class AppContract {
         public static final String COLUMN_PP = "pp";
         public static final String COLUMN_TITLE = "title";
         public static final String COLUMN_USER_ID = "user_id";
+        public static final String COLUMN_CURRENT_LEVEL_START_DATE = "current_level_start_date";
+        public static final String COLUMN_PREVIOUS_LEVEL_START_DATE = "previous_level_start_date";
     }
 
         public static class TaskInstanceEntry implements BaseColumns {
