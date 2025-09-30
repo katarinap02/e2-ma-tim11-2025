@@ -94,5 +94,7 @@
     <string name="savez">Savez</string>
     <string name="izbrisi_savez">Izbrisi savez</string>
     <string name="sansa_za_pogodak">Sansa za pogodak: 68%</string>
+    <string name="zapocni_misiju">Zapocni misiju</string>
+    <string name="members">Members:</string>
 
 </resources>

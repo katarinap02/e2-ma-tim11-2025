@@ -317,26 +317,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
                     ")";
 
-    public Set<Date> getMessageDays(String progressId) {
-        Set<Date> days = new HashSet<>();
-        SQLiteDatabase db = this.getReadableDatabase();
 
-        Cursor cursor = db.query(
-                AppContract.MemberProgressMessageDayEntry.TABLE_NAME,
-                new String[]{AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE},
-                AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID + " = ?",
-                new String[]{progressId},
-                null, null, null
-        );
-
-        while (cursor.moveToNext()) {
-            long timestamp = cursor.getLong(
-                    cursor.getColumnIndexOrThrow(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE));
-            days.add(new Date(timestamp));
-        }
-        cursor.close();
-        return days;
-    }
 
 
 

@@ -5,39 +5,78 @@
 
     <include
         android:id="@+id/navbar"
-        layout="@layout/navbar"/>
+        layout="@layout/navbar" />
 
     <TextView
         android:id="@+id/tvAllianceName"
-        android:textSize="20sp"
+        android:textSize="26sp"
         android:textStyle="bold"
+        android:textColor="#222222"
+        android:layout_marginTop="12dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_marginLeft="10dp"
+        android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/tvLeaderName"
         android:layout_marginTop="8dp"
-        android:textSize="16sp"
+        android:textSize="20sp"
+        android:textColor="#555555"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_marginLeft="20dp"
+        android:layout_height="wrap_content" />
 
     <TextView
-        android:layout_marginTop="16dp"
-        android:text="Members:"
-        android:textSize="16sp"
+        android:layout_marginTop="20dp"
+        android:text="@string/members"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_marginLeft="20dp"
+        android:layout_height="wrap_content" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMembers"
+        android:layout_marginTop="12dp"
         android:layout_width="match_parent"
+        android:layout_marginLeft="20dp"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="12dp"/>
 
-    <Button
-        android:id="@+id/btnDisbandAlliance"
-        android:text="@string/izbrisi_savez"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"/>
+        android:orientation="vertical"
+        android:layout_marginTop="20dp">
+
+        <Button
+            android:id="@+id/btnStartMission"
+            android:text="@string/zapocni_misiju"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:padding="14dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/btnDisbandAlliance"
+            android:text="@string/izbrisi_savez"
+            android:backgroundTint="#F44336"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="20dp"
+            android:padding="14dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
 </LinearLayout>
+

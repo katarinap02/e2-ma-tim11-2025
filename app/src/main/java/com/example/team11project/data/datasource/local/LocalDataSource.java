@@ -40,8 +40,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Klasa koja upravlja svim operacijama sa lokalnom SQLite bazom podataka.
@@ -1969,18 +1971,20 @@ public class LocalDataSource {
         values.put(AppContract.MemberProgressEntry.COLUMN_NAME_NO_UNRESOLVED_TASKS, progress.isNoUnresolvedTasks() ? 1 : 0);
         values.put(AppContract.MemberProgressEntry.COLUMN_NAME_TOTAL_DAMAGE_DEALT, progress.getTotalDamageDealt());
 
-        // Update osnovne kolone
         db.update(AppContract.MemberProgressEntry.TABLE_NAME, values,
                 AppContract.MemberProgressEntry._ID + " = ?", new String[]{progress.getId()});
 
-        // Dodaj message days direktno u DB
+        db.close();
+
+        deleteMessageDays(progress.getId());
+
+        db = dbHelper.getWritableDatabase();
         for (Date day : progress.getMessageDays()) {
             ContentValues cv = new ContentValues();
             cv.put(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID, progress.getId());
             cv.put(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE, day.getTime());
             db.insert(AppContract.MemberProgressMessageDayEntry.TABLE_NAME, null, cv);
         }
-
         db.close();
     }
 
@@ -2058,6 +2062,14 @@ public class LocalDataSource {
         return rewards;
     }
 
+    public void deleteAllRewardsForUser(String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(AppContract.AllianceMissionRewardEntry.TABLE_NAME,
+                AppContract.AllianceMissionRewardEntry.COLUMN_NAME_USER_ID + " = ?",
+                new String[]{userId});
+        db.close();
+    }
+
     public int getTotalBadgeCount(String userId) {
         List<AllianceMissionReward> rewards = getAllRewardsByUserId(userId);
         int totalBadges = 0;
@@ -2113,7 +2125,7 @@ public class LocalDataSource {
         progress.setTotalDamageDealt(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_TOTAL_DAMAGE_DEALT)));
 
         // Učitaj message days
-        progress.setMessageDays(dbHelper.getMessageDays(progress.getId()));
+        progress.setMessageDays(getMessageDays(progress.getId()));
 
         return progress;
     }
@@ -2139,6 +2151,63 @@ public class LocalDataSource {
         return reward;
     }
 
+    public void deleteMessageDays(String progressId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(AppContract.MemberProgressMessageDayEntry.TABLE_NAME,
+                AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID + " = ?",
+                new String[]{progressId});
+        db.close();
+    }
+
+    // Dodaj metodu za dodavanje jednog dana (kada korisnik pošalje poruku)
+    public void addMessageDay(String progressId, Date date) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        // Proveri da li već postoji taj datum
+        Cursor cursor = db.query(
+                AppContract.MemberProgressMessageDayEntry.TABLE_NAME,
+                null,
+                AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID + " = ? AND " +
+                        AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE + " = ?",
+                new String[]{progressId, String.valueOf(date.getTime())},
+                null, null, null
+        );
+
+        if (!cursor.moveToFirst()) {
+            // Ako ne postoji, dodaj
+            ContentValues cv = new ContentValues();
+            cv.put(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID, progressId);
+            cv.put(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE, date.getTime());
+            db.insert(AppContract.MemberProgressMessageDayEntry.TABLE_NAME, null, cv);
+        }
+
+        cursor.close();
+        db.close();
+    }
+
+    // Ispravi getMessageDays
+    public Set<Date> getMessageDays(String progressId) {
+        Set<Date> days = new HashSet<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase(); // Ispravi ovo
+
+        Cursor cursor = db.query(
+                AppContract.MemberProgressMessageDayEntry.TABLE_NAME,
+                new String[]{AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE},
+                AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID + " = ?",
+                new String[]{progressId},
+                null, null, null
+        );
+
+        while (cursor.moveToNext()) {
+            long timestamp = cursor.getLong(
+                    cursor.getColumnIndexOrThrow(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE));
+            days.add(new Date(timestamp));
+        }
+        cursor.close();
+        db.close(); // Dodaj i zatvaranje
+        return days;
+
+    }
 
 
-}
+    }
