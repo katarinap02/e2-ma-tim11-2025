@@ -93,6 +93,50 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.BossEntry.TABLE_NAME + "(" + AppContract.BossEntry._ID + ")," +
                     "FOREIGN KEY(" + AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + ") REFERENCES users(id)" +
                     ")";
+    private static final String SQL_CREATE_ALLIANCE_BOSS_TABLE =
+            "CREATE TABLE " + AppContract.AllianceBossEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceBossEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceBossEntry.COLUMN_NAME_MAX_HP + " INTEGER NOT NULL," +
+                    AppContract.AllianceBossEntry.COLUMN_NAME_CURRENT_HP + " INTEGER NOT NULL," +
+                    AppContract.AllianceBossEntry.COLUMN_NAME_NUMBER_OF_MEMBERS + " INTEGER NOT NULL" +
+                    ")";
+    private static final String SQL_CREATE_ALLIANCE_MISSION_TABLE =
+            "CREATE TABLE " + AppContract.AllianceMissionEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceMissionEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS + " TEXT NOT NULL," +
+                    AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE + " INTEGER NOT NULL," +
+                    AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE + " INTEGER NOT NULL," +
+                    "FOREIGN KEY(" + AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS + ") REFERENCES " +
+                    AppContract.AllianceBossEntry.TABLE_NAME + "(" + AppContract.AllianceBossEntry._ID + ")," +
+                    "FOREIGN KEY(" + AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID + ") REFERENCES " +
+                    AppContract.AllianceEntry.TABLE_NAME + "(" + AppContract.AllianceEntry._ID + ")" +
+                    ")";
+    private static final String SQL_CREATE_ALLIANCE_MISSION_REWARD_TABLE =
+            "CREATE TABLE " + AppContract.AllianceMissionRewardEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceMissionRewardEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceMissionRewardEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMissionRewardEntry.COLUMN_NAME_POTION + " TEXT," +
+                    AppContract.AllianceMissionRewardEntry.COLUMN_NAME_CLOTHING + " TEXT," +
+                    AppContract.AllianceMissionRewardEntry.COLUMN_NAME_COINS + " INTEGER NOT NULL," +
+                    AppContract.AllianceMissionRewardEntry.COLUMN_NAME_BADGE_COUNT + " INTEGER NOT NULL," +
+                    "FOREIGN KEY(" + AppContract.AllianceMissionRewardEntry.COLUMN_NAME_USER_ID + ") REFERENCES users(id)" +
+                    ")";
+    private static final String SQL_CREATE_MEMBER_PROGRESS_TABLE =
+            "CREATE TABLE " + AppContract.MemberProgressEntry.TABLE_NAME + " (" +
+                    AppContract.MemberProgressEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_MISSION_ID + " TEXT NOT NULL," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_STORE_PURCHASES + " INTEGER NOT NULL," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_REGULAR_BOSS_HITS + " INTEGER NOT NULL," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_EASY_NORMAL_TASKS + " INTEGER NOT NULL," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_OTHER_TASKS + " INTEGER NOT NULL," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_NO_UNRESOLVED_TASKS + " INTEGER NOT NULL," +
+                    AppContract.MemberProgressEntry.COLUMN_NAME_TOTAL_DAMAGE_DEALT + " INTEGER NOT NULL," +
+                    "FOREIGN KEY(" + AppContract.MemberProgressEntry.COLUMN_NAME_USER_ID + ") REFERENCES users(id)," +
+                    "FOREIGN KEY(" + AppContract.MemberProgressEntry.COLUMN_NAME_MISSION_ID + ") REFERENCES " +
+                    AppContract.AllianceMissionEntry.TABLE_NAME + "(" + AppContract.AllianceMissionEntry._ID + ")" +
+                    ")";
 
     // SQL komande za brisanje tabela
     private static final String SQL_DELETE_CATEGORIES_TABLE =
@@ -106,6 +150,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             "DROP TABLE IF EXISTS " + AppContract.BossBattleEntry.TABLE_NAME;
     private static final String SQL_DELETE_BOSS_REWARD_TABLE =
             "DROP TABLE IF EXISTS " + AppContract.BossRewardEntry.TABLE_NAME;
+    private static final String SQL_DELETE_ALLIANCE_BOSS_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.AllianceBossEntry.TABLE_NAME;
+
+    private static final String SQL_DELETE_ALLIANCE_MISSION_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.AllianceMissionEntry.TABLE_NAME;
+
+    private static final String SQL_DELETE_ALLIANCE_MISSION_REWARD_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.AllianceMissionRewardEntry.TABLE_NAME;
+
+    private static final String SQL_DELETE_MEMBER_PROGRESS_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.MemberProgressEntry.TABLE_NAME;
+
 
     //Poziva se kada se baza kreira po prvi put.
     @Override
@@ -120,6 +176,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_ALLIANCES_TABLE);
         db.execSQL(SQL_CREATE_ALLIANCE_MEMBERS_TABLE);
         db.execSQL(SQL_CREATE_ALLIANCE_INVITES_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_BOSS_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_MISSION_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_MISSION_REWARD_TABLE);
+        db.execSQL(SQL_CREATE_MEMBER_PROGRESS_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -137,6 +197,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceInviteEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceMemberEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceEntry.TABLE_NAME);
+        db.execSQL(SQL_DELETE_MEMBER_PROGRESS_TABLE);
+        db.execSQL(SQL_DELETE_ALLIANCE_MISSION_REWARD_TABLE);
+        db.execSQL(SQL_DELETE_ALLIANCE_MISSION_TABLE);
+        db.execSQL(SQL_DELETE_ALLIANCE_BOSS_TABLE);
 
         onCreate(db);
     }

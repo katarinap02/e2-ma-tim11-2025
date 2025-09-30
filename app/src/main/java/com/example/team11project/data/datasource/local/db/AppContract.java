@@ -158,4 +158,48 @@ public final class AppContract {
 
     }
 
+    public static class AllianceBossEntry implements BaseColumns {
+        public static final String TABLE_NAME = "alliance_bosses";
+        public static final String _ID = "id";
+        public static final String COLUMN_NAME_MAX_HP = "max_hp";
+        public static final String COLUMN_NAME_CURRENT_HP = "current_hp";
+        public static final String COLUMN_NAME_NUMBER_OF_MEMBERS = "number_of_members";
+    }
+
+    public static class AllianceMissionEntry implements BaseColumns {
+        public static final String TABLE_NAME = "alliance_missions";
+        public static final String _ID = "id";
+        public static final String COLUMN_NAME_ALLIANCE_ID = "alliance_id";
+        public static final String COLUMN_NAME_BOSS = "boss";
+        public static final String COLUMN_NAME_START_DATE = "start_date";
+        public static final String COLUMN_NAME_END_DATE = "end_date";
+    }
+
+    public static class AllianceMissionRewardEntry implements BaseColumns {
+        public static final String TABLE_NAME = "alliance_mission_rewards";
+        public static final String _ID = "id";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
+        public static final String COLUMN_NAME_POTION = "potion";
+        public static final String COLUMN_NAME_CLOTHING = "clothing";
+        public static final String COLUMN_NAME_COINS = "coins";
+        public static final String COLUMN_NAME_BADGE_COUNT = "badge_count";
+    }
+
+    public static class MemberProgressEntry implements BaseColumns {
+        public static final String TABLE_NAME = "member_progress";
+        public static final String _ID = "id";
+        public static final String COLUMN_NAME_USER_ID = "user_id";
+        public static final String COLUMN_NAME_MISSION_ID = "mission_id";
+        public static final String COLUMN_NAME_STORE_PURCHASES = "store_purchases";
+        public static final String COLUMN_NAME_REGULAR_BOSS_HITS = "regular_boss_hits";
+        public static final String COLUMN_NAME_EASY_NORMAL_TASKS = "easy_normal_tasks";
+        public static final String COLUMN_NAME_OTHER_TASKS = "other_tasks";
+        public static final String COLUMN_NAME_NO_UNRESOLVED_TASKS = "no_unresolved_tasks";
+        public static final String COLUMN_NAME_TOTAL_DAMAGE_DEALT = "total_damage_dealt";
+    }
+
+
+
+
+
 }
