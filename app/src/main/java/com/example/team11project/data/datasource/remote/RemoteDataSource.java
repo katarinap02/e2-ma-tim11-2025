@@ -7,12 +7,15 @@ import androidx.annotation.NonNull;
 
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.AllianceMission;
+import com.example.team11project.domain.model.AllianceMissionReward;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.BossReward;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.MemberProgress;
 import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
@@ -55,6 +58,11 @@ public class RemoteDataSource {
     private static final String EQUIPMENT_COLLECTION = "equipment";
     private static final String ALLIANCE_COLLECTION = "alliances";
     private static final String ALLIANCE_INVITATION_COLLECTION = "alliance_invitations";
+    private static final String ALLIANCE_BOSS_COLLECTION = "alliance_boss";
+    private static final String ALLIANCE_MISSION_COLLECTION = "alliance_mission";
+    private static final String ALLIANCE_REWARD_COLLECTION = "alliance_reward";
+    private static final String MEMBER_PROGRESS_COLLECTION = "member_progress";
+
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -1063,6 +1071,185 @@ public class RemoteDataSource {
                         callback.onFailure(task.getException());
                     }
                 });
+    }
+
+    public void createAllianceMission(AllianceMission mission, final DataSourceCallback<String> callback) {
+        if (mission.getId() == null || mission.getId().isEmpty()) {
+            mission.setId(UUID.randomUUID().toString());
+        }
+
+        db.collection(ALLIANCE_MISSION_COLLECTION)
+                .document(mission.getId())
+                .set(mission)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(mission.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getActiveMissionByAllianceId(String allianceId, final DataSourceCallback<AllianceMission> callback) {
+        db.collection(ALLIANCE_MISSION_COLLECTION)
+                .whereEqualTo("allianceId", allianceId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            AllianceMission mission = doc.toObject(AllianceMission.class);
+                            mission.setId(doc.getId());
+
+                            // Proveri da li je misija aktivna
+                            Date now = new Date();
+                            if (mission.getBoss().getCurrentHp() > 0 && now.before(mission.getEndDate())) {
+                                callback.onSuccess(mission);
+                                return;
+                            }
+                        }
+                        callback.onSuccess(null); // Nema aktivne misije
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void getAllianceMissionById(String missionId, final DataSourceCallback<AllianceMission> callback) {
+        db.collection(ALLIANCE_MISSION_COLLECTION)
+                .document(missionId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult().exists()) {
+                        AllianceMission mission = task.getResult().toObject(AllianceMission.class);
+                        mission.setId(task.getResult().getId());
+                        callback.onSuccess(mission);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateBossHp(String missionId, int newHp, final DataSourceCallback<Void> callback) {
+        db.collection(ALLIANCE_MISSION_COLLECTION)
+                .document(missionId)
+                .update("boss.currentHp", newHp)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void updateAllianceMission(AllianceMission mission, final DataSourceCallback<Void> callback) {
+        db.collection(ALLIANCE_MISSION_COLLECTION)
+                .document(mission.getId())
+                .set(mission)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void updateMemberProgress(MemberProgress progress, final DataSourceCallback<Void> callback) {
+        // Proveri da li progress ima missionId
+        if (progress.getMissionId() == null || progress.getMissionId().isEmpty()) {
+            callback.onFailure(new Exception("MissionId je obavezan"));
+            return;
+        }
+
+        // Dobavi misiju
+        getAllianceMissionById(progress.getMissionId(), new DataSourceCallback<AllianceMission>() {
+            @Override
+            public void onSuccess(AllianceMission mission) {
+                // Pronađi i ažuriraj progress za korisnika
+                List<MemberProgress> progressList = mission.getMemberProgressList();
+                boolean found = false;
+
+                for (int i = 0; i < progressList.size(); i++) {
+                    if (progressList.get(i).getUserId().equals(progress.getUserId())) {
+                        progressList.set(i, progress);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    progressList.add(progress);
+                }
+
+                mission.setMemberProgressList(progressList);
+                updateAllianceMission(mission, callback);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    public void getMemberProgressByUserId(String missionId, String userId, final DataSourceCallback<MemberProgress> callback) {
+        getAllianceMissionById(missionId, new DataSourceCallback<AllianceMission>() {
+            @Override
+            public void onSuccess(AllianceMission mission) {
+                for (MemberProgress progress : mission.getMemberProgressList()) { // ISPRAVI: bilo je getMemberProgressMap()
+                    if (progress.getUserId().equals(userId)) {
+                        callback.onSuccess(progress);
+                        return;
+                    }
+                }
+                callback.onSuccess(null);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    public void createAllianceMissionReward(AllianceMissionReward reward, final DataSourceCallback<String> callback) {
+        if (reward.getUserId() == null || reward.getUserId().isEmpty()) {
+            callback.onFailure(new Exception("UserId je obavezan"));
+            return;
+        }
+
+        String rewardId = UUID.randomUUID().toString();
+
+        db.collection(USERS_COLLECTION)
+                .document(reward.getUserId())
+                .collection(ALLIANCE_REWARD_COLLECTION)
+                .document(rewardId)
+                .set(reward)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(rewardId))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllRewardsByUserId(String userId, final DataSourceCallback<List<AllianceMissionReward>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(ALLIANCE_REWARD_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<AllianceMissionReward> rewards = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            AllianceMissionReward reward = doc.toObject(AllianceMissionReward.class);
+                            rewards.add(reward);
+                        }
+                        callback.onSuccess(rewards);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void getTotalBadgeCount(String userId, final DataSourceCallback<Integer> callback) {
+        getAllRewardsByUserId(userId, new DataSourceCallback<List<AllianceMissionReward>>() {
+            @Override
+            public void onSuccess(List<AllianceMissionReward> rewards) {
+                int totalBadges = 0;
+                for (AllianceMissionReward reward : rewards) {
+                    totalBadges += reward.getBadgeCount();
+                }
+                callback.onSuccess(totalBadges);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
 }

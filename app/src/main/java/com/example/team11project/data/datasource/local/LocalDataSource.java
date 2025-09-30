@@ -10,7 +10,10 @@ import android.util.Log;
 import com.example.team11project.data.datasource.local.db.AppContract;
 import com.example.team11project.data.datasource.local.db.DatabaseHelper;
 import com.example.team11project.domain.model.Alliance;
+import com.example.team11project.domain.model.AllianceBoss;
 import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.AllianceMission;
+import com.example.team11project.domain.model.AllianceMissionReward;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.BossReward;
@@ -19,6 +22,7 @@ import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.EquipmentType;
 import com.example.team11project.domain.model.LevelInfo;
+import com.example.team11project.domain.model.MemberProgress;
 import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.RecurrenceUnit;
 import com.example.team11project.domain.model.Task;
@@ -1814,6 +1818,325 @@ public class LocalDataSource {
 
         cursor.close();
         db.close();
+    }
+
+    //------------------------METODE ZA ALLICANCE ZA BOSS MISSION REWARD -------------------//
+
+    public void addAllianceBoss(AllianceBoss boss) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.AllianceBossEntry._ID, boss.getId());
+        values.put(AppContract.AllianceBossEntry.COLUMN_NAME_MAX_HP, boss.getMaxHp());
+        values.put(AppContract.AllianceBossEntry.COLUMN_NAME_CURRENT_HP, boss.getCurrentHp());
+        values.put(AppContract.AllianceBossEntry.COLUMN_NAME_NUMBER_OF_MEMBERS, boss.getNumberOfMembers());
+
+        db.insert(AppContract.AllianceBossEntry.TABLE_NAME, null, values);
+        db.close();
+    }
+
+    public AllianceBoss getAllianceBossById(String bossId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                AppContract.AllianceBossEntry.TABLE_NAME,
+                null,
+                AppContract.AllianceBossEntry._ID + " = ?",
+                new String[]{bossId},
+                null, null, null
+        );
+
+        AllianceBoss boss = null;
+        if (cursor.moveToFirst()) {
+            boss = cursorToAllianceBoss(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return boss;
+    }
+
+    public void updateAllianceBoss(AllianceBoss boss) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.AllianceBossEntry.COLUMN_NAME_MAX_HP, boss.getMaxHp());
+        values.put(AppContract.AllianceBossEntry.COLUMN_NAME_CURRENT_HP, boss.getCurrentHp());
+        values.put(AppContract.AllianceBossEntry.COLUMN_NAME_NUMBER_OF_MEMBERS, boss.getNumberOfMembers());
+
+        db.update(AppContract.AllianceBossEntry.TABLE_NAME, values,
+                AppContract.AllianceBossEntry._ID + " = ?", new String[]{boss.getId()});
+        db.close();
+    }
+
+    public void updateBossHp(String missionId, int newHp) {
+        AllianceMission mission = getAllianceMissionById(missionId);
+        if (mission != null) {
+            mission.getBoss().setCurrentHp(newHp);
+            updateAllianceBoss(mission.getBoss());
+        }
+    }
+    public void createAllianceMission(AllianceMission mission) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.AllianceMissionEntry._ID, mission.getId());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID, mission.getAllianceId());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS, mission.getBoss().getId());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE, mission.getStartDate().getTime());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE, mission.getEndDate().getTime());
+
+        db.insert(AppContract.AllianceMissionEntry.TABLE_NAME, null, values);
+        db.close();
+
+        // Dodaj i boss-a
+        addAllianceBoss(mission.getBoss());
+    }
+
+    public AllianceMission getActiveMissionByAllianceId(String allianceId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                AppContract.AllianceMissionEntry.TABLE_NAME,
+                null,
+                AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID + " = ?",
+                new String[]{allianceId},
+                null, null, null
+        );
+
+        AllianceMission activeMission = null;
+        Date now = new Date();
+
+        while (cursor.moveToNext()) {
+            AllianceMission mission = cursorToAllianceMission(cursor);
+            // Proveri da li je misija aktivna
+            if (mission.getBoss().getCurrentHp() > 0 && now.before(mission.getEndDate())) {
+                activeMission = mission;
+                break;
+            }
+        }
+
+        cursor.close();
+        db.close();
+        return activeMission;
+    }
+
+    public AllianceMission getAllianceMissionById(String missionId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                AppContract.AllianceMissionEntry.TABLE_NAME,
+                null,
+                AppContract.AllianceMissionEntry._ID + " = ?",
+                new String[]{missionId},
+                null, null, null
+        );
+
+        AllianceMission mission = null;
+        if (cursor.moveToFirst()) {
+            mission = cursorToAllianceMission(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return mission;
+    }
+
+    public void updateAllianceMission(AllianceMission mission) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID, mission.getAllianceId());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS, mission.getBoss().getId());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE, mission.getStartDate().getTime());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE, mission.getEndDate().getTime());
+
+        db.update(AppContract.AllianceMissionEntry.TABLE_NAME, values,
+                AppContract.AllianceMissionEntry._ID + " = ?", new String[]{mission.getId()});
+        db.close();
+
+        // Ažuriraj i boss-a
+        updateAllianceBoss(mission.getBoss());
+    }
+
+    public void updateMemberProgress(MemberProgress progress) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_USER_ID, progress.getUserId());
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_MISSION_ID, progress.getMissionId());
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_STORE_PURCHASES, progress.getStorePurchases());
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_REGULAR_BOSS_HITS, progress.getRegularBossHits());
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_EASY_NORMAL_TASKS, progress.getEasyNormalTasks());
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_OTHER_TASKS, progress.getOtherTasks());
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_NO_UNRESOLVED_TASKS, progress.isNoUnresolvedTasks() ? 1 : 0);
+        values.put(AppContract.MemberProgressEntry.COLUMN_NAME_TOTAL_DAMAGE_DEALT, progress.getTotalDamageDealt());
+
+        // Update osnovne kolone
+        db.update(AppContract.MemberProgressEntry.TABLE_NAME, values,
+                AppContract.MemberProgressEntry._ID + " = ?", new String[]{progress.getId()});
+
+        // Dodaj message days direktno u DB
+        for (Date day : progress.getMessageDays()) {
+            ContentValues cv = new ContentValues();
+            cv.put(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID, progress.getId());
+            cv.put(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE, day.getTime());
+            db.insert(AppContract.MemberProgressMessageDayEntry.TABLE_NAME, null, cv);
+        }
+
+        db.close();
+    }
+
+
+    public MemberProgress getMemberProgressByUserId(String missionId, String userId) {
+        AllianceMission mission = getAllianceMissionById(missionId);
+        if (mission == null) return null;
+
+        for (MemberProgress progress : mission.getMemberProgressList()) {
+            if (progress.getUserId().equals(userId)) {
+                return progress;
+            }
+        }
+        return null;
+    }
+
+    private List<MemberProgress> getAllMemberProgressForMission(String missionId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                AppContract.MemberProgressEntry.TABLE_NAME,
+                null,
+                AppContract.MemberProgressEntry.COLUMN_NAME_MISSION_ID + " = ?",
+                new String[]{missionId},
+                null, null, null
+        );
+
+        List<MemberProgress> progressList = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            progressList.add(cursorToMemberProgress(cursor));
+        }
+
+        cursor.close();
+        db.close();
+        return progressList;
+    }
+
+    public void createAllianceMissionReward(AllianceMissionReward reward) {
+        if (reward.getUserId() == null || reward.getUserId().isEmpty()) {
+            throw new IllegalArgumentException("UserId je obavezan");
+        }
+
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.AllianceMissionRewardEntry._ID, reward.getId());
+        values.put(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_USER_ID, reward.getUserId());
+        values.put(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_COINS, reward.getCoins());
+        values.put(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_BADGE_COUNT, reward.getBadgeCount());
+
+        Gson gson = new Gson();
+        values.put(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_POTION, gson.toJson(reward.getPotion()));
+        values.put(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_CLOTHING, gson.toJson(reward.getClothing()));
+
+        db.insert(AppContract.AllianceMissionRewardEntry.TABLE_NAME, null, values);
+        db.close();
+    }
+
+    public List<AllianceMissionReward> getAllRewardsByUserId(String userId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                AppContract.AllianceMissionRewardEntry.TABLE_NAME,
+                null,
+                AppContract.AllianceMissionRewardEntry.COLUMN_NAME_USER_ID + " = ?",
+                new String[]{userId},
+                null, null, null
+        );
+
+        List<AllianceMissionReward> rewards = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            rewards.add(cursorToAllianceMissionReward(cursor));
+        }
+
+        cursor.close();
+        db.close();
+        return rewards;
+    }
+
+    public int getTotalBadgeCount(String userId) {
+        List<AllianceMissionReward> rewards = getAllRewardsByUserId(userId);
+        int totalBadges = 0;
+        for (AllianceMissionReward reward : rewards) {
+            totalBadges += reward.getBadgeCount();
+        }
+        return totalBadges;
+    }
+
+
+
+
+
+    private AllianceBoss cursorToAllianceBoss(Cursor cursor) {
+        AllianceBoss boss = new AllianceBoss();
+        boss.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceBossEntry._ID)));
+        boss.setMaxHp(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceBossEntry.COLUMN_NAME_MAX_HP)));
+        boss.setCurrentHp(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceBossEntry.COLUMN_NAME_CURRENT_HP)));
+        boss.setNumberOfMembers(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceBossEntry.COLUMN_NAME_NUMBER_OF_MEMBERS)));
+        return boss;
+    }
+    private AllianceMission cursorToAllianceMission(Cursor cursor) {
+        AllianceMission mission = new AllianceMission();
+        mission.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry._ID)));
+        mission.setAllianceId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID)));
+
+        String bossId = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS));
+        mission.setBoss(getAllianceBossById(bossId));
+
+        mission.setStartDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE))));
+        mission.setEndDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE))));
+
+        // Učitaj sve member progress-e za ovu misiju
+        mission.setMemberProgressList(getAllMemberProgressForMission(mission.getId()));
+
+        return mission;
+    }
+
+
+
+
+
+    private MemberProgress cursorToMemberProgress(Cursor cursor) {
+        MemberProgress progress = new MemberProgress();
+        progress.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry._ID)));
+        progress.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_USER_ID)));
+        progress.setMissionId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_MISSION_ID)));
+        progress.setStorePurchases(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_STORE_PURCHASES)));
+        progress.setRegularBossHits(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_REGULAR_BOSS_HITS)));
+        progress.setEasyNormalTasks(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_EASY_NORMAL_TASKS)));
+        progress.setOtherTasks(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_OTHER_TASKS)));
+        progress.setNoUnresolvedTasks(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_NO_UNRESOLVED_TASKS)) == 1);
+        progress.setTotalDamageDealt(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.MemberProgressEntry.COLUMN_NAME_TOTAL_DAMAGE_DEALT)));
+
+        // Učitaj message days
+        progress.setMessageDays(dbHelper.getMessageDays(progress.getId()));
+
+        return progress;
+    }
+
+    private AllianceMissionReward cursorToAllianceMissionReward(Cursor cursor) {
+        AllianceMissionReward reward = new AllianceMissionReward();
+        reward.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionRewardEntry._ID)));
+        reward.setUserId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_USER_ID)));
+        reward.setCoins(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_COINS)));
+        reward.setBadgeCount(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_BADGE_COUNT)));
+
+        Gson gson = new Gson();
+        String potionJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_POTION));
+        String clothingJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionRewardEntry.COLUMN_NAME_CLOTHING));
+
+        if (potionJson != null && !potionJson.isEmpty()) {
+            reward.setPotion(gson.fromJson(potionJson, Potion.class));
+        }
+        if (clothingJson != null && !clothingJson.isEmpty()) {
+            reward.setClothing(gson.fromJson(clothingJson, Clothing.class));
+        }
+
+        return reward;
     }
 
 

@@ -198,6 +198,14 @@ public final class AppContract {
         public static final String COLUMN_NAME_TOTAL_DAMAGE_DEALT = "total_damage_dealt";
     }
 
+    public static class MemberProgressMessageDayEntry implements BaseColumns {
+        public static final String TABLE_NAME = "member_progress_message_days";
+
+        public static final String COLUMN_NAME_PROGRESS_ID = "progress_id";
+        public static final String COLUMN_NAME_DATE = "date";
+    }
+
+
 
 
 

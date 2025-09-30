@@ -1,8 +1,14 @@
 package com.example.team11project.data.datasource.local.db;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     public static final int DATABASE_VERSION = 3;
@@ -137,6 +143,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     "FOREIGN KEY(" + AppContract.MemberProgressEntry.COLUMN_NAME_MISSION_ID + ") REFERENCES " +
                     AppContract.AllianceMissionEntry.TABLE_NAME + "(" + AppContract.AllianceMissionEntry._ID + ")" +
                     ")";
+    private static final String SQL_CREATE_MEMBER_PROGRESS_MESSAGE_DAYS =
+            "CREATE TABLE " + AppContract.MemberProgressMessageDayEntry.TABLE_NAME + " (" +
+                    AppContract.MemberProgressMessageDayEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID + " TEXT NOT NULL," +
+                    AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE + " INTEGER NOT NULL," +
+                    "FOREIGN KEY(" + AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID + ") " +
+                    "REFERENCES " + AppContract.MemberProgressEntry.TABLE_NAME + "(" + AppContract.MemberProgressEntry._ID + ")" +
+                    ")";
+
 
     // SQL komande za brisanje tabela
     private static final String SQL_DELETE_CATEGORIES_TABLE =
@@ -161,6 +176,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String SQL_DELETE_MEMBER_PROGRESS_TABLE =
             "DROP TABLE IF EXISTS " + AppContract.MemberProgressEntry.TABLE_NAME;
+    private static final String SQL_DELETE_MEMBER_PROGRESS_MESSAGE_DAY_TABLE =
+            "DROP TABLE IF EXISTS " + AppContract.MemberProgressMessageDayEntry.TABLE_NAME;
 
 
     //Poziva se kada se baza kreira po prvi put.
@@ -180,6 +197,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_ALLIANCE_MISSION_TABLE);
         db.execSQL(SQL_CREATE_ALLIANCE_MISSION_REWARD_TABLE);
         db.execSQL(SQL_CREATE_MEMBER_PROGRESS_TABLE);
+        db.execSQL(SQL_CREATE_MEMBER_PROGRESS_MESSAGE_DAYS);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -201,6 +219,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_ALLIANCE_MISSION_REWARD_TABLE);
         db.execSQL(SQL_DELETE_ALLIANCE_MISSION_TABLE);
         db.execSQL(SQL_DELETE_ALLIANCE_BOSS_TABLE);
+        db.execSQL(SQL_DELETE_MEMBER_PROGRESS_MESSAGE_DAY_TABLE);
 
         onCreate(db);
     }
@@ -297,6 +316,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED + " INTEGER NOT NULL DEFAULT 0," + // 0 = false, 1 = true
                     AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
                     ")";
+
+    public Set<Date> getMessageDays(String progressId) {
+        Set<Date> days = new HashSet<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.query(
+                AppContract.MemberProgressMessageDayEntry.TABLE_NAME,
+                new String[]{AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE},
+                AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_PROGRESS_ID + " = ?",
+                new String[]{progressId},
+                null, null, null
+        );
+
+        while (cursor.moveToNext()) {
+            long timestamp = cursor.getLong(
+                    cursor.getColumnIndexOrThrow(AppContract.MemberProgressMessageDayEntry.COLUMN_NAME_DATE));
+            days.add(new Date(timestamp));
+        }
+        cursor.close();
+        return days;
+    }
+
+
+
+
 
 
 }

@@ -62,11 +62,11 @@ public class AllianceMission {
         this.endDate = endDate;
     }
 
-    public List<MemberProgress> getMemberProgressMap() {
+    public List<MemberProgress> getMemberProgressList() {
         return memberProgress;
     }
 
-    public void setMemberProgressMap(List<MemberProgress> memberProgressMap) {
+    public void setMemberProgressList(List<MemberProgress> memberProgressMap) {
         this.memberProgress = memberProgressMap;
     }
 }
