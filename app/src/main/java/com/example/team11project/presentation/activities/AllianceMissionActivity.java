@@ -83,6 +83,11 @@ public class AllianceMissionActivity extends AppCompatActivity {
             }
         });
 
+        viewModel.getMembersLiveData().observe(this, userMap -> {
+            adapter.setUserMap(userMap);
+        });
+
+
         viewModel.getErrorMessage().observe(this, error -> {
             if (error != null) {
                 Toast.makeText(this, error, Toast.LENGTH_SHORT).show();

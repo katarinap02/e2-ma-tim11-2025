@@ -8,7 +8,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import com.example.team11project.R;
 import com.example.team11project.domain.model.MemberProgress;
 import android.graphics.Color;
@@ -19,9 +22,15 @@ public class MemberProgressAdapter extends RecyclerView.Adapter<MemberProgressAd
     private List<MemberProgress> memberProgressList = new ArrayList<>();
     private String currentUserId;
     private int bossMaxHp = 100; // Default vrednost
+    private Map<String, String> userMap = new HashMap<>();
 
     public MemberProgressAdapter(String currentUserId) {
         this.currentUserId = currentUserId;
+    }
+
+    public void setUserMap(Map<String, String> userMap) {
+        this.userMap = userMap;
+        notifyDataSetChanged();
     }
 
     public void setMemberProgressList(List<MemberProgress> list) {
@@ -47,14 +56,15 @@ public class MemberProgressAdapter extends RecyclerView.Adapter<MemberProgressAd
         MemberProgress member = memberProgressList.get(position);
 
         boolean isCurrentUser = member.getUserId().equals(currentUserId);
+        String username = userMap.getOrDefault(member.getUserId(), "Član #" + (position + 1));
 
         // Ime člana ili "Vi" za trenutnog korisnika
         if (isCurrentUser) {
-            holder.tvMemberName.setText("Vi (Član #" + (position + 1) + ")");
+            holder.tvMemberName.setText("Vi (" + username + ")");
             holder.tvMemberName.setTextColor(Color.parseColor("#FFD700")); // Zlatna boja
             holder.tvMemberName.setTypeface(null, Typeface.BOLD);
         } else {
-            holder.tvMemberName.setText("Član #" + (position + 1));
+            holder.tvMemberName.setText(username);
             holder.tvMemberName.setTextColor(Color.WHITE);
             holder.tvMemberName.setTypeface(null, Typeface.NORMAL);
         }
