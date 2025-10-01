@@ -1145,23 +1145,30 @@ public class RemoteDataSource {
                 .whereEqualTo("allianceId", allianceId)
                 .get()
                 .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
-                        for (QueryDocumentSnapshot doc : task.getResult()) {
-                            AllianceMission mission = doc.toObject(AllianceMission.class);
-                            mission.setId(doc.getId());
+                    if (task.isSuccessful()) {
+                        if (!task.getResult().isEmpty()) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                AllianceMission mission = doc.toObject(AllianceMission.class);
+                                mission.setId(doc.getId());
 
-                            // Proveri da li je misija aktivna
-                            Date now = new Date();
-                            if (mission.getBoss().getCurrentHp() > 0 && now.before(mission.getEndDate())) {
-                                callback.onSuccess(mission);
-                                return;
+                                Date now = new Date();
+                                if (mission.getBoss().getCurrentHp() > 0 && now.before(mission.getEndDate())) {
+                                    callback.onSuccess(mission);
+                                    return;
+                                }
                             }
+                            callback.onSuccess(null); // Nema aktivne misije
+                        } else {
+                            callback.onSuccess(null); // 👈 prazan rezultat nije greška
                         }
-                        callback.onSuccess(null); // Nema aktivne misije
                     } else {
-                        callback.onFailure(task.getException());
+                        Exception e = task.getException() != null
+                                ? task.getException()
+                                : new Exception("Firestore upit neuspešan (ali bez Exception objekta).");
+                        callback.onFailure(e);
                     }
                 });
+
     }
 
     public void getAllianceMissionById(String missionId, final DataSourceCallback<AllianceMission> callback) {

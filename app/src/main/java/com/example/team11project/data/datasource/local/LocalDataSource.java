@@ -2239,8 +2239,8 @@ public class LocalDataSource {
     }
 
     // Ispravi getMessageDays
-    public Set<Date> getMessageDays(String progressId) {
-        Set<Date> days = new HashSet<>();
+    public List<Date> getMessageDays(String progressId) {
+        List<Date> days = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase(); // Ispravi ovo
 
         Cursor cursor = db.query(

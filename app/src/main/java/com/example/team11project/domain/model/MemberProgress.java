@@ -1,6 +1,7 @@
 package com.example.team11project.domain.model;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 public class MemberProgress {
@@ -12,12 +13,12 @@ public class MemberProgress {
     private int easyNormalTasks; // max 10
     private int otherTasks; // max 6
     private boolean noUnresolvedTasks; // 10 HP bonus
-    private Set<Date> messageDays;
+    private List<Date> messageDays;
     private int totalDamageDealt;
 
     public MemberProgress() {}
 
-    public MemberProgress(String id, String userId, String missionId, int storePurchases, int regularBossHits, int easyNormalTasks, int otherTasks, boolean noUnresolvedTasks, Set<Date> messageDays, int totalDamageDealt) {
+    public MemberProgress(String id, String userId, String missionId, int storePurchases, int regularBossHits, int easyNormalTasks, int otherTasks, boolean noUnresolvedTasks, List<Date> messageDays, int totalDamageDealt) {
         this.id = id;
         this.userId = userId;
         this.missionId = missionId;
@@ -94,11 +95,11 @@ public class MemberProgress {
         this.noUnresolvedTasks = noUnresolvedTasks;
     }
 
-    public Set<Date> getMessageDays() {
+    public List<Date> getMessageDays() {
         return messageDays;
     }
 
-    public void setMessageDays(Set<Date> messageDays) {
+    public void setMessageDays(List<Date> messageDays) {
         this.messageDays = messageDays;
     }
 

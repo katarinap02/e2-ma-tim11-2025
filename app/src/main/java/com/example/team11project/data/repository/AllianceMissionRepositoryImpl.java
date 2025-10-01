@@ -84,7 +84,7 @@ public class AllianceMissionRepositoryImpl implements AllianceMissionRepository 
 
             @Override
             public void onFailure(Exception e) {
-                System.out.println("Sync failed: " + e.getMessage());
+                callback.onFailure(e);
             }
         });
     }
