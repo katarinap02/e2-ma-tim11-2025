@@ -38,6 +38,12 @@
         android:id="@+id/btnDisbandAlliance"
         android:text="@string/izbrisi_savez"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btnChat"
+        android:text="@string/pristupi_cetu"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"/>
 </LinearLayout>

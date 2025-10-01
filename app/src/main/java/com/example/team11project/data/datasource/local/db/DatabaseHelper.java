@@ -120,6 +120,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_ALLIANCES_TABLE);
         db.execSQL(SQL_CREATE_ALLIANCE_MEMBERS_TABLE);
         db.execSQL(SQL_CREATE_ALLIANCE_INVITES_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_MESSAGES_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -137,6 +138,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceInviteEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceMemberEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceMessageEntry.TABLE_NAME);
+
 
         onCreate(db);
     }
@@ -234,5 +237,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
                     ")";
 
+
+    private static final String SQL_CREATE_ALLIANCE_MESSAGES_TABLE =
+            "CREATE TABLE " + AppContract.AllianceMessageEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceMessageEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_ALLIANCE_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_SENDER_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_SENDER_USERNAME + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_MESSAGE + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_TIMESTAMP + " INTEGER NOT NULL" +
+                    ")";
 
 }
