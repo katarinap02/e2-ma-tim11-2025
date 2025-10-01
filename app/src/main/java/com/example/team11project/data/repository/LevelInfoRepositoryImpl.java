@@ -10,6 +10,8 @@ import com.example.team11project.domain.model.UserTitle;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -39,6 +41,17 @@ public class LevelInfoRepositoryImpl implements LevelInfoRepository {
 
         while (newXp >= xpForNextLevel && level < 3) {
             level++;
+
+            levelInfo.setPreviousLevelStartDate(levelInfo.getCurrentLevelStartDate());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date());
+
+            calendar.set(Calendar.HOUR_OF_DAY, 23);
+            calendar.set(Calendar.MINUTE, 59);
+            calendar.set(Calendar.SECOND, 59);
+            calendar.set(Calendar.MILLISECOND, 999);
+
+            levelInfo.setCurrentLevelStartDate(calendar.getTime());
 
             if (level == 1) {
                 pp += 40;

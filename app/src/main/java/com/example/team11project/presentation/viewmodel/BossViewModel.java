@@ -11,11 +11,13 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
+import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.repository.BossBattleRepository;
 import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.BossRewardRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.usecase.BossUseCase;
 
@@ -24,6 +26,7 @@ public class BossViewModel extends ViewModel {
     private final BossBattleRepository bossBattleRepository;
     private final BossRepository bossRepository;
 
+    private final EquipmentRepository equipmentRepository;
     private final BossUseCase bossUseCase;
 
     private final MutableLiveData<BossBattle> _bossBattle = new MutableLiveData<>();
@@ -44,10 +47,11 @@ public class BossViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _battleFinished = new MutableLiveData<>();
     public final LiveData<Boolean> battleFinished = _battleFinished;
 
-    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository, BossRewardRepository bossRewardRepository) {
+    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository, BossRewardRepository bossRewardRepository, EquipmentRepository equipmentRepository) {
         this.bossBattleRepository = bossBattleRepository;
         this.bossRepository = bossRepository;
-        this.bossUseCase = new BossUseCase(bossRepository, bossBattleRepository, bossRewardRepository);
+        this.equipmentRepository = equipmentRepository;
+        this.bossUseCase = new BossUseCase(bossRepository, bossBattleRepository, bossRewardRepository, equipmentRepository);
     }
 
     public void loadBattleWithBoss(String userId, String bossId, int level) {
@@ -180,13 +184,15 @@ public class BossViewModel extends ViewModel {
                     BossBattleRepository battleRepo = new BossBattleRepositoryImpl(application);
                     BossRepository bossRepo = new BossRepositoryImpl(application);
                     BossRewardRepository rewardRepo = new BossRewardRepositoryImpl(application);
+                    EquipmentRepository equipmentRepo = new EquipmentRepositoryImpl(application);
 
                     @SuppressWarnings("unchecked")
                     T viewModel = (T) modelClass.getConstructor(
                                     BossBattleRepository.class,
                                     BossRepository.class,
-                                    BossRewardRepository.class)
-                            .newInstance(battleRepo, bossRepo, rewardRepo);
+                                    BossRewardRepository.class,
+                                    EquipmentRepository.class)
+                            .newInstance(battleRepo, bossRepo, rewardRepo, equipmentRepo);
                     return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);

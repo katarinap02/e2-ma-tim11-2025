@@ -8,6 +8,7 @@
         android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:forceDarkAllowed="false"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -15,6 +16,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Team11Project"
         tools:targetApi="31">
+        <activity
+            android:name=".presentation.activities.AllianceChatActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.AllianceDetailsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.CreateAllianceActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.AddFriendsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.FriendsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.RewardActivity"
+            android:exported="false" />
         <activity
             android:name=".presentation.activities.BossActivity"
             android:exported="false" />

@@ -1,0 +1,453 @@
+package com.example.team11project.data.repository;
+
+import android.content.Context;
+import android.util.Log;
+
+import com.example.team11project.data.datasource.local.LocalDataSource;
+import com.example.team11project.data.datasource.remote.RemoteDataSource;
+import com.example.team11project.domain.model.Alliance;
+import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.RepositoryCallback;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class AllianceRepositoryImpl implements AllianceRepository {
+
+    private final LocalDataSource localDataSource;
+    private final RemoteDataSource remoteDataSource;
+    private final ExecutorService executor;
+
+    public AllianceRepositoryImpl(Context context) {
+        this.localDataSource = new LocalDataSource(context);
+        this.remoteDataSource = new RemoteDataSource();
+        this.executor = Executors.newSingleThreadExecutor();
+    }
+
+    @Override
+    public void addAlliance(Alliance alliance, RepositoryCallback<Void> callback) {
+        if (alliance.getLeader() == null) {
+            callback.onFailure(new Exception("Alliance must have a leaderId"));
+            return;
+        }
+
+        executor.execute(() -> {
+            // prvo dodaj saveza na remote
+            remoteDataSource.addAlliance(alliance, new RemoteDataSource.DataSourceCallback<String>() {
+                @Override
+                public void onSuccess(String allianceId) {
+                    alliance.setId(allianceId);
+
+                    // sada update-uj lidera sa currentAlliance
+                    remoteDataSource.getUserById(alliance.getLeader(), new RemoteDataSource.DataSourceCallback<User>() {
+                        @Override
+                        public void onSuccess(User leader) {
+                            leader.setCurrentAlliance(alliance);
+
+                            remoteDataSource.updateUser(leader, new RemoteDataSource.DataSourceCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void result) {
+                                    executor.execute(() -> {
+                                        localDataSource.addAlliance(alliance);
+                                        localDataSource.saveUser(leader);
+                                        callback.onSuccess(null);
+                                    });
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    callback.onFailure(e);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            callback.onFailure(e);
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+
+    @Override
+    public void addAllianceInvite(AllianceInvite invite, RepositoryCallback<Void> callback) {
+        if (invite.getToUser().getId() == null) {
+            callback.onFailure(new Exception("Invite must have toUserId"));
+            return;
+        }
+
+        executor.execute(() -> {
+            remoteDataSource.addAllianceInvite(invite, new RemoteDataSource.DataSourceCallback<String>() {
+                @Override
+                public void onSuccess(String docId) {
+                    invite.setId(docId);
+                    executor.execute(() -> {
+                        localDataSource.addAllianceInvite(invite);
+                        callback.onSuccess(null);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void getAllAlliances(String userId, RepositoryCallback<List<Alliance>> callback) {
+        executor.execute(() -> callback.onSuccess(localDataSource.getAllAlliances(userId)));
+
+        remoteDataSource.getAllAlliances(userId, new RemoteDataSource.DataSourceCallback<List<Alliance>>() {
+            @Override
+            public void onSuccess(List<Alliance> remoteAlliances) {
+                executor.execute(() -> {
+                    localDataSource.deleteAllAlliancesForUser(userId);
+                    for (Alliance a : remoteAlliances) localDataSource.addAlliance(a);
+                    callback.onSuccess(localDataSource.getAllAlliances(userId));
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.d("AllianceRepository", "Alliance sync failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void getAllAllianceInvites(String userId, RepositoryCallback<List<AllianceInvite>> callback) {
+        remoteDataSource.getAllAllianceInvites(userId, new RemoteDataSource.DataSourceCallback<List<AllianceInvite>>() {
+            @Override
+            public void onSuccess(List<AllianceInvite> remoteInvites) {
+                executor.execute(() -> {
+                    localDataSource.deleteAllAllianceInvitesForUser(userId);
+                    for (AllianceInvite i : remoteInvites) {
+                        localDataSource.addAllianceInvite(i);
+                    }
+                    callback.onSuccess(localDataSource.getAllInvites(userId));
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.d("AllianceRepository", "AllianceInvite sync failed: " + e.getMessage());
+                executor.execute(() -> callback.onSuccess(localDataSource.getAllInvites(userId)));
+            }
+        });
+    }
+
+
+    @Override
+    public void updateAlliance(Alliance alliance, RepositoryCallback<Void> callback) {
+        executor.execute(() -> {
+            remoteDataSource.updateAlliance(alliance, new RemoteDataSource.DataSourceCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    executor.execute(() -> {
+                        localDataSource.updateAlliance(alliance);
+                        callback.onSuccess(null);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void updateAllianceInvite(AllianceInvite invite, RepositoryCallback<Void> callback) {
+        executor.execute(() -> {
+            remoteDataSource.updateAllianceInvite(invite, new RemoteDataSource.DataSourceCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    executor.execute(() -> {
+                        localDataSource.updateAllianceInvite(invite);
+                        callback.onSuccess(null);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void deleteAlliance(String allianceId, String userId, RepositoryCallback<Void> callback) {
+        executor.execute(() -> {
+            remoteDataSource.deleteAlliance(allianceId, userId, new RemoteDataSource.DataSourceCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    executor.execute(() -> {
+                        localDataSource.deleteAlliance(allianceId, userId);
+                        callback.onSuccess(null);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void deleteAllianceInvite(String inviteId, String userId, RepositoryCallback<Void> callback) {
+        executor.execute(() -> {
+            remoteDataSource.deleteAllianceInvite(inviteId, userId, new RemoteDataSource.DataSourceCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    executor.execute(() -> {
+                        localDataSource.deleteAllianceInvite(inviteId, userId);
+                        callback.onSuccess(null);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void getPendingInvites(String userId, RepositoryCallback<List<AllianceInvite>> callback) {
+        remoteDataSource.getPendingInvites(userId, new RemoteDataSource.DataSourceCallback<List<AllianceInvite>>() {
+            @Override
+            public void onSuccess(List<AllianceInvite> data) {
+                callback.onSuccess(data);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
+    public void getAllianceById(String userId, String allianceId, RepositoryCallback<Alliance> callback) {
+        remoteDataSource.getAllianceById(userId, allianceId, new RemoteDataSource.DataSourceCallback<Alliance>() {
+            @Override
+            public void onSuccess(Alliance alliance) {
+                Log.d("DEBUG", "Remote alliance loaded: " + alliance.toString());
+                callback.onSuccess(alliance);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
+    public void getAllianceInviteById(String userId, String allianceInviteId, RepositoryCallback<AllianceInvite> callback) {
+        remoteDataSource.getAllianceInviteById(userId, allianceInviteId, new RemoteDataSource.DataSourceCallback<AllianceInvite>() {
+            @Override
+            public void onSuccess(AllianceInvite allianceInvite) {
+                callback.onSuccess(allianceInvite);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
+    public void acceptInvite(String userId, String inviteId, RepositoryCallback<Void> callback) {
+        remoteDataSource.getAllianceInviteById(userId, inviteId, new RemoteDataSource.DataSourceCallback<AllianceInvite>() {
+            @Override
+            public void onSuccess(AllianceInvite invite) {
+                invite.setAccepted(true);
+                invite.setResponded(true);
+
+                Alliance alliance = invite.getAlliance();
+                if (!alliance.getMembers().contains(userId)) {
+                    alliance.getMembers().add(userId);
+                }
+
+                remoteDataSource.updateAllianceInviteByFieldId(invite, new RemoteDataSource.DataSourceCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        remoteDataSource.updateAlliance(alliance, new RemoteDataSource.DataSourceCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                updateCurrentAllianceForAllMembers(alliance, new RepositoryCallback<Void>() {
+                                    @Override
+                                    public void onSuccess(Void result) {
+                                        executor.execute(() -> {
+                                            localDataSource.updateAllianceInvite(invite);
+                                            localDataSource.updateAlliance(alliance);
+                                            callback.onSuccess(null);
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onFailure(Exception e) {
+                                        callback.onFailure(e);
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                callback.onFailure(e);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    private void updateCurrentAllianceForAllMembers(Alliance alliance, RepositoryCallback<Void> callback) {
+        List<String> members = alliance.getMembers();
+        AtomicInteger counter = new AtomicInteger(0);
+        AtomicBoolean failed = new AtomicBoolean(false);
+
+        for (String memberId : members) {
+            remoteDataSource.getUserById(memberId, new RemoteDataSource.DataSourceCallback<User>() {
+                @Override
+                public void onSuccess(User member) {
+                    member.setCurrentAlliance(alliance);
+                    remoteDataSource.updateUser(member, new RemoteDataSource.DataSourceCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            if (counter.incrementAndGet() == members.size() && !failed.get()) {
+                                callback.onSuccess(null);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            failed.set(true);
+                            callback.onFailure(e);
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    failed.set(true);
+                    callback.onFailure(e);
+                }
+            });
+        }
+    }
+
+
+    public void rejectInvite(String userId, String inviteId, RepositoryCallback<Void> callback) {
+        remoteDataSource.getAllianceInviteById(userId, inviteId, new RemoteDataSource.DataSourceCallback<AllianceInvite>() {
+            @Override
+            public void onSuccess(AllianceInvite invite) {
+                invite.setAccepted(false);
+                invite.setResponded(true);
+
+                remoteDataSource.updateAllianceInviteByFieldId(invite, new RemoteDataSource.DataSourceCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        executor.execute(() -> {
+                            localDataSource.updateAllianceInvite(invite);
+                            callback.onSuccess(null);
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
+    public void disbandAlliance(String allianceId, String leaderId, RepositoryCallback<Void> callback) {
+        remoteDataSource.getAllianceById(leaderId, allianceId, new RemoteDataSource.DataSourceCallback<Alliance>() {
+            @Override
+            public void onSuccess(Alliance alliance) {
+                if (!alliance.getLeader().equals(leaderId)) {
+                    callback.onFailure(new Exception("Only leader can disband the alliance"));
+                    return;
+                }
+
+                if (alliance.isMissionActive()) {
+                    callback.onFailure(new Exception("Cannot disband alliance while mission is active"));
+                    return;
+                }
+
+                remoteDataSource.deleteAlliance(allianceId, leaderId, new RemoteDataSource.DataSourceCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        executor.execute(() -> {
+                            localDataSource.deleteAlliance(allianceId, leaderId);
+
+                            for (String memberId : alliance.getMembers()) {
+                                User member = localDataSource.getUserById(memberId);
+                                if (member != null) {
+                                    member.setCurrentAlliance(null);
+                                    localDataSource.saveUser(member);
+                                }
+                            }
+
+                            callback.onSuccess(null);
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+
+}

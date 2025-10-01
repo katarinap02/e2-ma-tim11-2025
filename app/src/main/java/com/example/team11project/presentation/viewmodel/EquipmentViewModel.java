@@ -12,6 +12,7 @@ import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
 import com.example.team11project.data.repository.CategoryRepositoryImpl;
+import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.LevelInfoRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
@@ -21,6 +22,8 @@ import com.example.team11project.domain.model.ChlothingEffectType;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.Potion;
+import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.Weapon;
@@ -28,6 +31,7 @@ import com.example.team11project.domain.repository.BossBattleRepository;
 import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.CategoryRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
@@ -44,6 +48,8 @@ public class EquipmentViewModel extends ViewModel {
     private final UserRepository userRepository;
 
     private final BossRepository bossRepository;
+
+    private final TaskUseCase taskUseCase;
 
     // promenljiva verzija
     private final MutableLiveData<BossBattle> _bossBattle = new MutableLiveData<>();
@@ -72,13 +78,14 @@ public class EquipmentViewModel extends ViewModel {
 
 
 
-    public EquipmentViewModel(UserRepository userRepository, BossRepository bossRepository, BossUseCase battleService) {
+    public EquipmentViewModel(UserRepository userRepository, BossRepository bossRepository, BossUseCase battleService, TaskUseCase taskUseCase) {
         this.userRepository = userRepository;
         this.bossUseCase = battleService;
         this.bossRepository = bossRepository;
+        this.taskUseCase = taskUseCase;
     }
 
-    public void startBossFight(String userId) {
+    public void startBossFight(String userId, ArrayList<String> activeEquipmentImages) {
         _isLoading.setValue(true);
         _error.setValue(null); // resetuj greške
 
@@ -91,16 +98,26 @@ public class EquipmentViewModel extends ViewModel {
                     @Override
                     public void onSuccess(Boss boss) {
                         // Konačno kreiramo ili dobijamo postojeći BossBattle
-                        bossUseCase.getOrCreateBossBattle(user, boss, new RepositoryCallback<BossBattle>() {
+                        taskUseCase.calculateSuccessRateForCurrentStage(userId, user.getLevelInfo(), new RepositoryCallback<Double>() {
                             @Override
-                            public void onSuccess(BossBattle bossBattle) {
-                                _bossBattle.postValue(bossBattle);
-                                _isLoading.postValue(false);
-                            }
+                            public void onSuccess(Double successRate) {
+                                bossUseCase.getOrCreateBossBattle(user, boss, activeEquipmentImages, successRate,new RepositoryCallback<BossBattle>() {
+                                    @Override
+                                    public void onSuccess(BossBattle bossBattle) {
+                                        _bossBattle.postValue(bossBattle);
+                                        _isLoading.postValue(false);
+                                    }
 
+                                    @Override
+                                    public void onFailure(Exception e) {
+                                        _error.postValue("Greška pri kreiranju bitke: " + e.getMessage());
+                                        _isLoading.postValue(false);
+                                    }
+                                });
+                            }
                             @Override
                             public void onFailure(Exception e) {
-                                _error.postValue("Greška pri kreiranju bitke: " + e.getMessage());
+                                _error.postValue("Greška pri racunanju uspesnosti: " + e.getMessage());
                                 _isLoading.postValue(false);
                             }
                         });
@@ -143,15 +160,20 @@ public class EquipmentViewModel extends ViewModel {
                     BossRepository bossRepository = new BossRepositoryImpl(application);
                     BossBattleRepository battleRepository = new BossBattleRepositoryImpl(application);
                     BossRewardRepository rewardRepository = new BossRewardRepositoryImpl(application);
-                    BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository);
-
+                    EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(application);
+                    TaskRepository taskRepo = new TaskRepositoryImpl(application);
+                    TaskInstanceRepository instanceRepo = new TaskInstanceRepositoryImpl(application);
+                    LevelInfoRepository levelInfoRepository = new LevelInfoRepositoryImpl(application);
+                    BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository, equipmentRepository);
+                    TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository, bossUseCase);
 
                     @SuppressWarnings("unchecked")
                     T viewModel = (T) modelClass.getConstructor(
                                     UserRepository.class,
                                     BossRepository.class,
-                                    BossUseCase.class)
-                            .newInstance(userRepo, bossRepository, bossUseCase);
+                                    BossUseCase.class,
+                                    TaskUseCase.class)
+                            .newInstance(userRepo, bossRepository, bossUseCase, completeUC);
                     return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);
@@ -195,7 +217,7 @@ public class EquipmentViewModel extends ViewModel {
             }
         });
     }
-    public void activateEquipment(List<Weapon> selectedWeapons, List<Potion> selectedPotions, List<Clothing> selectedClothing) {
+    public void activateEquipment(List<Weapon> selectedWeapons, List<Potion> selectedPotions, List<Clothing> selectedClothing, Runnable onComplete) {
         User currentUser = _user.getValue();
         if (currentUser == null) {
             _error.postValue("Korisnik nije učitan");
@@ -247,6 +269,7 @@ public class EquipmentViewModel extends ViewModel {
                 _weapon.postValue(currentUser.getWeapons());
                 _potion.postValue(currentUser.getPotions());
                 _clothing.postValue(currentUser.getClothing());
+                onComplete.run();
             }
 
             @Override
@@ -255,8 +278,38 @@ public class EquipmentViewModel extends ViewModel {
             }
         });
 
+    }
 
+    public ArrayList<String> getActiveEquipmentImages() {
+        ArrayList<String> images = new ArrayList<>();
+        User currentUser1 = _user.getValue();
+        if (currentUser1 == null) return images;
 
+        if (currentUser1.getWeapons() != null) {
+            for (Weapon w : currentUser1.getWeapons()) {
+                if (w.isActive() && w.getImage() != null) {
+                    images.add(w.getImage());
+                }
+            }
+        }
+
+        if (currentUser1.getPotions() != null) {
+            for (Potion p : currentUser1.getPotions()) {
+                if (p.isActive() && p.getImage() != null) {
+                    images.add(p.getImage());
+                }
+            }
+        }
+
+        if (currentUser1.getClothing() != null) {
+            for (Clothing c : currentUser1.getClothing()) {
+                if (c.isActive() && c.getImage() != null) {
+                    images.add(c.getImage());
+                }
+            }
+        }
+
+        return images;
     }
 
 }

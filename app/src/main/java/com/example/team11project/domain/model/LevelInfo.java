@@ -1,5 +1,7 @@
 package com.example.team11project.domain.model;
 
+import java.util.Date;
+
 public class LevelInfo {
     private String id;
     private int level;
@@ -9,10 +11,12 @@ public class LevelInfo {
     private int xpTaskDifficulty;
     private UserTitle title;
     private int pp;
+    private Date currentLevelStartDate;
+    private Date previousLevelStartDate;
 
     public LevelInfo(){}
 
-    public LevelInfo(int level, int xpForNextLevel, int xp, int xpTaskImportance, int xpTaskDifficulty, UserTitle title, int pp) {
+    public LevelInfo(int level, int xpForNextLevel, int xp, int xpTaskImportance, int xpTaskDifficulty, UserTitle title, int pp, Date current, Date previous) {
         this.xpForNextLevel = xpForNextLevel;
         this.level = level;
         this.xp = xp;
@@ -20,6 +24,8 @@ public class LevelInfo {
         this.xpTaskDifficulty = xpTaskDifficulty;
         this.title = title;
         this.pp = pp;
+        this.currentLevelStartDate = current;
+        this.previousLevelStartDate = previous;
     }
 
     public int getLevel() {
@@ -84,5 +90,21 @@ public class LevelInfo {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Date getCurrentLevelStartDate() {
+        return currentLevelStartDate;
+    }
+
+    public void setCurrentLevelStartDate(Date currentLevelStartDate) {
+        this.currentLevelStartDate = currentLevelStartDate;
+    }
+
+    public Date getPreviousLevelStartDate() {
+        return previousLevelStartDate;
+    }
+
+    public void setPreviousLevelStartDate(Date previousLevelStartDate) {
+        this.previousLevelStartDate = previousLevelStartDate;
     }
 }

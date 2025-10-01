@@ -117,6 +117,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_BOSS_TABLE);
         db.execSQL(SQL_CREATE_BOSS_BATTLE_TABLE);
         db.execSQL(SQL_CREATE_BOSS_REWARD_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCES_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_MEMBERS_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_INVITES_TABLE);
+        db.execSQL(SQL_CREATE_ALLIANCE_MESSAGES_TABLE);
     }
 
     // Ova strategija odbacuje sve podatke i kreira tabele iz početka.
@@ -131,6 +135,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_BOSS_REWARD_TABLE);
         db.execSQL(SQL_DELETE_BOSS_BATTLE_TABLE);
         db.execSQL(SQL_DELETE_BOSS_TABLE);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceInviteEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceMemberEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceEntry.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AppContract.AllianceMessageEntry.TABLE_NAME);
+
+
         onCreate(db);
     }
 
@@ -152,7 +162,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_WEAPON + " TEXT, " +
                     AppContract.UserEntry.COLUMN_CLOTHING + " TEXT, " +
                     AppContract.UserEntry.COLUMN_POTION + " TEXT, " +
-                    AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0" +
+                    AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0, " +
+                    AppContract.UserEntry.COLUMN_FRIENDS + " TEXT, " +
+                    AppContract.UserEntry.COLUMN_NAME_CURRENT_ALLIANCE_ID + " TEXT" +
                     ")";
 
     private static final String SQL_CREATE_LEVELINFO_TABLE =
@@ -165,6 +177,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_PP + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_TITLE + " TEXT NOT NULL" +
+                    AppContract.LevelInfoEntry.COLUMN_CURRENT_LEVEL_START_DATE + " TEXT, " +
+                    AppContract.LevelInfoEntry.COLUMN_PREVIOUS_LEVEL_START_DATE + " TEXT, " +
                     "FOREIGN KEY (" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +
                     AppContract.UserEntry.TABLE_NAME + "(" + AppContract.UserEntry._ID + ")" +
                     ")";
@@ -198,5 +212,40 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     ")";
 
 
+    private static final String SQL_CREATE_ALLIANCES_TABLE =
+            "CREATE TABLE " + AppContract.AllianceEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceEntry.COLUMN_NAME_NAME + " TEXT NOT NULL," +
+                    AppContract.AllianceEntry.COLUMN_NAME_MISSION_ACTIVE + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
+                    ")";
+
+    private static final String SQL_CREATE_ALLIANCE_MEMBERS_TABLE =
+            "CREATE TABLE " + AppContract.AllianceMemberEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceMemberEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceMemberEntry.COLUMN_NAME_ALLIANCE_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMemberEntry.COLUMN_NAME_USER_ID + " TEXT NOT NULL" +
+                    ")";
+
+    private static final String SQL_CREATE_ALLIANCE_INVITES_TABLE =
+            "CREATE TABLE " + AppContract.AllianceInviteEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceInviteEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER + " TEXT NOT NULL," +
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED + " INTEGER NOT NULL DEFAULT 0," + // 0 = false, 1 = true
+                    AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED + " INTEGER NOT NULL DEFAULT 0" + // 0 = false, 1 = true
+                    ")";
+
+
+    private static final String SQL_CREATE_ALLIANCE_MESSAGES_TABLE =
+            "CREATE TABLE " + AppContract.AllianceMessageEntry.TABLE_NAME + " (" +
+                    AppContract.AllianceMessageEntry._ID + " TEXT PRIMARY KEY," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_ALLIANCE_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_SENDER_ID + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_SENDER_USERNAME + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_MESSAGE + " TEXT NOT NULL," +
+                    AppContract.AllianceMessageEntry.COLUMN_NAME_TIMESTAMP + " INTEGER NOT NULL" +
+                    ")";
 
 }

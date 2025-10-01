@@ -9,6 +9,9 @@ import android.util.Log;
 
 import com.example.team11project.data.datasource.local.db.AppContract;
 import com.example.team11project.data.datasource.local.db.DatabaseHelper;
+import com.example.team11project.domain.model.Alliance;
+import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.AllianceMessage;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.BossReward;
@@ -29,11 +32,13 @@ import com.example.team11project.domain.model.Weapon;
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Klasa koja upravlja svim operacijama sa lokalnom SQLite bazom podataka.
@@ -384,6 +389,59 @@ public class LocalDataSource {
         return task;
     }
 
+    public List<Task> getTasksInPeriod(String userId, Date startDate, Date endDate) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        List<Task> tasks = new ArrayList<>();
+
+        try {
+            StringBuilder selection = new StringBuilder(AppContract.TaskEntry.COLUMN_NAME_USER_ID + " = ?");
+            List<String> selectionArgsList = new ArrayList<>();
+            selectionArgsList.add(userId);
+
+            if (startDate != null) {
+                selection.append(" AND " + AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " >= ?");
+                selectionArgsList.add(String.valueOf(startDate.getTime()));
+            }
+            if (endDate != null) {
+                selection.append(" AND " + AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " <= ?");
+                selectionArgsList.add(String.valueOf(endDate.getTime()));
+            }
+
+            String[] selectionArgs = selectionArgsList.toArray(new String[0]);
+
+            cursor = db.query(
+                    AppContract.TaskEntry.TABLE_NAME,
+                    null,
+                    selection.toString(),
+                    selectionArgs,
+                    null,
+                    null,
+                    AppContract.TaskEntry.COLUMN_NAME_EXECUTION_TIME + " ASC"
+            );
+
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    try {
+                        Task task = cursorToTask(cursor);
+                        tasks.add(task);
+                    } catch (Exception e) {
+                        Log.w("SQLiteDataSource", "Error parsing task from cursor", e);
+                    }
+                } while (cursor.moveToNext());
+            }
+
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+
+        return tasks;
+    }
+
+
+
+
     // DEO SA TASKINSTANCES
 
     public long addTaskInstance(TaskInstance instance) {
@@ -709,6 +767,18 @@ public class LocalDataSource {
         values.put(AppContract.LevelInfoEntry.COLUMN_PP, levelInfo.getPp());
         values.put(AppContract.LevelInfoEntry.COLUMN_TITLE, levelInfo.getTitle().name());
 
+        if (levelInfo.getCurrentLevelStartDate() != null) {
+            values.put(AppContract.LevelInfoEntry.COLUMN_CURRENT_LEVEL_START_DATE,
+                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                            .format(levelInfo.getCurrentLevelStartDate()));
+        }
+
+        if (levelInfo.getPreviousLevelStartDate() != null) {
+            values.put(AppContract.LevelInfoEntry.COLUMN_PREVIOUS_LEVEL_START_DATE,
+                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                            .format(levelInfo.getPreviousLevelStartDate()));
+        }
+
         return values;
     }
 
@@ -892,7 +962,7 @@ public class LocalDataSource {
         return values;
     }
 
-    private User getUserById(String userId) {
+    public User getUserById(String userId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor cursor = null;
         User user = null;
@@ -957,7 +1027,7 @@ public class LocalDataSource {
         saveUser(user);
     }
 
-    private void saveUser(User user) {
+    public void saveUser(User user) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
         try {
@@ -1439,6 +1509,33 @@ public class LocalDataSource {
         return bossBattle;
     }
 
+    public BossReward getRewardByUserAndBossAndLevel(String userId, String bossId, int level) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.BossRewardEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                AppContract.BossRewardEntry.COLUMN_NAME_BOSS_ID + " = ? AND " +
+                AppContract.BossRewardEntry.COLUMN_NAME_LEVEL + " = ?";
+        String[] selectionArgs = {userId, bossId, String.valueOf(level)};
+
+        Cursor cursor = db.query(
+                AppContract.BossRewardEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null, null, null, "1"
+        );
+
+        BossReward bossReward = null;
+        if (cursor.moveToFirst()) {
+            bossReward = cursorToBossReward(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return bossReward;
+    }
+
+
 
     private ContentValues rewardToContentValues(BossReward reward) {
         ContentValues values = new ContentValues();
@@ -1460,6 +1557,317 @@ public class LocalDataSource {
         reward.setCoinsEarned(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_COINS_EARNED)));
         reward.setEquipmentId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.BossRewardEntry.COLUMN_NAME_EQUIPMENT_ID)));
         return reward;
+    }
+
+    public long addAlliance(Alliance alliance) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(AppContract.AllianceEntry._ID, alliance.getId());
+        values.put(AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID, alliance.getLeader());
+        values.put(AppContract.AllianceEntry.COLUMN_NAME_NAME, alliance.getName());
+        values.put(AppContract.AllianceEntry.COLUMN_NAME_MISSION_ACTIVE, alliance.isMissionActive() ? 1 : 0);
+
+        long newRowId = db.insertWithOnConflict(
+                AppContract.AllianceEntry.TABLE_NAME,
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_REPLACE
+        );
+        db.close();
+        return newRowId;
+    }
+
+    public List<Alliance> getAllAlliancesForUser(String userId) {
+        List<Alliance> alliances = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query = "SELECT a.* FROM " + AppContract.AllianceEntry.TABLE_NAME + " a " +
+                "INNER JOIN " + AppContract.AllianceMemberEntry.TABLE_NAME + " m " +
+                "ON a._ID = m.alliance_id " +
+                "WHERE m.user_id = ?";
+
+        Cursor cursor = db.rawQuery(query, new String[]{ userId });
+
+        while (cursor.moveToNext()) {
+            alliances.add(cursorToAlliance(cursor));
+        }
+        cursor.close();
+        db.close();
+        return alliances;
+    }
+
+    private Alliance cursorToAlliance(Cursor cursor) {
+        Alliance alliance = new Alliance();
+        alliance.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceEntry._ID)));
+        alliance.setLeader(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID)));
+        alliance.setName(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceEntry.COLUMN_NAME_NAME)));
+        alliance.setMissionActive(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceEntry.COLUMN_NAME_MISSION_ACTIVE)) == 1);
+        return alliance;
+    }
+    private AllianceInvite cursorToAllianceInvite(Cursor cursor) {
+        AllianceInvite invite = new AllianceInvite();
+        Gson gson = new Gson();
+
+        invite.setId(cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry._ID)));
+
+        String allianceJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE));
+        Alliance alliance = gson.fromJson(allianceJson, Alliance.class);
+        invite.setAlliance(alliance);
+
+        String fromUserJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER));
+        User fromUser = gson.fromJson(fromUserJson, User.class);
+        invite.setFromUser(fromUser);
+
+        String toUserJson = cursor.getString(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER));
+        User toUser = gson.fromJson(toUserJson, User.class);
+        invite.setToUser(toUser);
+
+        invite.setAccepted(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED)) == 1);
+        invite.setResponded(cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED)) == 1);
+
+        return invite;
+    }
+
+
+
+
+    public Alliance getAllianceById(String userId, String allianceId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID + " = ? AND " +
+                AppContract.AllianceEntry._ID + " = ?";
+        String[] selectionArgs = { userId, allianceId };
+
+        Cursor cursor = db.query(
+                AppContract.AllianceEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null, null, null,
+                "1" // limit 1
+        );
+
+        Alliance alliance = null;
+        if (cursor.moveToFirst()) {
+            alliance = cursorToAlliance(cursor);
+        }
+
+        cursor.close();
+        db.close();
+        return alliance;
+    }
+
+    public List<Alliance> getAllAlliances(String userId) {
+        List<Alliance> alliances = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String selection = AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID + " = ?";
+        String[] selectionArgs = { userId };
+
+        Cursor cursor = db.query(
+                AppContract.AllianceEntry.TABLE_NAME,
+                null,
+                selection,
+                selectionArgs,
+                null, null, null
+        );
+
+        while (cursor.moveToNext()) {
+            alliances.add(cursorToAlliance(cursor));
+        }
+
+        cursor.close();
+        db.close();
+        return alliances;
+    }
+
+
+    public List<AllianceInvite> getAllInvites(String userId) {
+        List<AllianceInvite> invites = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Gson gson = new Gson();
+
+        Cursor cursor = db.query(
+                AppContract.AllianceInviteEntry.TABLE_NAME,
+                null,
+                null, // ne filtriramo odmah, jer je toUser JSON
+                null,
+                null, null, null
+        );
+
+        while (cursor.moveToNext()) {
+            AllianceInvite invite = cursorToAllianceInvite(cursor);
+
+            if (invite.getToUser() != null && userId.equals(invite.getToUser().getId())) {
+                invites.add(invite);
+            }
+        }
+
+        cursor.close();
+        db.close();
+        return invites;
+    }
+
+
+
+    // ==== Alliance CRUD ====
+
+    public void updateAlliance(Alliance alliance) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(AppContract.AllianceEntry.COLUMN_NAME_NAME, alliance.getName());
+        values.put(AppContract.AllianceEntry.COLUMN_NAME_MISSION_ACTIVE, alliance.isMissionActive() ? 1 : 0);
+        db.update(AppContract.AllianceEntry.TABLE_NAME, values,
+                AppContract.AllianceEntry._ID + " = ?", new String[]{alliance.getId()});
+        db.close();
+    }
+
+    public void deleteAlliance(String allianceId, String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(AppContract.AllianceEntry.TABLE_NAME,
+                AppContract.AllianceEntry._ID + " = ? AND " + AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID + " = ?",
+                new String[]{allianceId, userId});
+        db.close();
+    }
+
+    public void deleteAllAlliancesForUser(String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.delete(AppContract.AllianceEntry.TABLE_NAME,
+                AppContract.AllianceEntry.COLUMN_NAME_LEADER_ID + " = ?",
+                new String[]{userId});
+        db.close();
+    }
+
+    public void addAllianceInvite(AllianceInvite invite) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(AppContract.AllianceInviteEntry._ID, invite.getId());
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED, invite.isAccepted() ? 1 : 0);
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED, invite.isResponded() ? 1 : 0);
+
+        Gson gson = new Gson();
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_ALLIANCE, gson.toJson(invite.getAlliance()));
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_FROM_USER, gson.toJson(invite.getFromUser()));
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_TO_USER, gson.toJson(invite.getToUser()));
+
+        db.insert(AppContract.AllianceInviteEntry.TABLE_NAME, null, values);
+        db.close();
+    }
+
+
+    public void deleteAllAllianceInvitesForUser(String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Cursor cursor = db.query(
+                AppContract.AllianceInviteEntry.TABLE_NAME,
+                null,
+                null, null, null, null, null
+        );
+
+        while (cursor.moveToNext()) {
+            AllianceInvite invite = cursorToAllianceInvite(cursor);
+            if (invite.getToUser() != null && userId.equals(invite.getToUser().getId())) {
+                db.delete(
+                        AppContract.AllianceInviteEntry.TABLE_NAME,
+                        AppContract.AllianceInviteEntry._ID + " = ?",
+                        new String[]{invite.getId()}
+                );
+            }
+        }
+
+        cursor.close();
+        db.close();
+    }
+
+
+    public void updateAllianceInvite(AllianceInvite invite) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_ACCEPTED, invite.isAccepted() ? 1 : 0);
+        values.put(AppContract.AllianceInviteEntry.COLUMN_NAME_RESPONDED, invite.isResponded() ? 1 : 0);
+
+        db.update(AppContract.AllianceInviteEntry.TABLE_NAME, values,
+                AppContract.AllianceInviteEntry._ID + " = ?",
+                new String[]{invite.getId()});
+        db.close();
+    }
+
+    public void deleteAllianceInvite(String inviteId, String userId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Cursor cursor = db.query(
+                AppContract.AllianceInviteEntry.TABLE_NAME,
+                null,
+                AppContract.AllianceInviteEntry._ID + " = ?",
+                new String[]{inviteId},
+                null, null, null
+        );
+
+        if (cursor.moveToFirst()) {
+            AllianceInvite invite = cursorToAllianceInvite(cursor);
+            if (invite.getToUser() != null && userId.equals(invite.getToUser().getId())) {
+                db.delete(
+                        AppContract.AllianceInviteEntry.TABLE_NAME,
+                        AppContract.AllianceInviteEntry._ID + " = ?",
+                        new String[]{inviteId}
+                );
+            }
+        }
+
+        cursor.close();
+        db.close();
+    }
+
+    public void addMessage(AllianceMessage message) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("_id", message.getId());
+        values.put("alliance_id", message.getAllianceId());
+        values.put("sender_id", message.getSenderId());
+        values.put("sender_username", message.getSenderUsername());
+        values.put("message", message.getMessage());
+        values.put("timestamp", message.getTimestamp());
+        db.insert("alliance_messages", null, values);
+        db.close();
+    }
+
+    public List<AllianceMessage> getAllMessages(String allianceId) {
+        List<AllianceMessage> messages = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                "alliance_messages",
+                null,
+                "alliance_id = ?",
+                new String[]{allianceId},
+                null,
+                null,
+                "timestamp ASC"
+        );
+
+        while (cursor.moveToNext()) {
+            AllianceMessage m = new AllianceMessage();
+            m.setId(cursor.getString(cursor.getColumnIndexOrThrow("_id")));
+            m.setAllianceId(cursor.getString(cursor.getColumnIndexOrThrow("alliance_id")));
+            m.setSenderId(cursor.getString(cursor.getColumnIndexOrThrow("sender_id")));
+            m.setSenderUsername(cursor.getString(cursor.getColumnIndexOrThrow("sender_username")));
+            m.setMessage(cursor.getString(cursor.getColumnIndexOrThrow("message")));
+            m.setTimestamp(cursor.getLong(cursor.getColumnIndexOrThrow("timestamp")));
+            messages.add(m);
+        }
+
+        cursor.close();
+        db.close();
+        return messages;
+    }
+
+    public int deleteAllMessagesForAlliance(String allianceId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = db.delete(
+                "alliance_messages",
+                "alliance_id = ?",
+                new String[]{allianceId}
+        );
+        db.close();
+        return deletedRows;
     }
 
 }

@@ -16,6 +16,8 @@ public class User {
     private List<Potion> potions = new ArrayList<>();
     private List<Clothing> clothing = new ArrayList<>();
     private int coins;
+    private List<String> friends = new ArrayList<>();
+    private Alliance currentAlliance;
 
     public User(){}
 
@@ -31,6 +33,8 @@ public class User {
         potions = new ArrayList<>();
         clothing = new ArrayList<>();
         this.coins = coins;
+        friends = new ArrayList<>();
+        currentAlliance = null;
     }
 
     public String getId(){
@@ -121,5 +125,21 @@ public class User {
 
     public void setClothing(List<Clothing> clothing) {
         this.clothing = clothing;
+    }
+
+    public List<String> getFriends() {
+        return friends;
+    }
+
+    public void setFriends(List<String> friends) {
+        this.friends = friends;
+    }
+
+    public Alliance getCurrentAlliance() {
+        return currentAlliance;
+    }
+
+    public void setCurrentAlliance(Alliance currentAlliance) {
+        this.currentAlliance = currentAlliance;
     }
 }

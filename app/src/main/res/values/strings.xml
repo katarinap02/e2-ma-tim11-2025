@@ -79,5 +79,21 @@
     <string name="qr_kod">📲 QR kod</string>
     <string name="promeni_lozinku">Promeni lozinku</string>
     <string name="prodavnica">Prodavnica</string>
+    <string name="borba_sa_bosom">BORBA SA BOSOM</string>
+    <string name="_5_5_napada">5/5 napada</string>
+    <string name="aktivna_oprema">Aktivna oprema:</string>
+    <string name="_150_pp">150 PP</string>
+    <string name="_200_200_hp">200/200 HP</string>
+    <string name="napad">NAPAD</string>
+    <string name="prijatelji">Prijatelji</string>
+    <string name="pretra_i_korisnike">Pretraži korisnike</string>
+    <string name="dodaj">Dodaj</string>
+    <string name="scan_qr">Scan QR</string>
+    <string name="ime_usera">Ime usera</string>
+    <string name="kreiraj_savez">Kreiraj savez</string>
+    <string name="savez">Savez</string>
+    <string name="izbrisi_savez">Izbrisi savez</string>
+    <string name="sansa_za_pogodak">Sansa za pogodak: 68%</string>
+    <string name="pristupi_cetu">Pristupi cetu</string>
 
 </resources>

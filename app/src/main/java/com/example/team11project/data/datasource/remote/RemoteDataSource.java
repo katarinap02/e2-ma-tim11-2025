@@ -5,6 +5,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 
+import com.example.team11project.domain.model.Alliance;
+import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.AllianceMessage;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.BossReward;
@@ -16,6 +19,7 @@ import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.UserTitle;
 import com.example.team11project.domain.model.Weapon;
+import com.example.team11project.domain.repository.RepositoryCallback;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -27,13 +31,16 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class RemoteDataSource {
 
@@ -47,6 +54,9 @@ public class RemoteDataSource {
     private static final String BOSS_BATTLES_COLLECTION = "bossBattles";
     private static final String BOSS_REWARDS_COLLECTION = "bossRewards";
     private static final String EQUIPMENT_COLLECTION = "equipment";
+    private static final String ALLIANCE_COLLECTION = "alliances";
+    private static final String ALLIANCE_INVITATION_COLLECTION = "alliance_invitations";
+    private static final String MESSAGE_COLLECTION = "messages";
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -106,6 +116,47 @@ public class RemoteDataSource {
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
+
+    public void getTasksInPeriod(String userId, Date startDate, Date endDate, final DataSourceCallback<List<Task>> callback) {
+        CollectionReference tasksRef = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(TASKS_COLLECTION);
+
+        if (endDate == null) {
+            callback.onFailure(new Exception("End date must not be null"));
+            return;
+        }
+        Query query = tasksRef;
+
+        if (startDate != null) {
+            query = query.whereGreaterThanOrEqualTo("executionTime", startDate);
+        }
+        query = query.whereLessThanOrEqualTo("executionTime", endDate);
+
+        // orderBy na kraju (ili ga ukloni ako nije potrebno)
+        query = query.orderBy("executionTime");
+
+        query.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Task> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        try {
+                            Task t = doc.toObject(Task.class);
+                            t.setId(doc.getId());
+                            list.add(t);
+                        } catch (Exception e) {
+                            // Log greške ali nastavi sa ostalim taskovima
+                            Log.w("FirestoreDataSource", "Error parsing task: " + doc.getId(), e);
+                        }
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FirestoreDataSource", "Error fetching tasks in period", e);
+                    callback.onFailure(e);
+                });
+    }
+
 
     public void addCategory(Category category, final DataSourceCallback<String> callback) {
         // Struktura: /users/{userId}/categories/{categoryId}
@@ -177,7 +228,7 @@ public class RemoteDataSource {
                                                 .addOnCompleteListener(verificationTask -> {
                                                     if (verificationTask.isSuccessful()) {
                                                         // Upis korisnika
-                                                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0));
+                                                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0, new Date(), null));
                                                         if (user.getClothing() == null) {
                                                             user.setClothing(new ArrayList<>());
                                                         }
@@ -282,24 +333,35 @@ public class RemoteDataSource {
             return;
         }
 
-        if (user.getClothing() == null) {
-            user.setClothing(new ArrayList<>());
-        }
+        if (user.getClothing() == null) user.setClothing(new ArrayList<>());
+        if (user.getWeapons() == null) user.setWeapons(new ArrayList<>());
+        if (user.getPotions() == null) user.setPotions(new ArrayList<>());
 
-        if (user.getWeapons() == null) {
-            user.setWeapons(new ArrayList<>());
-        }
-
-        if (user.getPotions() == null) {
-            user.setPotions(new ArrayList<>());
-        }
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("clothing", user.getClothing());
+        userMap.put("weapons", user.getWeapons());
+        userMap.put("potions", user.getPotions());
+        userMap.put("currentAlliance", convertAllianceToMap(user.getCurrentAlliance()));
 
         db.collection(USERS_COLLECTION)
                 .document(user.getId())
-                .set(user, SetOptions.merge())
+                .set(userMap, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
+
+    // Pomoćna metoda koja konvertuje Alliance u mapu
+    private Map<String, Object> convertAllianceToMap(Alliance alliance) {
+        if (alliance == null) return null;
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", alliance.getId());
+        map.put("name", alliance.getName());
+        map.put("leader", alliance.getLeader());
+        map.put("members", alliance.getMembers() != null ? alliance.getMembers() : new ArrayList<>());
+        map.put("missionActive", alliance.isMissionActive());
+        return map;
+    }
+
 
     public void getUserById(String userId, DataSourceCallback<User> callback) {
         if (userId == null || userId.isEmpty()) {
@@ -328,7 +390,7 @@ public class RemoteDataSource {
                         }
                         user.getLevelInfo().setTitle(titleEnum);
                     } else {
-                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0)); // default LevelInfo
+                        user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0, new Date(), null)); // default LevelInfo
                     }
 
                     callback.onSuccess(user);
@@ -665,6 +727,31 @@ public class RemoteDataSource {
                 .addOnFailureListener(e -> callback.onFailure(e));
     }
 
+    public void getRewardByUserAndBossAndLevel(String userId, String bossId, int level, final DataSourceCallback<BossReward> callback) {
+        // Tražimo boss reward sa određenim parametrima
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(BOSS_REWARDS_COLLECTION)
+                .whereEqualTo("bossId", bossId)
+                .whereEqualTo("level", level)
+                .limit(1) // Očekujemo samo jednu nagradu po kombinaciji
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        callback.onSuccess(null);
+                    } else {
+                        // Pronađen je boss reward
+                        DocumentSnapshot document = queryDocumentSnapshots.getDocuments().get(0);
+                        BossReward bossReward = document.toObject(BossReward.class);
+                        if (bossReward != null) {
+                            bossReward.setId(document.getId());
+                        }
+                        callback.onSuccess(bossReward);
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
+
     public void getPotionsByUserId(String userId, final DataSourceCallback<List<Potion>> callback) {
         db.collection(USERS_COLLECTION)
                 .document(userId)
@@ -734,5 +821,303 @@ public class RemoteDataSource {
                 });
     }
 
+    public void addAlliance(Alliance alliance, final DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(alliance.getLeader())
+                .collection(ALLIANCE_COLLECTION)
+                .add(alliance)
+                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void setAllianceWithId(Alliance alliance, String allianceId, final DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(alliance.getLeader())
+                .collection(ALLIANCE_COLLECTION)
+                .document(allianceId)
+                .set(alliance)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(allianceId))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllAlliances(String userId, final DataSourceCallback<List<Alliance>> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(ALLIANCE_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<Alliance> allianceList = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            Alliance a = doc.toObject(Alliance.class);
+                            a.setId(doc.getId());
+                            allianceList.add(a);
+                        }
+                        callback.onSuccess(allianceList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void deleteAlliance(String allianceId, String userId, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(ALLIANCE_COLLECTION)
+                .document(allianceId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void addAllianceInvite(AllianceInvite invite, final DataSourceCallback<String> callback) {
+        // Ako invite.id još nije setovan, generiši UUID i koristi ga kao docId
+        if (invite.getId() == null || invite.getId().isEmpty()) {
+            invite.setId(UUID.randomUUID().toString());
+        }
+
+        db.collection(USERS_COLLECTION)
+                .document(invite.getToUser().getId())
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(invite.getId()) // koristi invite.id kao docId
+                .set(invite)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(invite.getId()))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+
+    public void setAllianceInviteWithId(AllianceInvite invite, String inviteId, final DataSourceCallback<String> callback) {
+        db.collection(USERS_COLLECTION).document(invite.getToUser().getId())
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .set(invite)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(inviteId))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllAllianceInvites(String userId, final DataSourceCallback<List<AllianceInvite>> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<AllianceInvite> inviteList = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            AllianceInvite invite = doc.toObject(AllianceInvite.class);
+                            invite.setId(doc.getId());
+                            inviteList.add(invite);
+                            Log.d("InviteDebug", "invite: " + invite.getId()
+                                    + ", alliance=" + (invite.getAlliance() != null ? invite.getAlliance().getName() : "NULL")
+                                    + ", fromUser=" + (invite.getFromUser() != null ? invite.getFromUser().getUsername() : "NULL"));
+
+                        }
+                        callback.onSuccess(inviteList);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+
+    }
+
+    public void deleteAllianceInvite(String inviteId, String userId, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void getAllianceById(String userId, String allianceId, final DataSourceCallback<Alliance> callback) {
+        db.collection(USERS_COLLECTION).document(userId)
+                .collection(ALLIANCE_COLLECTION)
+                .document(allianceId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            Alliance alliance = document.toObject(Alliance.class);
+                            if (alliance != null) {
+                                alliance.setId(document.getId());
+                                callback.onSuccess(alliance);
+                            } else {
+                                callback.onFailure(new Exception("Alliance object is null"));
+                            }
+                        } else {
+                            callback.onFailure(new Exception("Alliance not found"));
+                            Log.d("AllianceRepositoryImpl", "Remote fetch failed: ");
+
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+
+    public void updateAlliance(Alliance alliance, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION).document(alliance.getLeader())
+                .collection(ALLIANCE_COLLECTION)
+                .document(alliance.getId())
+                .set(alliance)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void updateAllianceInvite(AllianceInvite invite, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(invite.getToUser().getId())
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(invite.getId())
+                .update(
+                        "accepted", invite.isAccepted(),
+                        "responded", invite.isResponded()
+                )
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+
+    public void getPendingInvites(String userId, final DataSourceCallback<List<AllianceInvite>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection("alliance_invitations")
+                .whereEqualTo("responded", false)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<AllianceInvite> invites = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        AllianceInvite invite = doc.toObject(AllianceInvite.class);
+                        invites.add(invite);
+                    }
+                    callback.onSuccess(invites);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+
+    public void acceptInvite(String userId, String inviteId, RepositoryCallback<Void> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .update("accepted", true, "responded", true)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void rejectInvite(String userId, String inviteId, RepositoryCallback<Void> callback) {
+        HashMap<String, Object> updates = new HashMap<>();
+        updates.put("accepted", false);
+        updates.put("responded", true);
+
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .set(updates, SetOptions.merge()) // merge: kreira dokument ako ne postoji
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    public void updateAllianceInviteByFieldId(AllianceInvite invite, final DataSourceCallback<Void> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(invite.getToUser().getId())
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .whereEqualTo("id", invite.getId()) // polje id unutar dokumenta
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // uzimamo prvi dokument koji odgovara
+                        DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
+                        db.collection(USERS_COLLECTION)
+                                .document(invite.getToUser().getId())
+                                .collection(ALLIANCE_INVITATION_COLLECTION)
+                                .document(doc.getId()) // stvarni documentId u Firestore
+                                .set(invite) // update-ujemo ceo dokument ili samo potrebna polja
+                                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                                .addOnFailureListener(callback::onFailure);
+                    } else {
+                        callback.onFailure(new Exception("Invite not found for field id: " + invite.getId()));
+                    }
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+
+    public void getAllianceInviteById(String userId, String inviteId, final DataSourceCallback<AllianceInvite> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(ALLIANCE_INVITATION_COLLECTION)
+                .document(inviteId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot doc = task.getResult();
+                        if (doc.exists()) {
+                            AllianceInvite invite = doc.toObject(AllianceInvite.class);
+                            if (invite != null) {
+                                invite.setId(doc.getId());
+                                callback.onSuccess(invite);
+                            } else {
+                                callback.onFailure(new Exception("Invite object is null"));
+                            }
+                        } else {
+                            callback.onFailure(new Exception("Invite not found"));
+                        }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+    public void addMessage(String allianceLeaderId, String allianceId, AllianceMessage message,
+                           final RepositoryCallback<String> callback) {
+        getUserById(message.getSenderId(), new DataSourceCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+
+                message.setSenderUsername(user.getUsername());
+                db.collection(USERS_COLLECTION)
+                        .document(allianceLeaderId)
+                        .collection(ALLIANCE_COLLECTION)
+                        .document(allianceId)
+                        .collection(MESSAGE_COLLECTION)
+                        .add(message)
+                        .addOnSuccessListener(docRef -> {
+                            message.setId(docRef.getId());
+                            callback.onSuccess(docRef.getId());
+                        })
+                        .addOnFailureListener(e -> {
+                            callback.onFailure(e);
+                        });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+
+
+    public void getAllMessages(String allianceLeaderId, String allianceId,
+                               final RepositoryCallback<List<AllianceMessage>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(allianceLeaderId)
+                .collection(ALLIANCE_COLLECTION)
+                .document(allianceId)
+                .collection(MESSAGE_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<AllianceMessage> messages = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            AllianceMessage m = doc.toObject(AllianceMessage.class);
+                            m.setId(doc.getId());
+                            messages.add(m);
+                        }
+                        callback.onSuccess(messages);
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
 
 }
