@@ -1,0 +1,58 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="#22FFFFFF"
+    android:layout_marginBottom="8dp">
+
+    <TextView
+        android:id="@+id/tvMemberName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:text="Član"/>
+
+    <ProgressBar
+        android:id="@+id/pbMemberProgress"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="16dp"
+        android:layout_marginTop="4dp"
+        android:progress="0"
+        android:max="100"
+        android:progressTint="@color/boss_hp_color"
+        android:progressBackgroundTint="@color/pp_background"/>
+
+    <TextView
+        android:id="@+id/tvMemberDamage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"
+        android:text="0 HP"/>
+
+    <TextView
+        android:id="@+id/tvMemberDetails"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:text="Detalji"
+        android:visibility="gone"
+        android:textSize="12sp"
+        android:layout_marginTop="4dp"/>
+
+    <TextView
+        android:id="@+id/tvBonus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🎉 Bonus 10 HP! (Nema nerešenih zadataka)"
+        android:textColor="@android:color/holo_green_light"
+        android:visibility="gone"
+        android:layout_marginTop="4dp"
+        android:textStyle="bold"
+        android:textSize="12sp"/>
+</LinearLayout>

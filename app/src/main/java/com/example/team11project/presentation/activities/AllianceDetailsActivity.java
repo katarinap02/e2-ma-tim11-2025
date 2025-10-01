@@ -141,13 +141,7 @@ public class AllianceDetailsActivity extends BaseActivity {
                 return;
             }
 
-            // samo lider može da pokrene novu misiju
-            if (!currentAlliance.getLeader().equals(userId)) {
-                Toast.makeText(this, "Samo lider može da započne misiju", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            allianceViewModel.startSpecialMission(currentAlliance);
+            allianceViewModel.startSpecialMission(currentAlliance, userId);
         });
 
 
@@ -209,6 +203,15 @@ public class AllianceDetailsActivity extends BaseActivity {
                 btnStartMission.setText(text);
             }
         });
+
+        allianceViewModel.getMissionStarted().observe(this, allianceId -> {
+            if (allianceId != null) {
+                Intent intent = new Intent(this, AllianceMissionActivity.class);
+                intent.putExtra("allianceId", allianceId);
+                startActivity(intent);
+            }
+        });
+
 
         allianceViewModel.getErrorMessage().observe(this, error -> {
             if (error != null) {

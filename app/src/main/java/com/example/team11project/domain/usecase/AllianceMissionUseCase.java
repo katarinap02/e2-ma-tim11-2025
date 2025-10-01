@@ -30,7 +30,7 @@ public class AllianceMissionUseCase {
         this.allianceRepository = allianceRepository;
     }
 
-    public void startSpecialMission(Alliance alliance, RepositoryCallback<AllianceMission> callback) {
+    public void startSpecialMission(Alliance alliance, String userId, RepositoryCallback<AllianceMission> callback) {
 
         if (alliance == null) {
             if (callback != null) callback.onFailure(new IllegalArgumentException("Alliance is null"));
@@ -46,8 +46,12 @@ public class AllianceMissionUseCase {
                     return;
                 }
 
-                // Nema aktivne misije, kreiraj novu
-                createNewMission(alliance, callback);
+                if (userId != null && userId.equals(alliance.getLeader())) {
+                    createNewMission(alliance, callback);
+                } else {
+                    if (callback != null)
+                        callback.onFailure(new IllegalAccessException("Samo lider može da započne misiju"));
+                }
             }
 
             @Override

@@ -30,6 +30,9 @@ public class AllianceDetailsViewModel extends ViewModel {
 
     private final MutableLiveData<String> missionButtonText = new MutableLiveData<>();
 
+    private final MutableLiveData<String> missionStarted = new MutableLiveData<>();
+
+
     public AllianceDetailsViewModel(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository) {
         this.allianceRepository = allianceRepository;
         this.userRepository = userRepository;
@@ -39,6 +42,9 @@ public class AllianceDetailsViewModel extends ViewModel {
     public LiveData<Alliance> getAlliance() { return allianceLiveData; }
     public LiveData<String> getErrorMessage() { return errorMessage; }
     public LiveData<String> getMissionButtonText() { return missionButtonText; }
+    public LiveData<String> getMissionStarted() {
+        return missionStarted;
+    }
 
     public void loadAlliance(String userId, String allianceId) {
         allianceRepository.getAllianceById(userId, allianceId, new RepositoryCallback<Alliance>() {
@@ -151,7 +157,7 @@ public class AllianceDetailsViewModel extends ViewModel {
         });
     }
 
-    public void startSpecialMission(Alliance alliance) {
+    public void startSpecialMission(Alliance alliance, String userId) {
         if (alliance == null) {
             errorMessage.postValue("Alliance is null");
             return;
@@ -159,12 +165,13 @@ public class AllianceDetailsViewModel extends ViewModel {
 
         AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository);
 
-        allianceMissionUseCase.startSpecialMission(alliance, new RepositoryCallback<AllianceMission>() {
+        allianceMissionUseCase.startSpecialMission(alliance, userId, new RepositoryCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission mission) {
                 // ažuriraj alliance da označiš da je misija aktivna
                 alliance.setMissionActive(true);
                 allianceLiveData.postValue(alliance);
+                missionStarted.postValue(alliance.getId());
 
                 Log.d("AllianceDetailsVM", "Mission started successfully: " + mission);
             }

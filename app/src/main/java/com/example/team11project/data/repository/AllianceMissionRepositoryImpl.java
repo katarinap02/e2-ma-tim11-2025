@@ -54,31 +54,45 @@ public class AllianceMissionRepositoryImpl implements AllianceMissionRepository 
 
     @Override
     public void getActiveMissionByAllianceId(String allianceId, RepositoryCallback<AllianceMission> callback) {
-        // Korak 1: Odmah dohvati lokalne podatke
+
+
+        // Korak 1: Pokušaj dohvatiti iz lokalne baze (ali NE šalji još callback)
         databaseExecutor.execute(() -> {
             AllianceMission localMission = localDataSource.getActiveMissionByAllianceId(allianceId);
             if (localMission != null) {
+                if (localMission.getMemberProgressList() != null) {
+                }
+                // ✅ Pošalji lokalne podatke KAO CACHE (brzi prikaz)
                 callback.onSuccess(localMission);
+            } else {
             }
         });
 
-        // Korak 2: Sinhronizuj sa Firebase-a
+        // Korak 2: Uvek dohvati fresh podatke sa Firebase-a
         remoteDataSource.getActiveMissionByAllianceId(allianceId, new RemoteDataSource.DataSourceCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission remoteMission) {
+                if (remoteMission == null) {
+                    callback.onSuccess(null);
+                    return;
+                }
+
+                if (remoteMission.getMemberProgressList() != null) {
+                } else {
+
+                }
+
+                // Sačuvaj u lokalnu bazu
                 databaseExecutor.execute(() -> {
-                    if (remoteMission != null) {
-                        // Ažuriraj lokalnu bazu
-                        AllianceMission existingMission = localDataSource.getAllianceMissionById(remoteMission.getId());
-                        if (existingMission != null) {
-                            localDataSource.updateAllianceMission(remoteMission);
-                        } else {
-                            localDataSource.createAllianceMission(remoteMission);
-                        }
+                    AllianceMission existingMission = localDataSource.getAllianceMissionById(remoteMission.getId());
+                    if (existingMission != null) {
+                        localDataSource.updateAllianceMission(remoteMission);
+                    } else {
+                        localDataSource.createAllianceMission(remoteMission);
                     }
-                    // Pošalji fresh podatke
-                    AllianceMission freshMission = localDataSource.getActiveMissionByAllianceId(allianceId);
-                    callback.onSuccess(freshMission);
+
+                    // ✅ Pošalji FRESH podatke sa Firebase-a
+                    callback.onSuccess(remoteMission);
                 });
             }
 

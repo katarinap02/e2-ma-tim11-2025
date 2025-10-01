@@ -1,176 +1,151 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/main"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@drawable/boss_arena_background1"
-    android:padding="16dp">
+    android:background="@drawable/boss_arena_background1">
 
-    <!-- Naslov -->
-    <TextView
-        android:id="@+id/tvSpecialMissionTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Specijalna misija"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        android:gravity="center"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="8dp"/>
-
-    <!-- Info o misiji i progresu -->
     <LinearLayout
-        android:id="@+id/layoutMissionInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center">
+        android:padding="16dp">
 
-        <!-- Napredak korisnika -->
+        <!-- Naslov misije -->
+        <TextView
+            android:id="@+id/tvSpecialMissionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Specijalna misija"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Boss informacije -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp">
+            android:background="#33000000"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp">
 
             <TextView
+                android:id="@+id/tvBossName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Vaš napredak"
+                android:text="Boss ime"
                 android:textColor="@color/white"
-                android:textSize="18sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="4dp"
-                android:gravity="center"/>
+                android:layout_gravity="center"
+                android:layout_marginBottom="8dp"/>
 
-            <ProgressBar
-                android:id="@+id/pbUserProgress"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            <!-- HP Boss-a -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="20dp"
-                android:progressTint="@color/user_pp_color"
-                android:progressBackgroundTint="@color/pp_background"
-                android:progress="0"
-                android:max="100"/>
-
-            <TextView
-                android:id="@+id/tvUserProgress"
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0 / 100"
-                android:textColor="@color/white"
-                android:textStyle="bold"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="4dp"/>
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ProgressBar
+                    android:id="@+id/pbBossHP"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="24dp"
+                    android:layout_weight="1"
+                    android:progressTint="@color/boss_hp_color"
+                    android:progressBackgroundTint="@color/hp_background"
+                    android:progress="100"
+                    android:max="100" />
+
+                <TextView
+                    android:id="@+id/tvBossHP"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="200 / 200 HP"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp"
+                    android:minWidth="110dp"/>
+            </LinearLayout>
         </LinearLayout>
+
+        <!-- Slika Boss-a -->
+        <ImageView
+            android:id="@+id/ivBoss"
+            android:layout_width="250dp"
+            android:layout_height="230dp"
+            android:layout_gravity="center"
+            android:scaleType="centerInside"
+            android:layout_marginBottom="30dp"
+            android:src="@drawable/zmaj" />
 
         <!-- Napredak saveza -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp">
+            android:background="#33000000">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Tekst i vrednost u jednom redu -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Napredak saveza"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp"
-                android:gravity="center"/>
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
+                <TextView
+                    android:id="@+id/tvAllianceLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Napredak saveza:"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/tvAllianceProgress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="0 / 100"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+
+            <!-- Progress bar ispod -->
             <ProgressBar
                 android:id="@+id/pbAllianceProgress"
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
-                android:layout_height="24dp"
+                android:layout_height="20dp"
+                android:layout_marginTop="4dp"
                 android:progressTint="@color/boss_hp_color"
                 android:progressBackgroundTint="@color/hp_background"
                 android:progress="0"
                 android:max="100"/>
-
-            <TextView
-                android:id="@+id/tvAllianceProgress"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 / 100"
-                android:textColor="@color/white"
-                android:textStyle="bold"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="4dp"/>
         </LinearLayout>
-    </LinearLayout>
 
-    <!-- Boss -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center">
 
-        <!-- HP Boss-a -->
-        <LinearLayout
+        <!-- Napredak članova -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Napredak članova"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvMembersProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginHorizontal="32dp"
-            android:layout_marginBottom="8dp">
-
-            <ProgressBar
-                android:id="@+id/pbBossHP"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:layout_width="0dp"
-                android:layout_height="24dp"
-                android:layout_weight="1"
-                android:progressTint="@color/boss_hp_color"
-                android:progressBackgroundTint="@color/hp_background"
-                android:progress="100"
-                android:max="100" />
-
-            <TextView
-                android:id="@+id/tvBossHP"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="200 / 200 HP"
-                android:textColor="@color/white"
-                android:textStyle="bold"
-                android:layout_marginStart="4dp"
-                android:minWidth="60dp"/>
-        </LinearLayout>
-
-        <!-- Slika Boss-a -->
-        <ImageView
-            android:id="@+id/ivBoss"
-            android:layout_width="300dp"
-            android:layout_height="300dp"
-            android:scaleType="centerInside"
-            android:layout_marginStart="30dp"
-            android:src="@drawable/boss_idle2"
-            android:layout_marginTop="8dp"/>
+            android:nestedScrollingEnabled="false"/>
     </LinearLayout>
-
-    <!-- Lista članova i njihovog napretka -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Napredak članova"
-        android:textColor="@color/white"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginTop="16dp"
-        android:gravity="center"/>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvMembersProgress"
-        android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:layout_marginTop="8dp"/>
-</LinearLayout>
+</ScrollView>
