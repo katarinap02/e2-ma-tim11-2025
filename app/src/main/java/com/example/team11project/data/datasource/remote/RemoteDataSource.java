@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.AllianceMessage;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.BossReward;
@@ -55,6 +56,7 @@ public class RemoteDataSource {
     private static final String EQUIPMENT_COLLECTION = "equipment";
     private static final String ALLIANCE_COLLECTION = "alliances";
     private static final String ALLIANCE_INVITATION_COLLECTION = "alliance_invitations";
+    private static final String MESSAGE_COLLECTION = "messages";
 
     public RemoteDataSource() {
         this.db = FirebaseFirestore.getInstance();
@@ -1059,6 +1061,59 @@ public class RemoteDataSource {
                         } else {
                             callback.onFailure(new Exception("Invite not found"));
                         }
+                    } else {
+                        callback.onFailure(task.getException());
+                    }
+                });
+    }
+    public void addMessage(String allianceLeaderId, String allianceId, AllianceMessage message,
+                           final RepositoryCallback<String> callback) {
+        getUserById(message.getSenderId(), new DataSourceCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+
+                message.setSenderUsername(user.getUsername());
+                db.collection(USERS_COLLECTION)
+                        .document(allianceLeaderId)
+                        .collection(ALLIANCE_COLLECTION)
+                        .document(allianceId)
+                        .collection(MESSAGE_COLLECTION)
+                        .add(message)
+                        .addOnSuccessListener(docRef -> {
+                            message.setId(docRef.getId());
+                            callback.onSuccess(docRef.getId());
+                        })
+                        .addOnFailureListener(e -> {
+                            callback.onFailure(e);
+                        });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+
+
+    public void getAllMessages(String allianceLeaderId, String allianceId,
+                               final RepositoryCallback<List<AllianceMessage>> callback) {
+        db.collection(USERS_COLLECTION)
+                .document(allianceLeaderId)
+                .collection(ALLIANCE_COLLECTION)
+                .document(allianceId)
+                .collection(MESSAGE_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<AllianceMessage> messages = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            AllianceMessage m = doc.toObject(AllianceMessage.class);
+                            m.setId(doc.getId());
+                            messages.add(m);
+                        }
+                        callback.onSuccess(messages);
                     } else {
                         callback.onFailure(task.getException());
                     }

@@ -11,6 +11,7 @@ import com.example.team11project.data.datasource.local.db.AppContract;
 import com.example.team11project.data.datasource.local.db.DatabaseHelper;
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.AllianceMessage;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
 import com.example.team11project.domain.model.BossReward;
@@ -1816,6 +1817,57 @@ public class LocalDataSource {
         db.close();
     }
 
+    public void addMessage(AllianceMessage message) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("_id", message.getId());
+        values.put("alliance_id", message.getAllianceId());
+        values.put("sender_id", message.getSenderId());
+        values.put("sender_username", message.getSenderUsername());
+        values.put("message", message.getMessage());
+        values.put("timestamp", message.getTimestamp());
+        db.insert("alliance_messages", null, values);
+        db.close();
+    }
 
+    public List<AllianceMessage> getAllMessages(String allianceId) {
+        List<AllianceMessage> messages = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(
+                "alliance_messages",
+                null,
+                "alliance_id = ?",
+                new String[]{allianceId},
+                null,
+                null,
+                "timestamp ASC"
+        );
+
+        while (cursor.moveToNext()) {
+            AllianceMessage m = new AllianceMessage();
+            m.setId(cursor.getString(cursor.getColumnIndexOrThrow("_id")));
+            m.setAllianceId(cursor.getString(cursor.getColumnIndexOrThrow("alliance_id")));
+            m.setSenderId(cursor.getString(cursor.getColumnIndexOrThrow("sender_id")));
+            m.setSenderUsername(cursor.getString(cursor.getColumnIndexOrThrow("sender_username")));
+            m.setMessage(cursor.getString(cursor.getColumnIndexOrThrow("message")));
+            m.setTimestamp(cursor.getLong(cursor.getColumnIndexOrThrow("timestamp")));
+            messages.add(m);
+        }
+
+        cursor.close();
+        db.close();
+        return messages;
+    }
+
+    public int deleteAllMessagesForAlliance(String allianceId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        int deletedRows = db.delete(
+                "alliance_messages",
+                "alliance_id = ?",
+                new String[]{allianceId}
+        );
+        db.close();
+        return deletedRows;
+    }
 
 }

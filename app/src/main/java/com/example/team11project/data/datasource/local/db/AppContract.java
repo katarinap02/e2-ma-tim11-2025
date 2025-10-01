@@ -158,4 +158,16 @@ public final class AppContract {
 
     }
 
+    public static class AllianceMessageEntry implements BaseColumns {
+        public static final String TABLE_NAME = "alliance_messages";
+        public static final String _ID = "_id";
+
+        public static final String COLUMN_NAME_ALLIANCE_ID = "alliance_id";
+        public static final String COLUMN_NAME_SENDER_ID = "sender_id";
+        public static final String COLUMN_NAME_SENDER_USERNAME = "sender_username";
+        public static final String COLUMN_NAME_MESSAGE = "message";
+        public static final String COLUMN_NAME_TIMESTAMP = "timestamp";
+    }
+
+
 }
