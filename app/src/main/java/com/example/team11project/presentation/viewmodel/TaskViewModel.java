@@ -1,6 +1,7 @@
 package com.example.team11project.presentation.viewmodel;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
@@ -8,6 +9,8 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
+import com.example.team11project.data.repository.AllianceRepositoryImpl;
 import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
@@ -18,9 +21,14 @@ import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Category;
+import com.example.team11project.domain.model.SpecialTaskType;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskDifficulty;
+import com.example.team11project.domain.model.TaskImportance;
 import com.example.team11project.domain.model.TaskInstance;
 import com.example.team11project.domain.model.TaskStatus;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
+import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.BossBattleRepository;
 import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.BossRewardRepository;
@@ -31,6 +39,7 @@ import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
+import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 import com.example.team11project.domain.usecase.BossUseCase;
 import com.example.team11project.domain.usecase.TaskEditUseCase;
 import com.example.team11project.domain.usecase.TaskUseCase;
@@ -49,6 +58,8 @@ public class TaskViewModel extends ViewModel{
     private final TaskUseCase taskUseCase;
 
     private final TaskInstanceRepository taskInstanceRepository;
+
+    private final AllianceMissionUseCase allianceMissionUseCase;
 
     private final MutableLiveData<List<Task>> _tasks = new MutableLiveData<>();
     public final LiveData<List<Task>> tasks = _tasks;
@@ -99,12 +110,14 @@ public class TaskViewModel extends ViewModel{
     public TaskViewModel(TaskRepository taskRepository,
                          CategoryRepository categoryRepository,
                          TaskUseCase taskUseCase,
-                         TaskInstanceRepository taskInstanceRepository
+                         TaskInstanceRepository taskInstanceRepository,
+                         AllianceMissionUseCase allianceMissionUseCase
 ) {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
         this.taskUseCase = taskUseCase;
         this.taskInstanceRepository = taskInstanceRepository;
+        this.allianceMissionUseCase = allianceMissionUseCase;
 
     }
 
@@ -279,6 +292,45 @@ public class TaskViewModel extends ViewModel{
                 _taskCompletedXp.postValue(earnedXp);
                 _taskCompleteSuccess.postValue(true);
 
+                SpecialTaskType difficultyType = (task.getDifficulty() == TaskDifficulty.EASY ||
+                        task.getDifficulty() == TaskDifficulty.VERY_EASY)
+                        ? SpecialTaskType.EASY_NORMAL_TASK
+                        : SpecialTaskType.OTHER_TASK;
+
+                allianceMissionUseCase.processSpecialTask(userId, difficultyType, new RepositoryCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean damageDealt) {
+                        if (damageDealt) {
+                            Log.d("SpecialMission", "Difficulty task processed: " + difficultyType);
+                        }
+
+                        // NAKON što se završi prvi, procesuj importance task
+                        SpecialTaskType importanceType = (task.getImportance() == TaskImportance.NORMAL ||
+                                task.getImportance() == TaskImportance.IMPORTANT)
+                                ? SpecialTaskType.EASY_NORMAL_TASK
+                                : SpecialTaskType.OTHER_TASK;
+
+                        allianceMissionUseCase.processSpecialTask(userId, importanceType, new RepositoryCallback<Boolean>() {
+                            @Override
+                            public void onSuccess(Boolean damageDealt2) {
+                                if (damageDealt2) {
+                                    Log.d("SpecialMission", "Importance task processed: " + importanceType);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e("SpecialMission", "Failed to process importance task: " + e.getMessage());
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e("SpecialMission", "Failed to process difficulty task: " + e.getMessage());
+                    }
+                });
+
                 // Task je već ažuriran optimistički, samo potvrdi da je sve OK
                 // Možeš dodati refresh instance-a ako je potrebno
                 if (task.isRecurring()) {
@@ -319,6 +371,7 @@ public class TaskViewModel extends ViewModel{
             }
         });
     }
+
 
 
     //promene statusa za taskove, uslove dodajemo kasnije
@@ -473,15 +526,18 @@ public class TaskViewModel extends ViewModel{
                     EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(application);
                     BossUseCase bossUseCase = new BossUseCase(bossRepository,battleRepository,rewardRepository, equipmentRepository);
                     TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository, bossUseCase);
-
+                    AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(application);
+                    AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
+                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepo);
 
                     @SuppressWarnings("unchecked")
                     T viewModel = (T) modelClass.getConstructor(
                                     TaskRepository.class,
                                     CategoryRepository.class,
                                     TaskUseCase.class,
-                                    TaskInstanceRepository.class)
-                            .newInstance(taskRepo, catRepo, completeUC, instanceRepo);
+                                    TaskInstanceRepository.class,
+                                    AllianceMissionUseCase.class)
+                            .newInstance(taskRepo, catRepo, completeUC, instanceRepo, allianceMissionUseCase1);
                     return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);

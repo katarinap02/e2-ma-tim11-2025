@@ -949,8 +949,7 @@ public class RemoteDataSource {
                                 callback.onFailure(new Exception("Alliance object is null"));
                             }
                         } else {
-                            callback.onFailure(new Exception("Alliance not found"));
-                            Log.d("AllianceRepositoryImpl", "Remote fetch failed: ");
+                            callback.onFailure(new Exception("You are not leader for this alliance"));
 
                         }
                     } else {

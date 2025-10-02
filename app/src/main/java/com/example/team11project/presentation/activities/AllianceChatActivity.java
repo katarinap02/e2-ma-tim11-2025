@@ -13,14 +13,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceMessageRepositoryImpl;
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.AllianceMessage;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMessageRepository;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.UserRepository;
+import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 import com.example.team11project.presentation.adapters.AllianceChatAdapter;
 import com.example.team11project.presentation.viewmodel.AllianceChatViewModel;
 import com.example.team11project.presentation.viewmodel.UserViewModel;
@@ -66,11 +69,16 @@ public class AllianceChatActivity extends BaseActivity {
 
         Executor executor = Executors.newSingleThreadExecutor();
         AllianceMessageRepository allianceMessageRepository = new AllianceMessageRepositoryImpl(getApplicationContext(), executor);
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
+        AllianceRepository allianceRepository = new AllianceRepositoryImpl(getApplicationContext());
+        UserRepository userRepository1 = new UserRepositoryImpl(getApplicationContext());
+        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository1);
 
         viewModel = new ViewModelProvider(this,
                 new AllianceChatViewModel.Factory(
                         allianceMessageRepository,
-                        executor
+                        executor,
+                        allianceMissionUseCase
                 )).get(AllianceChatViewModel.class);
 
         // load messages

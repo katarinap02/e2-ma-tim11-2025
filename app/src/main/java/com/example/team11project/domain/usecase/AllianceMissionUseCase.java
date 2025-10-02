@@ -108,7 +108,7 @@ public class AllianceMissionUseCase {
         allianceMissionRepository.createAllianceMission(mission, new RepositoryCallback<String>() {
             @Override
             public void onSuccess(String missionId) {
-                updateAllianceMissionStatus(alliance, true, userId, new RepositoryCallback<Void>() {
+                updateAllianceMissionStatus(alliance, true, new RepositoryCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
                         if (callback != null) callback.onSuccess(mission);
@@ -129,54 +129,70 @@ public class AllianceMissionUseCase {
         });
     }
 
-    public void updateAllianceMissionStatus(Alliance alliance, boolean isActive, String userId, RepositoryCallback<Void> callback) {
+    public void updateAllianceMissionStatus(Alliance alliance, boolean isActive, RepositoryCallback<Void> callback) {
         alliance.setMissionActive(isActive);
 
         // Ažuriraj savez
         allianceRepository.updateAlliance(alliance, new RepositoryCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
-                // Dobavi korisnika
-                userRepository.getUserById(userId, new RepositoryCallback<User>() {
-                    @Override
-                    public void onSuccess(User user) {
-                        if (user != null && user.getCurrentAlliance() != null) {
-                            // Postavi status misije u trenutnom savezu korisnika
-                            user.getCurrentAlliance().setMissionActive(isActive);
-
-                            // Ažuriraj korisnika
-                            userRepository.updateUser(user, new RepositoryCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void userResult) {
-                                    Log.d("AllianceMission", "Uspešno ažuriran status misije za savez i korisnika");
-                                    if (callback != null) callback.onSuccess(null);
-                                }
-
-                                @Override
-                                public void onFailure(Exception e) {
-                                    Log.e("AllianceMission", "Greška pri ažuriranju korisnika: " + e.getMessage());
-                                    if (callback != null) callback.onFailure(e);
-                                }
-                            });
-                        } else {
-                            // Korisnik nema trenutni savez, ali savez je uspešno ažuriran
-                            Log.w("AllianceMission", "Korisnik nema trenutni savez");
-                            if (callback != null) callback.onSuccess(null);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Exception e) {
-                        Log.e("AllianceMission", "Greška pri dobavljanju korisnika: " + e.getMessage());
-                        if (callback != null) callback.onFailure(e);
-                    }
-                });
+                // Ažuriraj status misije za sve članove
+                updateAllMembersStatus(alliance.getMembers(), isActive, 0, callback);
             }
 
             @Override
             public void onFailure(Exception e) {
                 Log.e("AllianceMission", "Greška pri ažuriranju saveza: " + e.getMessage());
                 if (callback != null) callback.onFailure(e);
+            }
+        });
+    }
+
+    private void updateAllMembersStatus(List<String> memberIds, boolean isActive, int index, RepositoryCallback<Void> callback) {
+        // Bazni slučaj: svi članovi su ažurirani
+        if (index >= memberIds.size()) {
+            Log.d("AllianceMission", "Svi članovi uspešno ažurirani");
+            if (callback != null) callback.onSuccess(null);
+            return;
+        }
+
+        String memberId = memberIds.get(index);
+
+        userRepository.getUserById(memberId, new RepositoryCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                if (user != null && user.getCurrentAlliance() != null) {
+                    // Postavi status misije u trenutnom savezu korisnika
+                    user.getCurrentAlliance().setMissionActive(isActive);
+
+                    // Ažuriraj korisnika
+                    userRepository.updateUser(user, new RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void userResult) {
+                            Log.d("AllianceMission", "Ažuriran status misije za člana: " + memberId);
+                            // Nastavi sa sledećim članom
+                            updateAllMembersStatus(memberIds, isActive, index + 1, callback);
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            Log.e("AllianceMission", "Greška pri ažuriranju člana " + memberId + ": " + e.getMessage());
+                            // Nastavi sa sledećim uprkos grešci
+                            updateAllMembersStatus(memberIds, isActive, index + 1, callback);
+                        }
+                    });
+                } else {
+                    // Korisnik nema trenutni savez, preskoči ga
+                    Log.w("AllianceMission", "Član " + memberId + " nema trenutni savez");
+                    updateAllMembersStatus(memberIds, isActive, index + 1, callback);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("AllianceMission", "Greška pri dobavljanju člana " + memberId + ": " + e.getMessage());
+                // Nastavi sa sledećim uprkos grešci
+                updateAllMembersStatus(memberIds, isActive, index + 1, callback);
             }
         });
     }
