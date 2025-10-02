@@ -186,6 +186,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_CREATE_CATEGORIES_TABLE);
         db.execSQL(SQL_CREATE_TASKS_TABLE);
         db.execSQL(SQL_CREATE_USERS_TABLE);
+//        db.execSQL(SQL_CREATE_LEVELINFO_TABLE);
         db.execSQL(SQL_CREATE_TASK_INSTANCES_TABLE);
         db.execSQL(SQL_CREATE_BOSS_TABLE);
         db.execSQL(SQL_CREATE_BOSS_BATTLE_TABLE);
@@ -211,6 +212,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_CATEGORIES_TABLE);
         db.execSQL("DROP TABLE IF EXISTS " + AppContract.TaskInstanceEntry.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS users");
+//        db.execSQL("DROP TABLE IF EXISTS " + AppContract.LevelInfoEntry.TABLE_NAME);
         db.execSQL(SQL_DELETE_BOSS_REWARD_TABLE);
         db.execSQL(SQL_DELETE_BOSS_BATTLE_TABLE);
         db.execSQL(SQL_DELETE_BOSS_TABLE);
@@ -248,7 +250,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.UserEntry.COLUMN_POTION + " TEXT, " +
                     AppContract.UserEntry.COLUMN_COINS + " INTEGER NOT NULL DEFAULT 0, " +
                     AppContract.UserEntry.COLUMN_FRIENDS + " TEXT, " +
-                    AppContract.UserEntry.COLUMN_NAME_CURRENT_ALLIANCE_ID + " TEXT" +
+                    AppContract.UserEntry.COLUMN_NAME_CURRENT_ALLIANCE_ID + " TEXT, " +
+                    AppContract.UserEntry.COLUMN_ACTIVE_DAYS + " INTEGER NOT NULL DEFAULT 0" +
                     ")";
 
     private static final String SQL_CREATE_LEVELINFO_TABLE =
@@ -260,7 +263,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.LevelInfoEntry.COLUMN_XP_TASK_IMPORTANCE + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_XP_TASK_DIFFICULTY + " INTEGER NOT NULL," +
                     AppContract.LevelInfoEntry.COLUMN_PP + " INTEGER NOT NULL," +
-                    AppContract.LevelInfoEntry.COLUMN_TITLE + " TEXT NOT NULL" +
+                    AppContract.LevelInfoEntry.COLUMN_TITLE + " TEXT NOT NULL, " +
                     AppContract.LevelInfoEntry.COLUMN_CURRENT_LEVEL_START_DATE + " TEXT, " +
                     AppContract.LevelInfoEntry.COLUMN_PREVIOUS_LEVEL_START_DATE + " TEXT, " +
                     "FOREIGN KEY (" + AppContract.LevelInfoEntry.COLUMN_USER_ID + ") REFERENCES " +

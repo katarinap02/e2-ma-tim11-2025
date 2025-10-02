@@ -2,6 +2,7 @@ package com.example.team11project.presentation.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -12,10 +13,16 @@ import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.AllianceInvite;
+import com.example.team11project.domain.model.User;
 import com.example.team11project.presentation.viewmodel.AllianceInvitationViewModel;
 import com.example.team11project.presentation.viewmodel.UserViewModel;
+import com.google.gson.Gson;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -32,12 +39,63 @@ public class HomeScreenActivity extends BaseActivity {
 
         setupNavbar();
 
+
+        String lastActiveDate = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getString("lastActiveDate", null);
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        String yesterday = java.time.LocalDate.now().minusDays(1).toString();
+
+
         userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
                 .getString("userId", null);
 
         userViewModel = new ViewModelProvider(this,
                 new UserViewModel.Factory(new UserRepositoryImpl(getApplicationContext())))
                 .get(UserViewModel.class);
+
+
+
+        userViewModel.getUser().observe(this, user -> {
+            if (user == null) return;
+
+            Log.d("ACTIVE_DAYS", "Učitani user: " + new Gson().toJson(user));
+
+            Log.d("ACTIVE_DAYS", "Učitani activeDays iz DB: " + user.getActiveDays());
+
+            if (lastActiveDate == null) {
+                // Prvi put, postavi danasnji datum i activeDays na 1
+                user.setActiveDays(1);
+                userViewModel.updateUser(user);
+                getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                        .edit()
+                        .putString("lastActiveDate", today)
+                        .apply();
+            } else {
+                java.time.LocalDate lastDate = java.time.LocalDate.parse(lastActiveDate);
+                java.time.LocalDate currentDate = java.time.LocalDate.parse(today);
+
+                if (lastDate.plusDays(1).equals(currentDate)) {
+                    // Novi dan, uzastopni
+                    user.setActiveDays(user.getActiveDays() + 1);
+                    userViewModel.updateUser(user);
+                    getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                            .edit()
+                            .putString("lastActiveDate", today)
+                            .apply();
+                } else if (lastDate.isBefore(currentDate)) {
+                    // Prekinut niz, resetuj na 1
+                    user.setActiveDays(1);
+                    userViewModel.updateUser(user);
+                    getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                            .edit()
+                            .putString("lastActiveDate", today)
+                            .apply();
+                } else {
+                    // Isto je dan, ništa ne radimo
+                    Log.d("ACTIVE_DAYS", "Datum je isti, activeDays ostaje: " + user.getActiveDays());
+                }
+            }
+            // Prikaz u TextView
+        });
 
         Executor executor = Executors.newSingleThreadExecutor();
 

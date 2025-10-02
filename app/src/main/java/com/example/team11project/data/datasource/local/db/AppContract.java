@@ -45,6 +45,7 @@ public final class AppContract {
         public static final String COLUMN_COINS = "coins";
         public static final String COLUMN_FRIENDS = "friends";
         public static final String COLUMN_NAME_CURRENT_ALLIANCE_ID = "current_alliance_id";
+        public static final String COLUMN_ACTIVE_DAYS = "active_days";
     }
 
 

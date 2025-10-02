@@ -226,7 +226,7 @@ public class EquipmentViewModel extends ViewModel {
 
         if (currentUser.getWeapons() != null && selectedWeapons != null) {
             for (Weapon w : selectedWeapons) {
-                if (w.getQuantity() <= 0) continue; // nemoj aktivirati ako nema na stanju
+                if (w.getQuantity() <= 0) continue;
                 w.setActive(true);
                 currentUser.getLevelInfo().setPp(w.getPermanentBoostPercent() + currentUser.getLevelInfo().getPp());
                 w.setQuantity(w.getQuantity() - 1);
