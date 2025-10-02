@@ -49,7 +49,7 @@
         android:id="@+id/tvBonus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🎉 Bonus 10 HP! (Nema nerešenih zadataka)"
+        android:text="🎉 Bonus 10 HP! (Ako na kraju nema nerešenih zadataka)"
         android:textColor="@android:color/holo_green_light"
         android:visibility="gone"
         android:layout_marginTop="4dp"

@@ -252,4 +252,20 @@ public class AllianceDetailsActivity extends BaseActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Osvežavanje stanja kada se vraćamo na aktivnost
+        User currentUser = userViewModel.getUser().getValue();
+        if (currentUser != null && currentUser.getCurrentAlliance() != null) {
+            Alliance alliance = currentUser.getCurrentAlliance();
+            allianceViewModel.refreshAllianceState(
+                    alliance.getId(),
+                    userId,
+                    alliance.getLeader()
+            );
+        }
+    }
+
 }

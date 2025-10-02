@@ -97,4 +97,13 @@
     <string name="pristupi_cetu">Pristupi cetu</string>
     <string name="zapocni_misiju">Zapocni misiju</string>
     <string name="members">Members:</string>
+    <string name="statistike2">STATISTIKE</string>
+    <string name="broj_uzastopnih_aktivnih_dana_0">Broj uzastopnih aktivnih dana: 0</string>
+    <string name="pregled_zadataka">Pregled zadataka:</string>
+    <string name="zavr_eni_zadaci_po_kategoriji">Završeni zadaci po kategoriji:</string>
+    <string name="prosecna_tezina_zadataka">Prosečna težina zadataka:</string>
+    <string name="najdu_i_niz_uspe_no_ura_enih_zadataka_0_dana">Najduži niz uspešno urađenih zadataka: 0 dana</string>
+    <string name="broj_zapo_etih_specijalnih_misija_0">Broj započetih specijalnih misija: 0</string>
+    <string name="broj_zavr_enih_specijalnih_misija_0">Broj završenih specijalnih misija: 0</string>
+    <string name="xp_poslednjih_7_dana">XP poslednjih 7 dana:</string>
 </resources>

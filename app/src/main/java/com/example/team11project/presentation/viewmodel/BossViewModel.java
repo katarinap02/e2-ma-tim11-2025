@@ -1,6 +1,7 @@
 package com.example.team11project.presentation.viewmodel;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
@@ -8,17 +9,25 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
+import com.example.team11project.data.repository.AllianceRepositoryImpl;
 import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
 import com.example.team11project.data.repository.EquipmentRepositoryImpl;
+import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
+import com.example.team11project.domain.model.SpecialTaskType;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
+import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.BossBattleRepository;
 import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.UserRepository;
+import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 import com.example.team11project.domain.usecase.BossUseCase;
 
 public class BossViewModel extends ViewModel {
@@ -28,6 +37,8 @@ public class BossViewModel extends ViewModel {
 
     private final EquipmentRepository equipmentRepository;
     private final BossUseCase bossUseCase;
+
+    private final AllianceMissionUseCase allianceMissionUseCase;
 
     private final MutableLiveData<BossBattle> _bossBattle = new MutableLiveData<>();
     public final LiveData<BossBattle> bossBattle = _bossBattle;
@@ -47,10 +58,11 @@ public class BossViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _battleFinished = new MutableLiveData<>();
     public final LiveData<Boolean> battleFinished = _battleFinished;
 
-    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository, BossRewardRepository bossRewardRepository, EquipmentRepository equipmentRepository) {
+    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository, BossRewardRepository bossRewardRepository, EquipmentRepository equipmentRepository, AllianceMissionUseCase allianceMissionUseCase) {
         this.bossBattleRepository = bossBattleRepository;
         this.bossRepository = bossRepository;
         this.equipmentRepository = equipmentRepository;
+        this.allianceMissionUseCase = allianceMissionUseCase;
         this.bossUseCase = new BossUseCase(bossRepository, bossBattleRepository, bossRewardRepository, equipmentRepository);
     }
 
@@ -98,7 +110,7 @@ public class BossViewModel extends ViewModel {
         });
     }
 
-    public void performAttack() {
+    public void performAttack(String userId) {
         BossBattle currentBattle = _bossBattle.getValue();
         Boss currentBoss = _boss.getValue();
 
@@ -125,6 +137,19 @@ public class BossViewModel extends ViewModel {
                 String result;
                 if (isHit) {
                     result = "Pogodak! Nanešena šteta: " + currentBattle.getUserPP();
+                    allianceMissionUseCase.processSpecialTask(userId, SpecialTaskType.REGULAR_BOSS_HIT, new RepositoryCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(Boolean damageDealt) {
+                            if (damageDealt) {
+                                Log.d("SpecialMission", "Store purchase registered!");
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            Log.e("SpecialMission", "Failed to process task: " + e.getMessage());
+                        }
+                    });
                     if (currentBoss.getCurrentHP() <= 0) {
                         result += "\nBoss je poražen!";
                     }
@@ -185,14 +210,19 @@ public class BossViewModel extends ViewModel {
                     BossRepository bossRepo = new BossRepositoryImpl(application);
                     BossRewardRepository rewardRepo = new BossRewardRepositoryImpl(application);
                     EquipmentRepository equipmentRepo = new EquipmentRepositoryImpl(application);
+                    AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(application);
+                    AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
+                    UserRepository userRepository = new UserRepositoryImpl(application);
+                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository);
 
                     @SuppressWarnings("unchecked")
                     T viewModel = (T) modelClass.getConstructor(
                                     BossBattleRepository.class,
                                     BossRepository.class,
                                     BossRewardRepository.class,
-                                    EquipmentRepository.class)
-                            .newInstance(battleRepo, bossRepo, rewardRepo, equipmentRepo);
+                                    EquipmentRepository.class,
+                                    AllianceMissionUseCase.class)
+                            .newInstance(battleRepo, bossRepo, rewardRepo, equipmentRepo, allianceMissionUseCase1);
                     return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);

@@ -50,16 +50,40 @@ public class AllianceMissionViewModel extends ViewModel {
     }
 
     public void getActiveMissionByAllianceId(String allianceId) {
+        getActiveMissionWithRetry(allianceId, 0, 5);
+    }
+
+    private void getActiveMissionWithRetry(String allianceId, int attempt, int maxAttempts) {
         allianceMissionRepository.getActiveMissionByAllianceId(allianceId, new RepositoryCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission mission) {
-                activeMission.postValue(mission);
-                loadUsernamesForMission(mission);
+                if (mission != null) {
+                    // Misija pronađena
+                    activeMission.postValue(mission);
+                    loadUsernamesForMission(mission);
+                } else if (attempt < maxAttempts) {
+                    // Misija još nije dostupna, pokušaj ponovo
+                    Log.d("AllianceMissionVM", "Mission not found, retrying... attempt " + (attempt + 1));
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        getActiveMissionWithRetry(allianceId, attempt + 1, maxAttempts);
+                    }, 400); // 400ms delay između pokušaja
+                } else {
+                    // Iscrpljeni pokušaji
+                    errorMessage.postValue("Misija nije pronađena nakon " + maxAttempts + " pokušaja. Molimo osvežite stranicu.");
+                }
             }
 
             @Override
             public void onFailure(Exception e) {
-                errorMessage.postValue("Greška pri dohvatanju aktivne misije: " + e.getMessage());
+                if (attempt < maxAttempts) {
+                    // Greška u query-ju, pokušaj ponovo
+                    Log.e("AllianceMissionVM", "Error fetching mission, retrying... attempt " + (attempt + 1), e);
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        getActiveMissionWithRetry(allianceId, attempt + 1, maxAttempts);
+                    }, 400);
+                } else {
+                    errorMessage.postValue("Greška pri dohvatanju aktivne misije: " + e.getMessage());
+                }
             }
         });
     }
