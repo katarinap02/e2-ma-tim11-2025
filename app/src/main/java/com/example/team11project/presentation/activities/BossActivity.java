@@ -78,7 +78,7 @@ public class BossActivity extends BaseActivity {
             ivBoss.setImageResource(R.drawable.boss_hit2);
             ivBoss.postDelayed(() -> ivBoss.setImageResource(R.drawable.boss_idle2), 500);
 
-            viewModel.performAttack();
+            viewModel.performAttack(userId);
         });
     }
 
