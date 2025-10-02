@@ -1,6 +1,7 @@
 package com.example.team11project.presentation.viewmodel;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
@@ -9,17 +10,23 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
+import com.example.team11project.data.repository.AllianceRepositoryImpl;
 import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.ChlothingEffectType;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.Potion;
+import com.example.team11project.domain.model.SpecialTaskType;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.Weapon;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
+import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.UserRepository;
+import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +37,8 @@ public class StoreViewModel extends ViewModel {
     private final UserRepository userRepository;
     private final EquipmentRepository equipmentRepository;
 
+    private final AllianceMissionUseCase allianceMissionUseCase;
+
     private final MutableLiveData<List<Potion>> potions = new MutableLiveData<>();
     private final MutableLiveData<List<Weapon>> weapons = new MutableLiveData<>();
     private final MutableLiveData<List<Clothing>> clothing = new MutableLiveData<>();
@@ -37,9 +46,10 @@ public class StoreViewModel extends ViewModel {
     private final MutableLiveData<String> error = new MutableLiveData<>();
 
 
-    public StoreViewModel(UserRepository repository, EquipmentRepository equipmentRepository) {
+    public StoreViewModel(UserRepository repository, EquipmentRepository equipmentRepository, AllianceMissionUseCase allianceMissionUseCase) {
         this.userRepository = repository;
         this.equipmentRepository = equipmentRepository;
+        this.allianceMissionUseCase = allianceMissionUseCase;
     }
 
     // --- Potions ---
@@ -123,6 +133,19 @@ public class StoreViewModel extends ViewModel {
                     @Override
                     public void onSuccess(Void data) {
                         clothing.postValue(user.getClothing());
+                        allianceMissionUseCase.processSpecialTask(userId, SpecialTaskType.STORE_PURCHASE, new RepositoryCallback<Boolean>() {
+                            @Override
+                            public void onSuccess(Boolean damageDealt) {
+                                if (damageDealt) {
+                                    Log.d("SpecialMission", "Store purchase registered!");
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e("SpecialMission", "Failed to process task: " + e.getMessage());
+                            }
+                        });
                     }
 
                     @Override
@@ -180,6 +203,19 @@ public class StoreViewModel extends ViewModel {
                     @Override
                     public void onSuccess(Void data) {
                         potions.postValue(user.getPotions());
+                        allianceMissionUseCase.processSpecialTask(userId, SpecialTaskType.STORE_PURCHASE, new RepositoryCallback<Boolean>() {
+                            @Override
+                            public void onSuccess(Boolean damageDealt) {
+                                if (damageDealt) {
+                                    Log.d("SpecialMission", "Store purchase registered!");
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e("SpecialMission", "Failed to process task: " + e.getMessage());
+                            }
+                        });
                     }
 
                     @Override
@@ -213,8 +249,11 @@ public class StoreViewModel extends ViewModel {
             if (modelClass.isAssignableFrom(StoreViewModel.class)) {
                 UserRepository repository = new UserRepositoryImpl(application);
                 EquipmentRepository eRepository = new EquipmentRepositoryImpl(application);
+                AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(application);
+                AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
+                AllianceMissionUseCase allianceUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, repository);
 
-                return (T) new StoreViewModel(repository, eRepository);
+                return (T) new StoreViewModel(repository, eRepository, allianceUseCase);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

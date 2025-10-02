@@ -253,7 +253,10 @@ public class AllianceRepositoryImpl implements AllianceRepository {
         remoteDataSource.getAllianceById(userId, allianceId, new RemoteDataSource.DataSourceCallback<Alliance>() {
             @Override
             public void onSuccess(Alliance alliance) {
-                Log.d("DEBUG", "Remote alliance loaded: " + alliance.toString());
+                if (alliance != null)
+                {
+                    Log.d("DEBUG", "Remote alliance loaded: " + alliance.toString());
+                }
                 callback.onSuccess(alliance);
             }
 

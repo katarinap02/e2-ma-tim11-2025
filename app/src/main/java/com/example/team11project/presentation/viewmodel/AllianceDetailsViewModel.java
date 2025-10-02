@@ -163,7 +163,7 @@ public class AllianceDetailsViewModel extends ViewModel {
             return;
         }
 
-        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository);
+        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository);
 
         allianceMissionUseCase.startSpecialMission(alliance, userId, new RepositoryCallback<AllianceMission>() {
             @Override
@@ -179,6 +179,21 @@ public class AllianceDetailsViewModel extends ViewModel {
             @Override
             public void onFailure(Exception e) {
                 errorMessage.postValue("Failed to start mission: " + e.getMessage());
+            }
+        });
+    }
+
+    public void refreshAllianceState(String allianceId, String currentUserId, String leaderId) {
+        allianceRepository.getAllianceById(currentUserId, allianceId, new RepositoryCallback<Alliance>() {
+            @Override
+            public void onSuccess(Alliance result) {
+                allianceLiveData.postValue(result);
+                checkActiveMission(allianceId, currentUserId, leaderId);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                errorMessage.postValue("Greška pri osvežavanju: " + e.getMessage());
             }
         });
     }
