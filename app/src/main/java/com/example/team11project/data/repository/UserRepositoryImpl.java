@@ -284,6 +284,7 @@ public class UserRepositoryImpl implements UserRepository {
         remoteDataSource.updateUser(user, new RemoteDataSource.DataSourceCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
+                localDataSource.saveUser(user);
                 callback.onSuccess(null);
             }
 

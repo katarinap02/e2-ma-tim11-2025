@@ -172,4 +172,20 @@ public class UserViewModel extends ViewModel {
     }
 
 
+    public void updateUser(User updatedUser) {
+        repository.updateUser(updatedUser, new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                updateSuccess.postValue(true);
+                user.postValue(updatedUser);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue("Neuspešna promena korisnika: " + e.getMessage());
+            }
+        });
+    }
+
+
 }

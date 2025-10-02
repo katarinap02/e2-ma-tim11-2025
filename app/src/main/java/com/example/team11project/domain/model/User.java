@@ -18,6 +18,7 @@ public class User {
     private int coins;
     private List<String> friends = new ArrayList<>();
     private Alliance currentAlliance;
+    private int activeDays;
 
     public User(){}
 
@@ -35,6 +36,7 @@ public class User {
         this.coins = coins;
         friends = new ArrayList<>();
         currentAlliance = null;
+        activeDays = 0;
     }
 
     public String getId(){
@@ -141,5 +143,13 @@ public class User {
 
     public void setCurrentAlliance(Alliance currentAlliance) {
         this.currentAlliance = currentAlliance;
+    }
+
+    public int getActiveDays() {
+        return activeDays;
+    }
+
+    public void setActiveDays(int activeDays) {
+        this.activeDays = activeDays;
     }
 }
