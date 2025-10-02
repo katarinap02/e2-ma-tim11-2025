@@ -21,6 +21,11 @@ public class StatisticViewModel extends ViewModel{
 
     private MutableLiveData<Map<String, Integer>> completedTasksPerCategory = new MutableLiveData<>();
 
+    private MutableLiveData<Float> averageTaskDifficulty = new MutableLiveData<>();
+    public LiveData<Float> getAverageTaskDifficulty() { return averageTaskDifficulty; }
+
+    private final MutableLiveData<Integer> longestStreak = new MutableLiveData<>();
+    public LiveData<Integer> getLongestStreak() {return longestStreak;}
     public StatisticViewModel(StatisticRepository statisticRepository){
         this.repository = statisticRepository;
     }
@@ -56,6 +61,38 @@ public class StatisticViewModel extends ViewModel{
         });
     }
 
+
+    public void loadAverageTaskDifficulty(String userId) {
+        repository.getAverageTaskDifficulty(userId, new RepositoryCallback<Float>() {
+            @Override
+            public void onSuccess(Float result) {
+                averageTaskDifficulty.postValue(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue(e.getMessage());
+            }
+        });
+    }
+
+    public void loadLongestStreak(String userId) {
+        repository.getLongestSuccessStreak(userId, new RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer result) {
+                longestStreak.postValue(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue(e.getMessage());
+            }
+        });
+    }
+
+    public LiveData<String> getError() {
+        return error;
+    }
 
     public static class Factory implements ViewModelProvider.Factory {
         private final StatisticRepository statisticRepository;

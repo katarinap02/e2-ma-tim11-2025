@@ -28,15 +28,21 @@ import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.presentation.viewmodel.StatisticViewModel;
 import com.example.team11project.presentation.viewmodel.UserViewModel;
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
@@ -275,6 +281,60 @@ public class ProfileActivity extends BaseActivity {
             barChart.getAxisRight().setEnabled(false);
 
             barChart.invalidate();
+        });
+
+
+        LineChart lineChart = findViewById(R.id.lineChartTaskDifficulty);
+
+        statisticViewModel.loadAverageTaskDifficulty(userId);
+        statisticViewModel.getAverageTaskDifficulty().observe(this, avgDifficulty -> {
+            if (avgDifficulty == null) return;
+
+            List<Entry> entries = new ArrayList<>();
+            entries.add(new Entry(0f, avgDifficulty));
+
+            LineDataSet dataSet = new LineDataSet(entries, "Prosečna težina zadataka");
+            dataSet.setColor(Color.MAGENTA);
+            dataSet.setCircleColor(Color.MAGENTA);
+            dataSet.setLineWidth(2f);
+            dataSet.setCircleRadius(5f);
+            dataSet.setValueTextSize(14f);
+            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+
+            LineData lineData = new LineData(dataSet);
+            lineChart.setData(lineData);
+
+            lineChart.getXAxis().setDrawLabels(true);
+            lineChart.getXAxis().setValueFormatter(new ValueFormatter() {
+                @Override
+                public String getAxisLabel(float value, AxisBase axis) {
+                    return "XP";
+                }
+            });
+            lineChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
+
+            lineChart.getAxisLeft().setAxisMinimum(0f);
+            lineChart.getAxisRight().setEnabled(false);
+
+            lineChart.getDescription().setEnabled(false);
+            lineChart.invalidate();
+        });
+
+
+        TextView txtLongestStreak = findViewById(R.id.txtLongestStreak);
+
+        statisticViewModel.loadLongestStreak(userId);
+
+        statisticViewModel.getLongestStreak().observe(this, streak -> {
+            if (streak != null) {
+                txtLongestStreak.setText("Najduži niz uspešno urađenih zadataka: " + streak + " dana");
+            }
+        });
+
+        statisticViewModel.getError().observe(this, error -> {
+            if (error != null) {
+                Toast.makeText(this, "Greška: " + error, Toast.LENGTH_SHORT).show();
+            }
         });
 
     }

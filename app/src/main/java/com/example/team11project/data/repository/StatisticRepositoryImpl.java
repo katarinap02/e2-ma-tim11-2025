@@ -6,12 +6,18 @@ import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
+import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.StatisticRepository;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class StatisticRepositoryImpl implements StatisticRepository {
 
@@ -108,5 +114,83 @@ public class StatisticRepositoryImpl implements StatisticRepository {
             }
         });
     }
+
+    public void getAverageTaskDifficulty(String userId, RepositoryCallback<Float> callback) {
+        remoteDataSource.getAllTasks(userId, new RemoteDataSource.DataSourceCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> tasks) {
+                List<Task> completed = tasks.stream()
+                        .filter(t -> "COMPLETED".equals(t.getStatus().toString()))
+                        .collect(Collectors.toList());
+
+                if (completed.isEmpty()) {
+                    callback.onSuccess(0f);
+                    return;
+                }
+
+                float sum = 0;
+                for (Task t : completed) {
+                    sum += t.getDifficulty().getXpValue();
+                }
+
+                float avg = sum / completed.size();
+                callback.onSuccess(avg);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    public void getLongestSuccessStreak(String userId, RepositoryCallback<Integer> callback) {
+        remoteDataSource.getAllTasks(userId, new RemoteDataSource.DataSourceCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> tasks) {
+                if (tasks == null || tasks.isEmpty()) {
+                    callback.onSuccess(0);
+                    return;
+                }
+
+                Map<String, List<Task>> tasksByDate = new TreeMap<>();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+                for (Task t : tasks) {
+                    String dateKey = sdf.format(t.getExecutionTime());
+                    tasksByDate.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(t);
+                }
+
+                int currentStreak = 0;
+                int maxStreak = 0;
+
+                for (Map.Entry<String, List<Task>> entry : tasksByDate.entrySet()) {
+                    List<Task> dayTasks = entry.getValue();
+                    boolean hasUncompleted = false;
+                    for (Task t : dayTasks) {
+                        if (t.getStatus() != TaskStatus.COMPLETED) {
+                            hasUncompleted = true;
+                            break;
+                        }
+                    }
+
+                    if (hasUncompleted) {
+                        currentStreak = 0;
+                    } else {
+                        currentStreak++;
+                        maxStreak = Math.max(maxStreak, currentStreak);
+                    }
+                }
+
+                callback.onSuccess(maxStreak);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
 
 }
