@@ -7,5 +7,7 @@ public interface StatisticRepository {
     void getCompletedTasksPerCategory(String userId, RepositoryCallback<Map<String, Integer>> callback);
     void getAverageTaskDifficulty(String userId, RepositoryCallback<Float> callback);
     void getLongestSuccessStreak(String userId, RepositoryCallback<Integer> callback);
+    void getUserAllianceMissionsSummary(String userId, RepositoryCallback<Map<String, Integer>> callback);
+
 
 }

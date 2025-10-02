@@ -43,6 +43,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 public class RemoteDataSource {
@@ -399,6 +400,17 @@ public class RemoteDataSource {
                         user.getLevelInfo().setTitle(titleEnum);
                     } else {
                         user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0, new Date(), null)); // default LevelInfo
+                    }
+
+                    Map<String, Long> xpMap = (Map<String, Long>) documentSnapshot.get("xpLast7Days");
+                    if (xpMap != null) {
+                        Map<String, Integer> xpLast7Days = new TreeMap<>();
+                        for (Map.Entry<String, Long> entry : xpMap.entrySet()) {
+                            xpLast7Days.put(entry.getKey(), entry.getValue().intValue());
+                        }
+                        user.getLevelInfo().setXpHistoryLast7Days(xpLast7Days); // dodaj getter/setter u LevelInfo
+                    } else {
+                        user.getLevelInfo().setXpHistoryLast7Days(new TreeMap<>());
                     }
 
                     callback.onSuccess(user);
@@ -1313,5 +1325,28 @@ public class RemoteDataSource {
             }
         });
     }
+
+    public void getAllAllianceMissions(DataSourceCallback<List<AllianceMission>> callback) {
+        db.collection(ALLIANCE_MISSION_COLLECTION)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<AllianceMission> missions = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : task.getResult()) {
+                            AllianceMission mission = doc.toObject(AllianceMission.class);
+                            mission.setId(doc.getId());
+                            missions.add(mission);
+                        }
+                        callback.onSuccess(missions);
+                    } else {
+                        Exception e = task.getException() != null
+                                ? task.getException()
+                                : new Exception("Firestore upit neuspešan.");
+                        callback.onFailure(e);
+                    }
+                });
+    }
+
+
 
 }

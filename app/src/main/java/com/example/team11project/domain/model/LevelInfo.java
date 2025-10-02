@@ -1,6 +1,8 @@
 package com.example.team11project.domain.model;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class LevelInfo {
     private String id;
@@ -107,4 +109,5 @@ public class LevelInfo {
     public void setPreviousLevelStartDate(Date previousLevelStartDate) {
         this.previousLevelStartDate = previousLevelStartDate;
     }
+
 }

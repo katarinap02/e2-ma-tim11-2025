@@ -50,6 +50,7 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,10 +60,9 @@ public class ProfileActivity extends BaseActivity {
     private UserViewModel viewModel;
     private StatisticViewModel statisticViewModel;
     private TextView textUsername, textTitle, textLevel, textPp, textXp, textCoins;
-    private TextView textBadgesCount, txtActiveDays;
+    private TextView textBadgesCount, txtActiveDays, txtStartedSpecialMissions, txtFinishedSpecialMissions;
+    ;
     private PieChart pieChartTasks;
-
-
     private LinearLayout layoutBadges, layoutEquipment;
     private ImageView imgAvatar, imgQr;
     private Button btnChangePassword;
@@ -95,6 +95,9 @@ public class ProfileActivity extends BaseActivity {
         imgQr = findViewById(R.id.imgQrCode);
         btnChangePassword = findViewById(R.id.btnChangePassword);
         txtActiveDays = findViewById(R.id.txtActiveDays);
+        txtStartedSpecialMissions = findViewById(R.id.txtStartedSpecialMissions);
+        txtFinishedSpecialMissions = findViewById(R.id.txtFinishedSpecialMissions);
+
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
         UserViewModel.Factory factory = new UserViewModel.Factory(userRepository);
@@ -337,5 +340,16 @@ public class ProfileActivity extends BaseActivity {
             }
         });
 
+        statisticViewModel.loadAllianceMissionsSummary(userId);
+
+        statisticViewModel.getAllianceMissionsSummary().observe(this, summary -> {
+            if (summary != null) {
+                int started = summary.getOrDefault("STARTED", 0);
+                int finished = summary.getOrDefault("FINISHED", 0);
+
+                txtStartedSpecialMissions.setText("Broj započetih specijalnih misija: " + started);
+                txtFinishedSpecialMissions.setText("Broj završenih specijalnih misija: " + finished);
+            }
+        });
     }
 }

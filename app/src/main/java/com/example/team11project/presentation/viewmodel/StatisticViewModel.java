@@ -6,10 +6,12 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.StatisticRepository;
 import com.example.team11project.domain.repository.UserRepository;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class StatisticViewModel extends ViewModel{
@@ -26,6 +28,10 @@ public class StatisticViewModel extends ViewModel{
 
     private final MutableLiveData<Integer> longestStreak = new MutableLiveData<>();
     public LiveData<Integer> getLongestStreak() {return longestStreak;}
+
+    private final MutableLiveData<Map<String, Integer>> allianceMissionsSummary = new MutableLiveData<>();
+    public LiveData<Map<String, Integer>> getAllianceMissionsSummary() { return allianceMissionsSummary; }
+
     public StatisticViewModel(StatisticRepository statisticRepository){
         this.repository = statisticRepository;
     }
@@ -92,6 +98,20 @@ public class StatisticViewModel extends ViewModel{
 
     public LiveData<String> getError() {
         return error;
+    }
+
+    public void loadAllianceMissionsSummary(String userId) {
+        repository.getUserAllianceMissionsSummary(userId, new RepositoryCallback<Map<String, Integer>>() {
+            @Override
+            public void onSuccess(Map<String, Integer> result) {
+                allianceMissionsSummary.postValue(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue(e.getMessage());
+            }
+        });
     }
 
     public static class Factory implements ViewModelProvider.Factory {

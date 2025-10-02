@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
+import com.example.team11project.domain.model.AllianceMission;
 import com.example.team11project.domain.model.Category;
 import com.example.team11project.domain.model.Task;
 import com.example.team11project.domain.model.TaskStatus;
@@ -183,6 +184,42 @@ public class StatisticRepositoryImpl implements StatisticRepository {
                 }
 
                 callback.onSuccess(maxStreak);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    @Override
+    public void getUserAllianceMissionsSummary(String userId, RepositoryCallback<Map<String, Integer>> callback) {
+        remoteDataSource.getAllAllianceMissions(new RemoteDataSource.DataSourceCallback<List<AllianceMission>>() {
+            @Override
+            public void onSuccess(List<AllianceMission> missions) {
+                int started = 0;
+                int finished = 0;
+
+                if (missions != null) {
+                    for (AllianceMission mission : missions) {
+                        if (mission.getMemberProgressList() != null) {
+                            boolean isMember = mission.getMemberProgressList().stream()
+                                    .anyMatch(mp -> mp.getUserId().equals(userId));
+
+                            if (isMember) {
+                                if (mission.getStartDate() != null) started++;
+                                if (mission.getEndDate() != null) finished++;
+                            }
+                        }
+                    }
+                }
+
+                Map<String, Integer> summary = new HashMap<>();
+                summary.put("STARTED", started);
+                summary.put("FINISHED", finished);
+
+                callback.onSuccess(summary);
             }
 
             @Override

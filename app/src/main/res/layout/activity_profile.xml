@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     tools:context=".presentation.activities.ProfileActivity">
 
@@ -175,14 +176,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/broj_uzastopnih_aktivnih_dana_0"
-                android:paddingTop="4dp"/>
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"/>
 
             <TextView
                 android:id="@+id/txtChart"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/pregled_zadataka"
-                android:paddingTop="4dp"/>
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"/>
 
 
             <com.github.mikephil.charting.charts.PieChart
@@ -192,13 +199,15 @@
                 android:layout_marginTop="12dp"/>
 
 
-            <!-- Broj završenih zadataka po kategoriji -->
             <TextView
                 android:id="@+id/txtTasksByCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/zavr_eni_zadaci_po_kategoriji"
-                android:paddingTop="4dp"/>
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"/>
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartTasksByCategory"
@@ -211,7 +220,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/prosecna_tezina_zadataka"
-                android:paddingTop="4dp"/>
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"/>
 
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/lineChartTaskDifficulty"
@@ -225,8 +237,31 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/najdu_i_niz_uspe_no_ura_enih_zadataka_0_dana"
-                android:paddingTop="8dp"/>
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"/>
 
+
+            <TextView
+                android:id="@+id/txtStartedSpecialMissions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/broj_zapo_etih_specijalnih_misija_0"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp" />
+
+            <TextView
+                android:id="@+id/txtFinishedSpecialMissions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/broj_zavr_enih_specijalnih_misija_0"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp" />
 
         </LinearLayout>
     </ScrollView>
