@@ -5,7 +5,9 @@ import android.util.Log;
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.AllianceBoss;
 import com.example.team11project.domain.model.AllianceMission;
+import com.example.team11project.domain.model.AllianceMissionReward;
 import com.example.team11project.domain.model.MemberProgress;
+import com.example.team11project.domain.model.MissionFinalizationResult;
 import com.example.team11project.domain.model.SpecialTaskType;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
@@ -41,52 +43,26 @@ public class AllianceMissionUseCase {
         this.taskInstanceRepository = taskInstanceRepository;
     }
 
-    public void startSpecialMission(Alliance alliance, String userId, RepositoryCallback<AllianceMission> callback) {
 
+
+    public void startSpecialMission(Alliance alliance, String userId, RepositoryCallback<AllianceMission> callback) {
         if (alliance == null) {
             if (callback != null) callback.onFailure(new IllegalArgumentException("Alliance is null"));
             return;
         }
 
-        // Da li postoji aktivna misija
         allianceMissionRepository.getActiveMissionByAllianceId(alliance.getId(), new RepositoryCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission existingMission) {
-                if (existingMission != null) {
-                    Date now = new Date();
-                    if (now.after(existingMission.getEndDate())) {
-
-                        MemberProgress userProgress = null;
-                        for (MemberProgress progress : existingMission.getMemberProgress()) {
-                            if (progress.getUserId().equals(userId)) {
-                                userProgress = progress;
-                                break;
-                            }
-                        }
-                        // Misija je istekla - proveri da li korisnik zaslužuje bonus
-                        checkAndAwardNoUnresolvedTasksBonus(userId, existingMission, userProgress, new RepositoryCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void result) {
-                                // Nakon provere bonusa, možemo završiti
-                                if (callback != null) callback.onSuccess(null);
-                            }
-
-                            @Override
-                            public void onFailure(Exception e) {
-                                Log.e("AllianceMission", "Greška pri proveri završenih zadataka: " + e.getMessage());
-                                if (callback != null) callback.onSuccess(null);
-                            }
-                        });
-                        return; // prekini dalje izvršavanje startSpecialMission
-                    }
-
-                    // Ako nije istekla, samo vrati postojeću misiju
+                if (existingMission != null && existingMission.isActive()) {
+                    // Ima aktivnu misiju, vrati je
                     if (callback != null) callback.onSuccess(existingMission);
                     return;
                 }
 
+                // Nema aktivne misije, kreiraj novu ako je lider
                 if (userId != null && userId.equals(alliance.getLeader())) {
-                    createNewMission(alliance,userId, callback);
+                    createNewMission(alliance, userId, callback);
                 } else {
                     if (callback != null)
                         callback.onFailure(new IllegalAccessException("Samo lider može da započne misiju"));
@@ -96,6 +72,51 @@ public class AllianceMissionUseCase {
             @Override
             public void onFailure(Exception e) {
                 Log.e("AllianceMission", "Greška pri proveri misije: " + e.getMessage());
+                if (callback != null) callback.onFailure(e);
+            }
+        });
+    }
+
+    public void checkAndFinalizeMission(Alliance alliance, RepositoryCallback<MissionFinalizationResult> callback) {
+        if (alliance == null) {
+            if (callback != null) callback.onFailure(new IllegalArgumentException("Alliance is null"));
+            return;
+        }
+
+        allianceMissionRepository.getActiveMissionByAllianceId(alliance.getId(), new RepositoryCallback<AllianceMission>() {
+            @Override
+            public void onSuccess(AllianceMission existingMission) {
+                if (existingMission != null && existingMission.isActive()) {
+                    Date now = new Date();
+                    if (now.after(existingMission.getEndDate())) {
+                        // Misija je istekla - obradi je
+                        handleMissionExpiration(existingMission, alliance, new RepositoryCallback<AllianceMission>() {
+                            @Override
+                            public void onSuccess(AllianceMission result) {
+                                // Misija je finalizovana
+                                MissionFinalizationResult finResult = new MissionFinalizationResult(true, existingMission.getBoss().getCurrentHp() == 0);
+                                if (callback != null) callback.onSuccess(finResult);
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                if (callback != null) callback.onFailure(e);
+                            }
+                        });
+                    } else {
+                        // Misija još traje
+                        MissionFinalizationResult finResult = new MissionFinalizationResult(false, false);
+                        if (callback != null) callback.onSuccess(finResult);
+                    }
+                } else {
+                    // Nema aktivne misije
+                    MissionFinalizationResult finResult = new MissionFinalizationResult(false, false);
+                    if (callback != null) callback.onSuccess(finResult);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
                 if (callback != null) callback.onFailure(e);
             }
         });
@@ -419,6 +440,67 @@ public class AllianceMissionUseCase {
         return cal.getTime();
     }
 
+    private void handleMissionExpiration(AllianceMission mission, Alliance alliance, RepositoryCallback<AllianceMission> callback) {
+        // 1. Prvo obradi bonuse za SVE članove
+        processMemberBonuses(mission, mission.getMemberProgress(), 0, new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // 2. Nakon bonusa, proveri da li je boss pobedjen
+                if (mission.getBoss().getCurrentHp() == 0) {
+                    // Boss pobedjen - dodeli nagrade
+                   // distributeRewards(mission, new RepositoryCallback<Void>() {
+                      //  @Override
+                      //  public void onSuccess(Void result2) {
+                            // 3. Zatvori misiju nakon nagrada
+                            closeMission(mission, alliance, callback);
+                       // }
+
+                      //  @Override
+                      //  public void onFailure(Exception e) {
+                      //      Log.e("AllianceMission", "Greška pri dodeli nagrada: " + e.getMessage());
+                        //    closeMission(mission, alliance, callback);
+                       // }
+                  //  });
+                } else {
+                    // Boss nije pobedjen - samo zatvori misiju bez nagrada
+                    closeMission(mission, alliance, callback);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("AllianceMission", "Greška pri obradi bonusa: " + e.getMessage());
+                closeMission(mission, alliance, callback);
+            }
+        });
+    }
+
+    private void processMemberBonuses(AllianceMission mission, List<MemberProgress> progressList, int index, RepositoryCallback<Void> callback) {
+        // Bazni slučaj: svi članovi obrađeni
+        if (index >= progressList.size()) {
+            callback.onSuccess(null);
+            return;
+        }
+
+        MemberProgress userProgress = progressList.get(index);
+
+        // Proveri da li ovaj član zaslužuje bonus
+        checkAndAwardNoUnresolvedTasksBonus(userProgress.getUserId(), mission, userProgress, new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // Nastavi sa sledećim članom
+                processMemberBonuses(mission, progressList, index + 1, callback);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("AllianceMission", "Greška pri obradi bonusa za člana: " + e.getMessage());
+                // Nastavi sa sledećim uprkos grešci
+                processMemberBonuses(mission, progressList, index + 1, callback);
+            }
+        });
+    }
+
     private void checkAndAwardNoUnresolvedTasksBonus(String userId, AllianceMission mission, MemberProgress userProgress, RepositoryCallback<Void> callback) {
         Date startDate = mission.getStartDate();
         Date endDate = mission.getEndDate();
@@ -495,6 +577,84 @@ public class AllianceMissionUseCase {
             @Override
             public void onFailure(Exception e) {
                 callback.onFailure(e);
+            }
+        });
+    }
+
+    private void distributeRewards(AllianceMission mission, RepositoryCallback<Void> callback) {
+        List<MemberProgress> progressList = mission.getMemberProgress();
+
+        // Obradi nagrade za sve članove
+        distributeRewardsForMembers(mission, progressList, 0, callback);
+    }
+
+    private void distributeRewardsForMembers(AllianceMission mission, List<MemberProgress> progressList, int index, RepositoryCallback<Void> callback) {
+      /*  // Bazni slučaj: sve nagrade dodeljene
+        if (index >= progressList.size()) {
+            callback.onSuccess(null);
+            return;
+        }
+
+        MemberProgress progress = progressList.get(index);
+
+        AllianceMissionReward reward = new AllianceMissionReward();
+        reward.setUserId(progress.getUserId());
+
+        // TODO: Implementiraj generisanje random potiona i clothing-a
+        // reward.setPotion(generateRandomPotion());
+        // reward.setClothing(generateRandomClothing());
+
+        // TODO: Implementiraj računanje 50% nagrade od sledećeg bossa
+        // reward.setCoins(calculateNextBossReward() / 2);
+        reward.setCoins(100); // Placeholder
+
+        // Badge count - broj uspešno rešenih specijalnih zadataka
+        reward.setBadgeCount(1);
+
+        allianceMissionRepository.createAllianceMissionReward(reward, new RepositoryCallback<String>() {
+            @Override
+            public void onSuccess(String rewardId) {
+                Log.d("AllianceMission", "Nagrada kreirana za korisnika: " + progress.getUserId());
+                // Nastavi sa sledećim članom
+                distributeRewardsForMembers(mission, progressList, index + 1, callback);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("AllianceMission", "Greška pri kreiranju nagrade: " + e.getMessage());
+                // Nastavi sa sledećim uprkos grešci
+                distributeRewardsForMembers(mission, progressList, index + 1, callback);
+            }
+        });*/
+    }
+
+    private void closeMission(AllianceMission mission, Alliance alliance, RepositoryCallback<AllianceMission> callback) {
+        // 1. Postavi misiju na neaktivnu
+        mission.setActive(false);
+
+        allianceMissionRepository.updateAllianceMission(mission, new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // 2. Postavi alliance.missionActive na false
+                updateAllianceMissionStatus(alliance, false, new RepositoryCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result2) {
+                        Log.d("AllianceMission", "Misija uspešno zatvorena");
+                        if (callback != null) callback.onSuccess(null);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e("AllianceMission", "Greška pri zatvaranju misije: " + e.getMessage());
+                        if (callback != null) callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("AllianceMission", "Greška pri ažuriranju misije: " + e.getMessage());
+                if (callback != null) callback.onFailure(e);
             }
         });
     }
