@@ -15,11 +15,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
+import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
+import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.presentation.adapters.FriendsAdapter;
@@ -66,9 +70,11 @@ public class AllianceDetailsActivity extends BaseActivity {
         AllianceRepository allianceRepository = new AllianceRepositoryImpl(getApplicationContext());
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
         AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl((getApplicationContext()));
+        TaskRepository taskRepository = new TaskRepositoryImpl(getApplicationContext());
+        TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(getApplicationContext());
 
         allianceViewModel = new ViewModelProvider(this,
-                new AllianceDetailsViewModel.Factory(allianceRepository, userRepository, allianceMissionRepository))
+                new AllianceDetailsViewModel.Factory(allianceRepository, userRepository, allianceMissionRepository, taskRepository, taskInstanceRepository))
                 .get(AllianceDetailsViewModel.class);
 
         userViewModel = new ViewModelProvider(this,

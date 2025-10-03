@@ -15,6 +15,8 @@ import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceMessageRepositoryImpl;
 import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
+import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
+import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.AllianceMessage;
 import com.example.team11project.domain.model.User;
@@ -22,6 +24,8 @@ import com.example.team11project.domain.repository.AllianceMessageRepository;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 import com.example.team11project.presentation.adapters.AllianceChatAdapter;
@@ -72,7 +76,9 @@ public class AllianceChatActivity extends BaseActivity {
         AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
         AllianceRepository allianceRepository = new AllianceRepositoryImpl(getApplicationContext());
         UserRepository userRepository1 = new UserRepositoryImpl(getApplicationContext());
-        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository1);
+        TaskRepository taskRepository = new TaskRepositoryImpl(getApplicationContext());
+        TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(getApplicationContext());
+        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository1, taskRepository, taskInstanceRepository);
 
         viewModel = new ViewModelProvider(this,
                 new AllianceChatViewModel.Factory(

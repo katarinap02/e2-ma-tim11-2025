@@ -455,6 +455,51 @@ public class RemoteDataSource {
                     }
                 });
     }
+
+    public void getTaskInstancesInPeriod(String userId, Date startDate, Date endDate, final DataSourceCallback<List<TaskInstance>> callback) {
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("UserID must not be null or empty"));
+            return;
+        }
+        if (endDate == null) {
+            callback.onFailure(new Exception("End date must not be null"));
+            return;
+        }
+
+        CollectionReference instancesRef = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(INSTANCES_COLLECTION);
+
+        Query query = instancesRef;
+
+        if (startDate != null) {
+            query = query.whereGreaterThanOrEqualTo("originalDate", startDate);
+        }
+        query = query.whereLessThanOrEqualTo("originalDate", endDate);
+
+        // orderBy na kraju
+        query = query.orderBy("originalDate");
+
+        query.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<TaskInstance> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        try {
+                            TaskInstance instance = doc.toObject(TaskInstance.class);
+                            instance.setId(doc.getId());
+                            list.add(instance);
+                        } catch (Exception e) {
+                            Log.w("FirestoreDataSource", "Error parsing task instance: " + doc.getId(), e);
+                        }
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FirestoreDataSource", "Error fetching task instances in period", e);
+                    callback.onFailure(e);
+                });
+    }
+
     public void addEquipmentToCollection(Equipment equipment, final DataSourceCallback<String> callback) {
         db.collection(EQUIPMENT_COLLECTION)
                 .add(equipment)
@@ -1162,15 +1207,15 @@ public class RemoteDataSource {
                                 AllianceMission mission = doc.toObject(AllianceMission.class);
                                 mission.setId(doc.getId());
 
-                                Date now = new Date();
-                                if (mission.getBoss().getCurrentHp() > 0 && now.before(mission.getEndDate())) {
+                                // Provera preko isActive polja
+                                if (mission.isActive()) {
                                     callback.onSuccess(mission);
                                     return;
                                 }
                             }
                             callback.onSuccess(null); // Nema aktivne misije
                         } else {
-                            callback.onSuccess(null); // 👈 prazan rezultat nije greška
+                            callback.onSuccess(null); // prazan rezultat nije greška
                         }
                     } else {
                         Exception e = task.getException() != null
@@ -1179,8 +1224,8 @@ public class RemoteDataSource {
                         callback.onFailure(e);
                     }
                 });
-
     }
+
 
     public void getAllianceMissionById(String missionId, final DataSourceCallback<AllianceMission> callback) {
         db.collection(ALLIANCE_MISSION_COLLECTION)

@@ -11,6 +11,8 @@ import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 
 import java.util.ArrayList;
@@ -26,11 +28,17 @@ public class AllianceMissionUseCase {
 
     private final UserRepository userRepository;
 
-    public AllianceMissionUseCase(AllianceMissionRepository allianceMissionRepository, AllianceRepository allianceRepository, UserRepository userRepository)
+    private final TaskRepository taskRepository;
+
+    private final TaskInstanceRepository taskInstanceRepository;
+
+    public AllianceMissionUseCase(AllianceMissionRepository allianceMissionRepository, AllianceRepository allianceRepository, UserRepository userRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository)
     {
         this.allianceMissionRepository = allianceMissionRepository;
         this.allianceRepository = allianceRepository;
         this.userRepository = userRepository;
+        this.taskRepository = taskRepository;
+        this.taskInstanceRepository = taskInstanceRepository;
     }
 
     public void startSpecialMission(Alliance alliance, String userId, RepositoryCallback<AllianceMission> callback) {
@@ -79,6 +87,7 @@ public class AllianceMissionUseCase {
         mission.setAllianceId(alliance.getId());
         mission.setBoss(boss);
         mission.setStartDate(new Date());
+        mission.setActive(true);
 
 
         Calendar calendar = Calendar.getInstance();
@@ -96,7 +105,7 @@ public class AllianceMissionUseCase {
             progress.setRegularBossHits(0);
             progress.setEasyNormalTasks(0);
             progress.setOtherTasks(0);
-            progress.setNoUnresolvedTasks(true);
+            progress.setNoUnresolvedTasks(false);
             progress.setTotalDamageDealt(0);
             progress.setMessageDays(new ArrayList<>());
 
@@ -208,13 +217,6 @@ public class AllianceMissionUseCase {
                     return;
                 }
 
-                // Proveri da li je misija još aktivna (nije istekla)
-                Date now = new Date();
-                if (now.after(mission.getEndDate())) {
-                    if (callback != null) callback.onSuccess(false);
-                    return;
-                }
-
                 // Pronađi progress za korisnika
                 MemberProgress userProgress = null;
                 for (MemberProgress progress : mission.getMemberProgressList()) {
@@ -226,6 +228,25 @@ public class AllianceMissionUseCase {
 
                 if (userProgress == null) {
                     if (callback != null) callback.onFailure(new Exception("Progress nije pronađen"));
+                    return;
+                }
+                // Proveri da li je misija još aktivna (nije istekla)
+                Date now = new Date();
+                if (now.after(mission.getEndDate())) {
+                    // Misija je istekla - proveri da li korisnik zaslužuje bonus za završene zadatke
+                    checkAndAwardNoUnresolvedTasksBonus(userId, mission, userProgress, new RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            // Nakon provere bonusa, nastavi sa završetkom misije
+                            if (callback != null) callback.onSuccess(false);
+                        }
+
+                        @Override
+                        public void onFailure(Exception e) {
+                            Log.e("AllianceMission", "Greška pri proveri završenih zadataka: " + e.getMessage());
+                            if (callback != null) callback.onSuccess(false);
+                        }
+                    });
                     return;
                 }
 
@@ -382,6 +403,85 @@ public class AllianceMissionUseCase {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
         return cal.getTime();
+    }
+
+    private void checkAndAwardNoUnresolvedTasksBonus(String userId, AllianceMission mission, MemberProgress userProgress, RepositoryCallback<Void> callback) {
+        Date startDate = mission.getStartDate();
+        Date endDate = mission.getEndDate();
+
+        // Proveri da li postoje nezavršeni task instance-i
+        taskInstanceRepository.hasUncompletedTaskInstanceInPeriod(userId, startDate, endDate, new RepositoryCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean hasUncompleted) {
+                if (hasUncompleted) {
+                    // Ima nezavršenih taskova - nema bonusa
+                    callback.onSuccess(null);
+                    return;
+                }
+
+                // Proveri da li postoje task-ovi koji nisu completed
+                taskRepository.IsTaskNotCompleted(userId, startDate, endDate, new RepositoryCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean hasNotCompleted) {
+                        if (hasNotCompleted) {
+                            // Ima task-ova koji nisu completed - nema bonusa
+                            callback.onSuccess(null);
+                            return;
+                        }
+
+                        // Oba su false - korisnik zaslužuje bonus!
+                        if (!userProgress.isNoUnresolvedTasks()) {
+                            // Još nije dobio bonus, dodaj 10 HP damage
+                            int bonusDamage = SpecialTaskType.NO_UNRESOLVED_TASKS.getHpDamage();
+                            userProgress.setNoUnresolvedTasks(true); // Markira da je dobio bonus
+                            userProgress.setTotalDamageDealt(userProgress.getTotalDamageDealt() + bonusDamage);
+
+                            // Smanji HP bossa
+                            AllianceBoss boss = mission.getBoss();
+                            int newHp = Math.max(0, boss.getCurrentHp() - bonusDamage);
+                            boss.setCurrentHp(newHp);
+
+                            // Ažuriraj u bazi
+                            allianceMissionRepository.updateMemberProgress(userProgress, new RepositoryCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void result) {
+                                    allianceMissionRepository.updateBossHp(mission.getId(), newHp, new RepositoryCallback<Void>() {
+                                        @Override
+                                        public void onSuccess(Void result2) {
+                                            Log.d("AllianceMission", "Bonus za završene zadatke dodeljen korisniku: " + userId);
+                                            callback.onSuccess(null);
+                                        }
+
+                                        @Override
+                                        public void onFailure(Exception e) {
+                                            callback.onFailure(e);
+                                        }
+                                    });
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    callback.onFailure(e);
+                                }
+                            });
+                        } else {
+                            // Već je dobio bonus
+                            callback.onSuccess(null);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
 

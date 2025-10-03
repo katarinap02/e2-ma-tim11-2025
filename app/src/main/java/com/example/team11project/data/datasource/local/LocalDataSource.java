@@ -493,6 +493,45 @@ public class LocalDataSource {
         return instances;
     }
 
+    public List<TaskInstance> getAllTaskInstancesInPeriod(String userId, Date startDate, Date endDate) {
+        List<TaskInstance> instances = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            long startMillis = startDate != null ? startDate.getTime() : 0L;
+            long endMillis = endDate != null ? endDate.getTime() : Long.MAX_VALUE;
+
+            String selection = AppContract.TaskInstanceEntry.COLUMN_NAME_USER_ID + " = ? AND " +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE + " >= ? AND " +
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE + " <= ?";
+            String[] selectionArgs = {
+                    userId,
+                    String.valueOf(startMillis),
+                    String.valueOf(endMillis)
+            };
+
+            cursor = db.query(
+                    AppContract.TaskInstanceEntry.TABLE_NAME,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    AppContract.TaskInstanceEntry.COLUMN_NAME_ORIGINAL_DATE + " ASC"
+            );
+
+            while (cursor.moveToNext()) {
+                instances.add(cursorToTaskInstance(cursor));
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return instances;
+    }
+
+
+
     public int updateTaskInstance(TaskInstance instance) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = instanceToContentValues(instance);
@@ -1900,6 +1939,7 @@ public class LocalDataSource {
         values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS, mission.getBoss().getId());
         values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE, mission.getStartDate().getTime());
         values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE, mission.getEndDate().getTime());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_IS_ACTIVE, 1);
 
         db.insert(AppContract.AllianceMissionEntry.TABLE_NAME, null, values);
         db.close();
@@ -1913,8 +1953,9 @@ public class LocalDataSource {
         Cursor cursor = db.query(
                 AppContract.AllianceMissionEntry.TABLE_NAME,
                 null,
-                AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID + " = ?",
-                new String[]{allianceId},
+                AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID + " = ? AND " +
+                        AppContract.AllianceMissionEntry.COLUMN_NAME_IS_ACTIVE + " = ?",
+                new String[]{allianceId, "1"}, // 1 znači true
                 null, null, null
         );
 
@@ -1923,7 +1964,7 @@ public class LocalDataSource {
 
         while (cursor.moveToNext()) {
             AllianceMission mission = cursorToAllianceMission(cursor);
-            // Proveri da li je misija aktivna
+            // dodatna provera po endDate i boss HP-u
             if (mission.getBoss().getCurrentHp() > 0 && now.before(mission.getEndDate())) {
                 activeMission = mission;
                 break;
@@ -1934,6 +1975,7 @@ public class LocalDataSource {
         db.close();
         return activeMission;
     }
+
 
     public AllianceMission getAllianceMissionById(String missionId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -1963,6 +2005,7 @@ public class LocalDataSource {
         values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS, mission.getBoss().getId());
         values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE, mission.getStartDate().getTime());
         values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE, mission.getEndDate().getTime());
+        values.put(AppContract.AllianceMissionEntry.COLUMN_NAME_IS_ACTIVE, mission.isActive() ? 1 : 0);
 
         db.update(AppContract.AllianceMissionEntry.TABLE_NAME, values,
                 AppContract.AllianceMissionEntry._ID + " = ?", new String[]{mission.getId()});
@@ -2155,6 +2198,8 @@ public class LocalDataSource {
         mission.setStartDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE))));
         mission.setEndDate(new Date(cursor.getLong(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE))));
 
+        int isActiveInt = cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_IS_ACTIVE));
+        mission.setActive(isActiveInt != 0);
         // Učitaj sve member progress-e za ovu misiju
         mission.setMemberProgressList(getAllMemberProgressForMission(mission.getId()));
 

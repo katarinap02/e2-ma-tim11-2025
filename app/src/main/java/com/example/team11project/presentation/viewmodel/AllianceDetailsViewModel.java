@@ -12,6 +12,8 @@ import com.example.team11project.domain.model.AllianceMission;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 
@@ -25,6 +27,10 @@ public class AllianceDetailsViewModel extends ViewModel {
 
     private final AllianceMissionRepository allianceMissionRepository;
 
+    private final TaskRepository taskRepository;
+
+    private final TaskInstanceRepository taskInstanceRepository;
+
     private final MutableLiveData<Alliance> allianceLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
 
@@ -33,10 +39,12 @@ public class AllianceDetailsViewModel extends ViewModel {
     private final MutableLiveData<String> missionStarted = new MutableLiveData<>();
 
 
-    public AllianceDetailsViewModel(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository) {
+    public AllianceDetailsViewModel(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository) {
         this.allianceRepository = allianceRepository;
         this.userRepository = userRepository;
         this.allianceMissionRepository = allianceMissionRepository;
+        this.taskRepository = taskRepository;
+        this.taskInstanceRepository = taskInstanceRepository;
     }
 
     public LiveData<Alliance> getAlliance() { return allianceLiveData; }
@@ -163,7 +171,7 @@ public class AllianceDetailsViewModel extends ViewModel {
             return;
         }
 
-        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository);
+        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository);
 
         allianceMissionUseCase.startSpecialMission(alliance, userId, new RepositoryCallback<AllianceMission>() {
             @Override
@@ -208,17 +216,23 @@ public class AllianceDetailsViewModel extends ViewModel {
 
         private final AllianceMissionRepository allianceMissionRepository;
 
-        public Factory(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository) {
+        private final TaskRepository taskRepository;
+
+        private final TaskInstanceRepository taskInstanceRepository;
+
+        public Factory(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository) {
             this.allianceRepository = allianceRepository;
             this.userRepository = userRepository;
             this.allianceMissionRepository = allianceMissionRepository;
+            this.taskRepository = taskRepository;
+            this.taskInstanceRepository = taskInstanceRepository;
 
         }
 
         @Override
         public <T extends ViewModel> T create(Class<T> modelClass) {
             if (modelClass.isAssignableFrom(AllianceDetailsViewModel.class)) {
-                return (T) new AllianceDetailsViewModel(allianceRepository, userRepository, allianceMissionRepository);
+                return (T) new AllianceDetailsViewModel(allianceRepository, userRepository, allianceMissionRepository, taskRepository, taskInstanceRepository);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

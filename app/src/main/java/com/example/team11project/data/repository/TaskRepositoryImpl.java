@@ -212,6 +212,55 @@ public class TaskRepositoryImpl implements TaskRepository {
         });
     }
 
+    @Override
+    public void IsTaskNotCompleted(String userId, Date startDate, Date endDate, RepositoryCallback<Boolean> callback) {
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("UserID is null or empty"));
+            return;
+        }
+
+        remoteDataSource.getTasksInPeriod(userId, startDate, endDate, new RemoteDataSource.DataSourceCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> remoteTasks) {
+                databaseExecutor.execute(() -> {
+                    // Ažuriraj lokalnu bazu
+                    for (Task task : remoteTasks) {
+                        localDataSource.updateTask(task);
+                    }
+
+                    // Provera: da li postoji task koji NIJE recurring i NIJE completed
+                    boolean exists = false;
+                    for (Task task : remoteTasks) {
+                        if (!task.isRecurring() && (task.getStatus() != TaskStatus.COMPLETED || task.getStatus() != TaskStatus.DELETED) ) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    callback.onSuccess(exists); // true ili false
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                databaseExecutor.execute(() -> {
+                    List<Task> localTasks = localDataSource.getTasksInPeriod(userId, startDate, endDate);
+
+                    boolean exists = false;
+                    for (Task task : localTasks) {
+                        if (!task.isRecurring() && (task.getStatus() != TaskStatus.COMPLETED || task.getStatus() != TaskStatus.DELETED)) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    callback.onSuccess(exists);
+                });
+            }
+        });
+    }
+
+
 
 
 
