@@ -138,18 +138,20 @@ public class RemoteDataSource {
         Query query = tasksRef;
 
         if (startDate != null) {
+            Log.d("FirestoreQuery", "StartDate: " + startDate);
             query = query.whereGreaterThanOrEqualTo("executionTime", startDate);
         }
         query = query.whereLessThanOrEqualTo("executionTime", endDate);
 
         // orderBy na kraju (ili ga ukloni ako nije potrebno)
-        query = query.orderBy("executionTime");
+        //query = query.orderBy("executionTime");
 
         query.get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Task> list = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         try {
+                            Log.d("FirestoreDataSource", "Doc id: " + doc.getId() + ", executionTime: " + doc.get("executionTime"));
                             Task t = doc.toObject(Task.class);
                             t.setId(doc.getId());
                             list.add(t);
@@ -1270,7 +1272,7 @@ public class RemoteDataSource {
             @Override
             public void onSuccess(AllianceMission mission) {
                 // Pronađi i ažuriraj progress za korisnika
-                List<MemberProgress> progressList = mission.getMemberProgressList();
+                List<MemberProgress> progressList = mission.getMemberProgress();
                 boolean found = false;
 
                 for (int i = 0; i < progressList.size(); i++) {
@@ -1285,7 +1287,7 @@ public class RemoteDataSource {
                     progressList.add(progress);
                 }
 
-                mission.setMemberProgressList(progressList);
+                mission.setMemberProgress(progressList);
                 updateAllianceMission(mission, callback);
             }
 
@@ -1300,7 +1302,7 @@ public class RemoteDataSource {
         getAllianceMissionById(missionId, new DataSourceCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission mission) {
-                for (MemberProgress progress : mission.getMemberProgressList()) { // ISPRAVI: bilo je getMemberProgressMap()
+                for (MemberProgress progress : mission.getMemberProgress()) {
                     if (progress.getUserId().equals(userId)) {
                         callback.onSuccess(progress);
                         return;

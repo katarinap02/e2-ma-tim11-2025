@@ -109,7 +109,7 @@ public class AllianceMissionActivity extends AppCompatActivity {
 
         // Savez napredak (total damage svih članova)
         int allianceTotal = 0;
-        for (MemberProgress mp : mission.getMemberProgressList()) {
+        for (MemberProgress mp : mission.getMemberProgress()) {
             allianceTotal += mp.getTotalDamageDealt();
         }
 
@@ -121,6 +121,6 @@ public class AllianceMissionActivity extends AppCompatActivity {
         adapter.setBossMaxHp(bossMaxHp);
 
         // Adapter RecyclerView-a - prikaži sve članove i njihov damage
-        adapter.setMemberProgressList(mission.getMemberProgressList());
+        adapter.setMemberProgressList(mission.getMemberProgress());
     }
 }

@@ -53,6 +53,34 @@ public class AllianceMissionUseCase {
             @Override
             public void onSuccess(AllianceMission existingMission) {
                 if (existingMission != null) {
+                    Date now = new Date();
+                    if (now.after(existingMission.getEndDate())) {
+
+                        MemberProgress userProgress = null;
+                        for (MemberProgress progress : existingMission.getMemberProgress()) {
+                            if (progress.getUserId().equals(userId)) {
+                                userProgress = progress;
+                                break;
+                            }
+                        }
+                        // Misija je istekla - proveri da li korisnik zaslužuje bonus
+                        checkAndAwardNoUnresolvedTasksBonus(userId, existingMission, userProgress, new RepositoryCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                // Nakon provere bonusa, možemo završiti
+                                if (callback != null) callback.onSuccess(null);
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e("AllianceMission", "Greška pri proveri završenih zadataka: " + e.getMessage());
+                                if (callback != null) callback.onSuccess(null);
+                            }
+                        });
+                        return; // prekini dalje izvršavanje startSpecialMission
+                    }
+
+                    // Ako nije istekla, samo vrati postojeću misiju
                     if (callback != null) callback.onSuccess(existingMission);
                     return;
                 }
@@ -95,7 +123,7 @@ public class AllianceMissionUseCase {
         mission.setEndDate(calendar.getTime());
 
         // 2. Kreiraj MemberProgress za svakog člana
-        List<MemberProgress> memberProgressList = new ArrayList<>();
+        List<MemberProgress> memberProgress = new ArrayList<>();
         for (String memberId : alliance.getMembers()) {
             MemberProgress progress = new MemberProgress();
             progress.setId(UUID.randomUUID().toString());
@@ -109,10 +137,10 @@ public class AllianceMissionUseCase {
             progress.setTotalDamageDealt(0);
             progress.setMessageDays(new ArrayList<>());
 
-            memberProgressList.add(progress);
+            memberProgress.add(progress);
         }
 
-        mission.setMemberProgressList(memberProgressList);
+        mission.setMemberProgress(memberProgress);
 
         allianceMissionRepository.createAllianceMission(mission, new RepositoryCallback<String>() {
             @Override
@@ -217,9 +245,8 @@ public class AllianceMissionUseCase {
                     return;
                 }
 
-                // Pronađi progress za korisnika
                 MemberProgress userProgress = null;
-                for (MemberProgress progress : mission.getMemberProgressList()) {
+                for (MemberProgress progress : mission.getMemberProgress()) {
                     if (progress.getUserId().equals(userId)) {
                         userProgress = progress;
                         break;
@@ -232,21 +259,8 @@ public class AllianceMissionUseCase {
                 }
                 // Proveri da li je misija još aktivna (nije istekla)
                 Date now = new Date();
-                if (now.after(mission.getEndDate())) {
-                    // Misija je istekla - proveri da li korisnik zaslužuje bonus za završene zadatke
-                    checkAndAwardNoUnresolvedTasksBonus(userId, mission, userProgress, new RepositoryCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void result) {
-                            // Nakon provere bonusa, nastavi sa završetkom misije
-                            if (callback != null) callback.onSuccess(false);
-                        }
-
-                        @Override
-                        public void onFailure(Exception e) {
-                            Log.e("AllianceMission", "Greška pri proveri završenih zadataka: " + e.getMessage());
-                            if (callback != null) callback.onSuccess(false);
-                        }
-                    });
+                if (now.after(mission.getEndDate()) && taskType != SpecialTaskType.NO_UNRESOLVED_TASKS) {
+                    if (callback != null) callback.onSuccess(false);
                     return;
                 }
 
@@ -414,7 +428,7 @@ public class AllianceMissionUseCase {
             @Override
             public void onSuccess(Boolean hasUncompleted) {
                 if (hasUncompleted) {
-                    // Ima nezavršenih taskova - nema bonusa
+                    Log.d("Taskovi", "Ima nezavrsenih intsanci taskova");
                     callback.onSuccess(null);
                     return;
                 }
@@ -424,13 +438,14 @@ public class AllianceMissionUseCase {
                     @Override
                     public void onSuccess(Boolean hasNotCompleted) {
                         if (hasNotCompleted) {
-                            // Ima task-ova koji nisu completed - nema bonusa
+                            Log.d("Taskovi", "Ima nezavrsenih taskova");
                             callback.onSuccess(null);
                             return;
                         }
 
                         // Oba su false - korisnik zaslužuje bonus!
                         if (!userProgress.isNoUnresolvedTasks()) {
+                            Log.d("Taskovi", "Promeni na true");
                             // Još nije dobio bonus, dodaj 10 HP damage
                             int bonusDamage = SpecialTaskType.NO_UNRESOLVED_TASKS.getHpDamage();
                             userProgress.setNoUnresolvedTasks(true); // Markira da je dobio bonus
@@ -465,7 +480,7 @@ public class AllianceMissionUseCase {
                                 }
                             });
                         } else {
-                            // Već je dobio bonus
+                            Log.d("Taskovi", "Vec je dobio bonus");
                             callback.onSuccess(null);
                         }
                     }

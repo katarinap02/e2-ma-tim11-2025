@@ -2089,7 +2089,7 @@ public class LocalDataSource {
         AllianceMission mission = getAllianceMissionById(missionId);
         if (mission == null) return null;
 
-        for (MemberProgress progress : mission.getMemberProgressList()) {
+        for (MemberProgress progress : mission.getMemberProgress()) {
             if (progress.getUserId().equals(userId)) {
                 return progress;
             }
@@ -2201,7 +2201,7 @@ public class LocalDataSource {
         int isActiveInt = cursor.getInt(cursor.getColumnIndexOrThrow(AppContract.AllianceMissionEntry.COLUMN_NAME_IS_ACTIVE));
         mission.setActive(isActiveInt != 0);
         // Učitaj sve member progress-e za ovu misiju
-        mission.setMemberProgressList(getAllMemberProgressForMission(mission.getId()));
+        mission.setMemberProgress(getAllMemberProgressForMission(mission.getId()));
 
         return mission;
     }

@@ -15,13 +15,13 @@ public class AllianceMission {
 
     public AllianceMission() {}
 
-    public AllianceMission(String id, String allianceId, AllianceBoss boss, Date startDate, Date endDate, List<MemberProgress> memberProgressMap, boolean isActive) {
+    public AllianceMission(String id, String allianceId, AllianceBoss boss, Date startDate, Date endDate, List<MemberProgress> memberProgress, boolean isActive) {
         this.id = id;
         this.allianceId = allianceId;
         this.boss = boss;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.memberProgress = memberProgressMap;
+        this.memberProgress = memberProgress;
         this.isActive = isActive;
     }
 
@@ -65,11 +65,11 @@ public class AllianceMission {
         this.endDate = endDate;
     }
 
-    public List<MemberProgress> getMemberProgressList() {
+    public List<MemberProgress> getMemberProgress() {
         return memberProgress;
     }
 
-    public void setMemberProgressList(List<MemberProgress> memberProgressMap) {
+    public void setMemberProgress(List<MemberProgress> memberProgressMap) {
         this.memberProgress = memberProgressMap;
     }
 
@@ -81,11 +81,4 @@ public class AllianceMission {
         isActive = active;
     }
 
-    public List<MemberProgress> getMemberProgress() {
-        return memberProgress;
-    }
-
-    public void setMemberProgress(List<MemberProgress> memberProgress) {
-        this.memberProgress = memberProgress;
-    }
 }

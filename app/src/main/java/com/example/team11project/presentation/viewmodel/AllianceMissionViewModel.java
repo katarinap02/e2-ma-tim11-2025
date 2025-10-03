@@ -89,9 +89,9 @@ public class AllianceMissionViewModel extends ViewModel {
     }
 
     public void loadUsernamesForMission(AllianceMission mission) {
-        if (mission == null || mission.getMemberProgressList() == null) return;
+        if (mission == null || mission.getMemberProgress() == null) return;
 
-        for (MemberProgress progress : mission.getMemberProgressList()) {
+        for (MemberProgress progress : mission.getMemberProgress()) {
             String userId = progress.getUserId();
             userRepository.getUserById(userId, new RepositoryCallback<User>() {
                 @Override

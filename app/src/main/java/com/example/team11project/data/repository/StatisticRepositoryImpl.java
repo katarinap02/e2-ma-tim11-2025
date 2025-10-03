@@ -203,8 +203,8 @@ public class StatisticRepositoryImpl implements StatisticRepository {
 
                 if (missions != null) {
                     for (AllianceMission mission : missions) {
-                        if (mission.getMemberProgressList() != null) {
-                            boolean isMember = mission.getMemberProgressList().stream()
+                        if (mission.getMemberProgress() != null) {
+                            boolean isMember = mission.getMemberProgress().stream()
                                     .anyMatch(mp -> mp.getUserId().equals(userId));
 
                             if (isMember) {

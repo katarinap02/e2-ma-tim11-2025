@@ -136,7 +136,7 @@ public class TaskInstanceRepositoryImpl implements TaskInstanceRepository {
                     // Proveri da li postoji bar jedna koja nije completed
                     boolean exists = false;
                     for (TaskInstance instance : remoteInstances) {
-                        if (instance.getNewStatus() != TaskStatus.COMPLETED || instance.getNewStatus() != TaskStatus.DELETED) {
+                        if (instance.getNewStatus() != TaskStatus.COMPLETED && instance.getNewStatus() != TaskStatus.DELETED) {
                             exists = true;
                             break;
                         }
