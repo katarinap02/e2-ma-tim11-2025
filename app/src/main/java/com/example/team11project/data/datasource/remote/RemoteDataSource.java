@@ -408,9 +408,9 @@ public class RemoteDataSource {
                         for (Map.Entry<String, Long> entry : xpMap.entrySet()) {
                             xpLast7Days.put(entry.getKey(), entry.getValue().intValue());
                         }
-                        user.getLevelInfo().setXpHistoryLast7Days(xpLast7Days); // dodaj getter/setter u LevelInfo
+                       // user.getLevelInfo().setXpHistoryLast7Days(xpLast7Days); // dodaj getter/setter u LevelInfo
                     } else {
-                        user.getLevelInfo().setXpHistoryLast7Days(new TreeMap<>());
+                      //  user.getLevelInfo().setXpHistoryLast7Days(new TreeMap<>());
                     }
 
                     callback.onSuccess(user);
