@@ -524,7 +524,7 @@ public class TaskViewModel extends ViewModel{
                     BossBattleRepository battleRepository = new BossBattleRepositoryImpl(application);
                     BossRewardRepository rewardRepository = new BossRewardRepositoryImpl(application);
                     EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(application);
-                    BossUseCase bossUseCase = new BossUseCase(bossRepository,battleRepository,rewardRepository, equipmentRepository);
+                    BossUseCase bossUseCase = new BossUseCase(bossRepository,battleRepository,rewardRepository, equipmentRepository, userRepo);
                     TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository, bossUseCase);
                     AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(application);
                     AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);

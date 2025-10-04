@@ -17,6 +17,7 @@ import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.UserRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,13 +31,15 @@ public class BossUseCase {
     private final BossRewardRepository bossRewardRepository;
 
     private final EquipmentRepository equipmentRepository;
+    private final UserRepository userRepository;
 
-    public BossUseCase(BossRepository bossRepository, BossBattleRepository battleRepository, BossRewardRepository bossRewardRepository, EquipmentRepository equipmentRepository)
+    public BossUseCase(BossRepository bossRepository, BossBattleRepository battleRepository, BossRewardRepository bossRewardRepository, EquipmentRepository equipmentRepository, UserRepository userRepository)
     {
         this.bossRepository = bossRepository;
         this.bossBattleRepository = battleRepository;
         this.bossRewardRepository = bossRewardRepository;
         this.equipmentRepository = equipmentRepository;
+        this.userRepository = userRepository;
     }
 
     public void findUndefeatedBossRecursive(String userId, int maxLevel, RepositoryCallback<Boss> callback) {

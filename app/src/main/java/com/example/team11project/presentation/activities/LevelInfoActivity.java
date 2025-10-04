@@ -55,7 +55,7 @@ public class LevelInfoActivity extends BaseActivity {
         BossBattleRepositoryImpl battleRepository = new BossBattleRepositoryImpl(getApplicationContext());
         BossRewardRepositoryImpl rewardRepository = new BossRewardRepositoryImpl(getApplicationContext());
         EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(getApplicationContext());
-        BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository, equipmentRepository);
+        BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository, equipmentRepository, userRepository);
         LevelInfoViewModel.Factory factory = new LevelInfoViewModel.Factory(repository, userRepository, bossUseCase, userId);
         viewModel = new ViewModelProvider(this, factory).get(LevelInfoViewModel.class);
 

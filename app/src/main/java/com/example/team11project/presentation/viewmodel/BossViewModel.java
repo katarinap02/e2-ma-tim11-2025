@@ -18,7 +18,12 @@ import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
+import com.example.team11project.domain.model.ChlothingEffectType;
+import com.example.team11project.domain.model.Clothing;
+import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.SpecialTaskType;
+import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.model.Weapon;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.BossBattleRepository;
@@ -30,13 +35,18 @@ import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 import com.example.team11project.domain.usecase.BossUseCase;
 
+import java.util.Iterator;
+import java.util.List;
+
 public class BossViewModel extends ViewModel {
 
     private final BossBattleRepository bossBattleRepository;
     private final BossRepository bossRepository;
 
     private final EquipmentRepository equipmentRepository;
+    private final UserRepository userRepository;
     private final BossUseCase bossUseCase;
+    private User user;
 
     private final AllianceMissionUseCase allianceMissionUseCase;
 
@@ -58,37 +68,69 @@ public class BossViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _battleFinished = new MutableLiveData<>();
     public final LiveData<Boolean> battleFinished = _battleFinished;
 
-    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository, BossRewardRepository bossRewardRepository, EquipmentRepository equipmentRepository, AllianceMissionUseCase allianceMissionUseCase) {
+    public BossViewModel(BossBattleRepository bossBattleRepository, BossRepository bossRepository, BossRewardRepository bossRewardRepository, EquipmentRepository equipmentRepository, AllianceMissionUseCase allianceMissionUseCase, UserRepository userRepository) {
         this.bossBattleRepository = bossBattleRepository;
         this.bossRepository = bossRepository;
         this.equipmentRepository = equipmentRepository;
         this.allianceMissionUseCase = allianceMissionUseCase;
-        this.bossUseCase = new BossUseCase(bossRepository, bossBattleRepository, bossRewardRepository, equipmentRepository);
+        this.userRepository = userRepository;
+        this.bossUseCase = new BossUseCase(bossRepository, bossBattleRepository, bossRewardRepository, equipmentRepository, userRepository);
     }
 
-    public void loadBattleWithBoss(String userId, String bossId, int level) {
+    public void loadBattleWithBoss(String userId, String bossId, int level, User currentUser) {
         if (bossId == null) {
             _error.setValue("Nevalidna bitka ili bossId");
             return;
         }
 
+        user = currentUser;
+
         _isLoading.setValue(true);
         _error.setValue(null);
 
-        // Prvo učitaj BossBattle
         bossBattleRepository.getBattleByUserAndBossAndLevel(userId, bossId, level, new RepositoryCallback<BossBattle>() {
             @Override
             public void onSuccess(BossBattle battle) {
+                if (currentUser != null) {
+                    List<String> activeIds = battle.getActiveEquipment();
+                    int temporaryPP = 0;
+
+                    for (Potion p : currentUser.getPotions()) {
+                        if (activeIds.contains(p.getId()) && !p.isPermanent())
+                            temporaryPP += p.getPowerBoostPercent();
+                    }
+
+                    for (Clothing c : currentUser.getClothing()) {
+                        if (activeIds.contains(c.getId())) {
+                            switch(c.getEffectType()) {
+                                case STRENGTH:
+                                    currentUser.getLevelInfo().setPp(currentUser.getLevelInfo().getPp() + c.getEffectPercent());
+                                    break;
+                                case SUCCESS_RATE:
+                                    battle.setHitChance(battle.getHitChance() + 10); // privremeni bonus +10%
+                                    break;
+                                case EXTRA_ATTACKS:
+                                    int extraAttacks = (int)(5 * 0.4); // 40% više napada
+                                    battle.setAttacksUsed(battle.getAttacksUsed() + extraAttacks);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+
+
+                    battle.setUserPP(battle.getUserPP() + temporaryPP);
+                }
+
                 _bossBattle.postValue(battle);
 
-                // Kada je BossBattle učitan, učitaj Boss
                 bossRepository.getBossById(userId, bossId, new RepositoryCallback<Boss>() {
                     @Override
                     public void onSuccess(Boss bossObj) {
                         _boss.postValue(bossObj);
                         _isLoading.postValue(false);
 
-                        // Provjeri da li je borba već završena
                         if (bossUseCase.isBattleFinished(battle)) {
                             _battleFinished.postValue(true);
                         }
@@ -109,6 +151,7 @@ public class BossViewModel extends ViewModel {
             }
         });
     }
+
 
     public void performAttack(String userId) {
         BossBattle currentBattle = _bossBattle.getValue();
@@ -161,6 +204,65 @@ public class BossViewModel extends ViewModel {
                 // Provjeri da li je borba završena
                 if (bossUseCase.isBattleFinished(currentBattle)) {
                     _battleFinished.postValue(true);
+
+                    if (bossUseCase.isBattleFinished(currentBattle)) {
+                        _battleFinished.postValue(true);
+
+                        if (user != null) {
+                            Iterator<Clothing> clothingIterator = user.getClothing().iterator();
+                            while (clothingIterator.hasNext()) {
+                                Clothing c = clothingIterator.next();
+                                if (c.isActive()) {
+                                    c.setRemainingBattles(c.getRemainingBattles() - 1);
+                                    if (c.getRemainingBattles() <= 0) {
+                                        c.setActive(false);
+                                        c.setQuantity(c.getQuantity() - 1);
+                                    }
+                                }
+                                if (c.getQuantity() <= 0) {
+                                    clothingIterator.remove();
+                                }
+                            }
+
+                            Iterator<Potion> potionIterator = user.getPotions().iterator();
+                            while (potionIterator.hasNext()) {
+                                Potion p = potionIterator.next();
+                                if (p.isActive()) {
+                                    p.setActive(false);
+                                    p.setQuantity(p.getQuantity() - 1);
+                                }
+                                if (p.getQuantity() <= 0) {
+                                    potionIterator.remove();
+                                }
+                            }
+
+                            Iterator<Weapon> weaponIterator = user.getWeapons().iterator();
+                            while (weaponIterator.hasNext()) {
+                                Weapon w = weaponIterator.next();
+                                if (w.isActive()) {
+                                    w.setActive(false);
+                                     w.setQuantity(w.getQuantity() - 1);
+                                }
+                                if (w.getQuantity() <= 0) {
+                                    weaponIterator.remove();
+                                }
+                            }
+
+                            userRepository.updateUser(user, new RepositoryCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void data) {
+                                    Log.d("BossVM", "Oprema resetovana i očišćena");
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    Log.e("BossVM", "Greška pri resetovanju/opremi: " + e.getMessage());
+                                }
+                            });
+                        }
+
+                    }
+
 
                     // Dodaj informaciju o završetku borbe
                     if (currentBattle.isBossDefeated()) {
@@ -215,14 +317,16 @@ public class BossViewModel extends ViewModel {
                     UserRepository userRepository = new UserRepositoryImpl(application);
                     AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository);
 
+
                     @SuppressWarnings("unchecked")
                     T viewModel = (T) modelClass.getConstructor(
                                     BossBattleRepository.class,
                                     BossRepository.class,
                                     BossRewardRepository.class,
                                     EquipmentRepository.class,
-                                    AllianceMissionUseCase.class)
-                            .newInstance(battleRepo, bossRepo, rewardRepo, equipmentRepo, allianceMissionUseCase1);
+                                    AllianceMissionUseCase.class,
+                                    UserRepository.class)
+                            .newInstance(battleRepo, bossRepo, rewardRepo, equipmentRepo, allianceMissionUseCase1, userRepository);
                     return viewModel;
                 } catch (Exception e) {
                     throw new RuntimeException("Cannot create an instance of " + modelClass, e);

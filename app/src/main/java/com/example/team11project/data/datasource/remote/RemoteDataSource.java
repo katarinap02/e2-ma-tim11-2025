@@ -402,17 +402,6 @@ public class RemoteDataSource {
                         user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0, new Date(), null)); // default LevelInfo
                     }
 
-                    Map<String, Long> xpMap = (Map<String, Long>) documentSnapshot.get("xpLast7Days");
-                    if (xpMap != null) {
-                        Map<String, Integer> xpLast7Days = new TreeMap<>();
-                        for (Map.Entry<String, Long> entry : xpMap.entrySet()) {
-                            xpLast7Days.put(entry.getKey(), entry.getValue().intValue());
-                        }
-                        user.getLevelInfo().setXpHistoryLast7Days(xpLast7Days); // dodaj getter/setter u LevelInfo
-                    } else {
-                        user.getLevelInfo().setXpHistoryLast7Days(new TreeMap<>());
-                    }
-
                     callback.onSuccess(user);
                 })
                 .addOnFailureListener(callback::onFailure);

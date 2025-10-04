@@ -17,9 +17,12 @@ import androidx.lifecycle.ViewModelProvider;
 import android.widget.ProgressBar;
 
 import com.example.team11project.R;
+import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.presentation.viewmodel.BossViewModel;
 import com.example.team11project.domain.model.BossBattle;
+import com.example.team11project.presentation.viewmodel.UserViewModel;
 
 import java.util.ArrayList;
 
@@ -41,6 +44,7 @@ public class BossActivity extends BaseActivity {
     private int level;
 
     private BossViewModel viewModel;
+    private UserViewModel userViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +89,9 @@ public class BossActivity extends BaseActivity {
     private void setupViewModel() {
         BossViewModel.Factory factory = new BossViewModel.Factory(getApplication());
         viewModel = new ViewModelProvider(this, factory).get(BossViewModel.class);
+
+        UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
+        userViewModel = new ViewModelProvider(this, new UserViewModel.Factory(userRepository)).get(UserViewModel.class);
 
         viewModel.bossBattle.observe(this, bossBattle -> {
             if (bossBattle != null) {
@@ -140,8 +147,11 @@ public class BossActivity extends BaseActivity {
             }
         });
 
-        // Učitavanje BossBattle-a
-        viewModel.loadBattleWithBoss(userId, bossId, level);
+        userViewModel.getUser().observe(this, user -> {
+            if (user != null) {
+                viewModel.loadBattleWithBoss(userId, bossId, level, user);
+            }
+        });
     }
 
     private void updateUI(BossBattle battle, Boss boss) {
