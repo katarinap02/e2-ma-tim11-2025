@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
+import com.example.team11project.data.repository.BossRepositoryImpl;
+import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
@@ -23,6 +25,8 @@ import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.BossRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
@@ -60,6 +64,8 @@ public class AllianceDetailsActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alliance_details);
 
+
+
         setupNavbar();
         initializeViews();
         initializeRepositories();
@@ -94,10 +100,12 @@ public class AllianceDetailsActivity extends BaseActivity {
         AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
         TaskRepository taskRepository = new TaskRepositoryImpl(getApplicationContext());
         TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(getApplicationContext());
+        EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(getApplicationContext());
+        BossRepository bossRepository = new BossRepositoryImpl(getApplicationContext());
 
         allianceViewModel = new ViewModelProvider(this,
                 new AllianceDetailsViewModel.Factory(allianceRepository, userRepository,
-                        allianceMissionRepository, taskRepository, taskInstanceRepository))
+                        allianceMissionRepository, taskRepository, taskInstanceRepository, equipmentRepository, bossRepository))
                 .get(AllianceDetailsViewModel.class);
 
         userViewModel = new ViewModelProvider(this,
@@ -197,7 +205,6 @@ public class AllianceDetailsActivity extends BaseActivity {
                 // Onemogući/omogući dugmad
                 btnStartMission.setEnabled(!isLoading);
                 btnDisband.setEnabled(!isLoading);
-                btnChat.setEnabled(!isLoading);
 
                 // Promeni tekst dugmeta ako je vidljivo
                 if (isLoading && btnStartMission.getVisibility() == View.VISIBLE) {

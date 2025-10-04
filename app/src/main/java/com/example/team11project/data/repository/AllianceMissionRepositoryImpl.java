@@ -5,6 +5,7 @@ import android.content.Context;
 import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.AllianceMission;
+import com.example.team11project.domain.model.AllianceMissionReward;
 import com.example.team11project.domain.model.MemberProgress;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
@@ -211,5 +212,108 @@ public class AllianceMissionRepositoryImpl implements AllianceMissionRepository 
             }
         });
     }
+
+    @Override
+    public void createAllianceMissionReward(AllianceMissionReward reward, RepositoryCallback<String> callback) {
+        if (reward.getUserId() == null || reward.getUserId().isEmpty()) {
+            callback.onFailure(new Exception("User ID je obavezan."));
+            return;
+        }
+
+        databaseExecutor.execute(() -> {
+            // Korak 1: Dodaj na Firebase
+            remoteDataSource.createAllianceMissionReward(reward, new RemoteDataSource.DataSourceCallback<String>() {
+                @Override
+                public void onSuccess(String rewardId) {
+                    reward.setId(rewardId);
+
+                    // Korak 2: Sačuvaj u lokalnu bazu
+                    databaseExecutor.execute(() -> {
+                        localDataSource.createAllianceMissionReward(reward);
+                        callback.onSuccess(rewardId);
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    callback.onFailure(e);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void getAllRewardsByUserId(String userId, RepositoryCallback<List<AllianceMissionReward>> callback) {
+        // Korak 1: Odmah dohvati lokalne podatke
+        databaseExecutor.execute(() -> {
+            List<AllianceMissionReward> localRewards = localDataSource.getAllRewardsByUserId(userId);
+            if (!localRewards.isEmpty()) {
+                callback.onSuccess(localRewards);
+            }
+        });
+
+        // Korak 2: Sinhronizuj sa Firebase-a
+        remoteDataSource.getAllRewardsByUserId(userId, new RemoteDataSource.DataSourceCallback<List<AllianceMissionReward>>() {
+            @Override
+            public void onSuccess(List<AllianceMissionReward> remoteRewards) {
+                databaseExecutor.execute(() -> {
+                    // Obriši stare i dodaj nove
+                    localDataSource.deleteAllRewardsForUser(userId);
+                    for (AllianceMissionReward reward : remoteRewards) {
+                        localDataSource.createAllianceMissionReward(reward);
+                    }
+                    // Pošalji fresh podatke
+                    List<AllianceMissionReward> freshRewards = localDataSource.getAllRewardsByUserId(userId);
+                    callback.onSuccess(freshRewards);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                System.out.println("Sync failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void getTotalBadgeCount(String userId, RepositoryCallback<Integer> callback) {
+        // 1. Odmah vrati lokalni zbir (ako postoji)
+        databaseExecutor.execute(() -> {
+            int localCount = localDataSource.getTotalBadgeCount(userId);
+            if (localCount > 0) {
+                callback.onSuccess(localCount);
+            }
+        });
+
+        // 2. Povuci sve nagrade sa Firebase-a
+        remoteDataSource.getAllRewardsByUserId(userId, new RemoteDataSource.DataSourceCallback<List<AllianceMissionReward>>() {
+            @Override
+            public void onSuccess(List<AllianceMissionReward> remoteRewards) {
+                databaseExecutor.execute(() -> {
+                    // Očisti stare i dodaj nove
+                    localDataSource.deleteAllRewardsForUser(userId);
+                    for (AllianceMissionReward reward : remoteRewards) {
+                        localDataSource.createAllianceMissionReward(reward);
+                    }
+
+                    // Izračunaj fresh badge count
+                    int freshCount = 0;
+                    for (AllianceMissionReward reward : remoteRewards) {
+                        if (reward != null) {
+                            freshCount += reward.getBadgeCount();
+                        }
+                    }
+
+                    callback.onSuccess(freshCount);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
 
 }

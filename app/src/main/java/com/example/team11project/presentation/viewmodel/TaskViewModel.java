@@ -528,7 +528,7 @@ public class TaskViewModel extends ViewModel{
                     TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository, bossUseCase);
                     AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(application);
                     AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
-                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepo, taskRepo, instanceRepo);
+                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepo, taskRepo, instanceRepo, equipmentRepository, bossRepository);
 
                     @SuppressWarnings("unchecked")
                     T viewModel = (T) modelClass.getConstructor(

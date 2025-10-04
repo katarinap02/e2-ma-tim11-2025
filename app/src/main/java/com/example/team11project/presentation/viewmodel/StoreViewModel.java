@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
+import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
@@ -25,6 +26,7 @@ import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.Weapon;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
@@ -257,7 +259,9 @@ public class StoreViewModel extends ViewModel {
                 AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
                 TaskRepository taskRepository = new TaskRepositoryImpl(application);
                 TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(application);
-                AllianceMissionUseCase allianceUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, repository, taskRepository, taskInstanceRepository);
+                EquipmentRepository equipmentRepository1 = new EquipmentRepositoryImpl(application);
+                BossRepository bossRepository = new BossRepositoryImpl(application);
+                AllianceMissionUseCase allianceUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, repository, taskRepository, taskInstanceRepository, equipmentRepository1, bossRepository);
 
                 return (T) new StoreViewModel(repository, eRepository, allianceUseCase);
             }
