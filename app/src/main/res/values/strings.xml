@@ -107,4 +107,6 @@
     <string name="broj_zavr_enih_specijalnih_misija_0">Broj završenih specijalnih misija: 0</string>
     <string name="xp_poslednjih_7_dana">XP poslednjih 7 dana:</string>
     <string name="osvojeni_xp_u_poslednjih_7_dana">Osvojeni XP u poslednjih 7 dana:</string>
+    <string name="aktivna_oprema1">Aktivna oprema</string>
+    <string name="izaberite_opremu">Izaberite opremu</string>
 </resources>

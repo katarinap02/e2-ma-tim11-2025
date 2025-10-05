@@ -37,6 +37,9 @@ public class EquipmentActivity extends BaseActivity {
     private EquipmentViewModel viewModel;
     private String userId;
 
+    private ClothingActivateAdapter activeClothingAdapter;
+    private RecyclerView rvActiveEquipment;
+
 
 
     @Override
@@ -64,6 +67,8 @@ public class EquipmentActivity extends BaseActivity {
         rvWeapons = findViewById(R.id.rvWeapons);
         rvPotions = findViewById(R.id.rvPotions);
         rvClothing = findViewById(R.id.rvClothing);
+        rvActiveEquipment = findViewById(R.id.rvActiveEquipment);
+
     }
 
     private void setupAdapters() {
@@ -78,6 +83,11 @@ public class EquipmentActivity extends BaseActivity {
         clothingAdapter = new ClothingActivateAdapter();
         rvClothing.setAdapter(clothingAdapter);
         rvClothing.setLayoutManager(new LinearLayoutManager(this));
+
+        activeClothingAdapter = new ClothingActivateAdapter();
+        rvActiveEquipment.setAdapter(activeClothingAdapter);
+        rvActiveEquipment.setLayoutManager(new LinearLayoutManager(this));
+
     }
 
     private void getUserData() {
@@ -157,6 +167,10 @@ public class EquipmentActivity extends BaseActivity {
 
         viewModel.clothing.observe(this, clothing -> {
             clothingAdapter.setClothingList(clothing);
+        });
+
+        viewModel.activeClothing.observe(this, activeClothing -> {
+            activeClothingAdapter.setClothingList(activeClothing);
         });
 
     }

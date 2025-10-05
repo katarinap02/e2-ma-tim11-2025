@@ -77,6 +77,8 @@ public class EquipmentViewModel extends ViewModel {
     private final MutableLiveData<List<Weapon>> _weapon = new MutableLiveData<>();
     public final LiveData<List<Weapon>> weapon = _weapon;
 
+    private final MutableLiveData<List<Clothing>> _activeClothing = new MutableLiveData<>();
+    public final LiveData<List<Clothing>> activeClothing = _activeClothing;
 
 
     public EquipmentViewModel(UserRepository userRepository, BossRepository bossRepository, BossUseCase battleService, TaskUseCase taskUseCase) {
@@ -190,19 +192,25 @@ public class EquipmentViewModel extends ViewModel {
             @Override
             public void onSuccess(User user) {
                 _user.postValue(user);
-
                 List<Weapon> allWeapon = new ArrayList<>();
                 List<Potion> allPotion = new ArrayList<>();
                 List<Clothing> allClothing = new ArrayList<>();
+                List<Clothing> active = new ArrayList<>();
+                List<Clothing> inactive = new ArrayList<>();
 
                 if (user.getWeapons() != null) allWeapon.addAll(user.getWeapons());
                 if (user.getPotions() != null) allPotion.addAll(user.getPotions());
                 if (user.getClothing() != null) allClothing.addAll(user.getClothing());
 
+                for (Clothing c : allClothing) {
+                    if (c.isActive()) active.add(c);
+                    else inactive.add(c);
+                }
+
                 _weapon.postValue(allWeapon);
                 _potion.postValue(allPotion);
-                _clothing.postValue(allClothing);
-
+                _clothing.postValue(inactive);      // za postojeći tab
+                _activeClothing.postValue(active);  // za aktivnu odeću
 
                 _isLoading.postValue(false);
             }
