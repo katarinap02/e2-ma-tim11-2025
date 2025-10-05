@@ -61,7 +61,7 @@ public class AllianceMissionRepositoryImpl implements AllianceMissionRepository 
         databaseExecutor.execute(() -> {
             AllianceMission localMission = localDataSource.getActiveMissionByAllianceId(allianceId);
             if (localMission != null) {
-                if (localMission.getMemberProgressList() != null) {
+                if (localMission.getMemberProgress() != null) {
                 }
                 // ✅ Pošalji lokalne podatke KAO CACHE (brzi prikaz)
                 callback.onSuccess(localMission);
@@ -78,7 +78,7 @@ public class AllianceMissionRepositoryImpl implements AllianceMissionRepository 
                     return;
                 }
 
-                if (remoteMission.getMemberProgressList() != null) {
+                if (remoteMission.getMemberProgress() != null) {
                 } else {
 
                 }

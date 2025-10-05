@@ -14,6 +14,8 @@ import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.EquipmentRepositoryImpl;
+import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
+import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.ChlothingEffectType;
@@ -28,6 +30,8 @@ import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 
@@ -415,7 +419,9 @@ public class StoreViewModel extends ViewModel {
                 EquipmentRepository eRepository = new EquipmentRepositoryImpl(application);
                 AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(application);
                 AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
-                AllianceMissionUseCase allianceUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, repository);
+                TaskRepository taskRepository = new TaskRepositoryImpl(application);
+                TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(application);
+                AllianceMissionUseCase allianceUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, repository, taskRepository, taskInstanceRepository);
                 BossRepository bossRepository1 = new BossRepositoryImpl(application);
 
                 return (T) new StoreViewModel(repository, eRepository, allianceUseCase, bossRepository1);

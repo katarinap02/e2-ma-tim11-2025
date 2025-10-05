@@ -15,6 +15,8 @@ import com.example.team11project.data.repository.BossBattleRepositoryImpl;
 import com.example.team11project.data.repository.BossRepositoryImpl;
 import com.example.team11project.data.repository.BossRewardRepositoryImpl;
 import com.example.team11project.data.repository.EquipmentRepositoryImpl;
+import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
+import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
@@ -31,6 +33,8 @@ import com.example.team11project.domain.repository.BossRepository;
 import com.example.team11project.domain.repository.BossRewardRepository;
 import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 import com.example.team11project.domain.usecase.BossUseCase;
@@ -321,7 +325,9 @@ public class BossViewModel extends ViewModel {
                     AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(application);
                     AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
                     UserRepository userRepository = new UserRepositoryImpl(application);
-                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository);
+                    TaskRepository taskRepository = new TaskRepositoryImpl(application);
+                    TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(application);
+                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository);
 
 
                     @SuppressWarnings("unchecked")

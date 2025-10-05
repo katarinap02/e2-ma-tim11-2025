@@ -1,6 +1,7 @@
 package com.example.team11project.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
@@ -193,7 +194,8 @@ public class TaskRepositoryImpl implements TaskRepository {
                 databaseExecutor.execute(() -> {
                     // Ažuriraj lokalnu bazu: dodaj ili update svaki task
                     for (Task task : remoteTasks) {
-                        localDataSource.updateTask(task); // updateTask treba da radi insert ako ne postoji
+                        localDataSource.updateTask(task);
+
                     }
 
                     // Vrati callback sa sinhronizovanim taskovima
@@ -211,6 +213,62 @@ public class TaskRepositoryImpl implements TaskRepository {
             }
         });
     }
+
+    @Override
+    public void IsTaskNotCompleted(String userId, Date startDate, Date endDate, RepositoryCallback<Boolean> callback) {
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("UserID is null or empty"));
+            return;
+        }
+
+        remoteDataSource.getTasksInPeriod(userId, startDate, endDate, new RemoteDataSource.DataSourceCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> remoteTasks) {
+                databaseExecutor.execute(() -> {
+                    for (Task task : remoteTasks) {
+                        localDataSource.updateTask(task);
+
+                        if (task.getExecutionTime() != null) {
+                            Log.d("TasksPeriod", "Task ID: " + task.getId() + ", executionTime: " + task.getExecutionTime());
+                        } else {
+                            Log.d("TasksPeriod", "Task ID: " + task.getId() + " nema executionTime postavljen");
+                        }
+                    }
+
+                    boolean exists = false;
+                    for (Task task : remoteTasks) {
+                        if (!task.isRecurring() && task.getStatus() != TaskStatus.COMPLETED && task.getStatus() != TaskStatus.DELETED) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    Log.d("TasksPeriod", "Postoji task koji nije završen? " + exists);
+                    callback.onSuccess(exists);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                databaseExecutor.execute(() -> {
+                    List<Task> localTasks = localDataSource.getTasksInPeriod(userId, startDate, endDate);
+
+                    boolean exists = false;
+                    for (Task task : localTasks) {
+                        if (!task.isRecurring() && task.getStatus() != TaskStatus.COMPLETED && task.getStatus() != TaskStatus.DELETED) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    Log.d("TasksPeriod", "Postoji task koji nije završen (lokalno)? " + exists);
+                    callback.onSuccess(exists);
+                });
+            }
+        });
+    }
+
+
 
 
 

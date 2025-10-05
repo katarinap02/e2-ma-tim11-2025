@@ -138,18 +138,20 @@ public class RemoteDataSource {
         Query query = tasksRef;
 
         if (startDate != null) {
+            Log.d("FirestoreQuery", "StartDate: " + startDate);
             query = query.whereGreaterThanOrEqualTo("executionTime", startDate);
         }
         query = query.whereLessThanOrEqualTo("executionTime", endDate);
 
         // orderBy na kraju (ili ga ukloni ako nije potrebno)
-        query = query.orderBy("executionTime");
+        //query = query.orderBy("executionTime");
 
         query.get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Task> list = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         try {
+                            Log.d("FirestoreDataSource", "Doc id: " + doc.getId() + ", executionTime: " + doc.get("executionTime"));
                             Task t = doc.toObject(Task.class);
                             t.setId(doc.getId());
                             list.add(t);
@@ -460,6 +462,51 @@ public class RemoteDataSource {
                     }
                 });
     }
+
+    public void getTaskInstancesInPeriod(String userId, Date startDate, Date endDate, final DataSourceCallback<List<TaskInstance>> callback) {
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("UserID must not be null or empty"));
+            return;
+        }
+        if (endDate == null) {
+            callback.onFailure(new Exception("End date must not be null"));
+            return;
+        }
+
+        CollectionReference instancesRef = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(INSTANCES_COLLECTION);
+
+        Query query = instancesRef;
+
+        if (startDate != null) {
+            query = query.whereGreaterThanOrEqualTo("originalDate", startDate);
+        }
+        query = query.whereLessThanOrEqualTo("originalDate", endDate);
+
+        // orderBy na kraju
+        query = query.orderBy("originalDate");
+
+        query.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<TaskInstance> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        try {
+                            TaskInstance instance = doc.toObject(TaskInstance.class);
+                            instance.setId(doc.getId());
+                            list.add(instance);
+                        } catch (Exception e) {
+                            Log.w("FirestoreDataSource", "Error parsing task instance: " + doc.getId(), e);
+                        }
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FirestoreDataSource", "Error fetching task instances in period", e);
+                    callback.onFailure(e);
+                });
+    }
+
     public void addEquipmentToCollection(Equipment equipment, final DataSourceCallback<String> callback) {
         db.collection(EQUIPMENT_COLLECTION)
                 .add(equipment)
@@ -1167,15 +1214,15 @@ public class RemoteDataSource {
                                 AllianceMission mission = doc.toObject(AllianceMission.class);
                                 mission.setId(doc.getId());
 
-                                Date now = new Date();
-                                if (mission.getBoss().getCurrentHp() > 0 && now.before(mission.getEndDate())) {
+                                // Provera preko isActive polja
+                                if (mission.isActive()) {
                                     callback.onSuccess(mission);
                                     return;
                                 }
                             }
                             callback.onSuccess(null); // Nema aktivne misije
                         } else {
-                            callback.onSuccess(null); // 👈 prazan rezultat nije greška
+                            callback.onSuccess(null); // prazan rezultat nije greška
                         }
                     } else {
                         Exception e = task.getException() != null
@@ -1184,8 +1231,8 @@ public class RemoteDataSource {
                         callback.onFailure(e);
                     }
                 });
-
     }
+
 
     public void getAllianceMissionById(String missionId, final DataSourceCallback<AllianceMission> callback) {
         db.collection(ALLIANCE_MISSION_COLLECTION)
@@ -1230,7 +1277,7 @@ public class RemoteDataSource {
             @Override
             public void onSuccess(AllianceMission mission) {
                 // Pronađi i ažuriraj progress za korisnika
-                List<MemberProgress> progressList = mission.getMemberProgressList();
+                List<MemberProgress> progressList = mission.getMemberProgress();
                 boolean found = false;
 
                 for (int i = 0; i < progressList.size(); i++) {
@@ -1245,7 +1292,7 @@ public class RemoteDataSource {
                     progressList.add(progress);
                 }
 
-                mission.setMemberProgressList(progressList);
+                mission.setMemberProgress(progressList);
                 updateAllianceMission(mission, callback);
             }
 
@@ -1260,7 +1307,7 @@ public class RemoteDataSource {
         getAllianceMissionById(missionId, new DataSourceCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission mission) {
-                for (MemberProgress progress : mission.getMemberProgressList()) { // ISPRAVI: bilo je getMemberProgressMap()
+                for (MemberProgress progress : mission.getMemberProgress()) {
                     if (progress.getUserId().equals(userId)) {
                         callback.onSuccess(progress);
                         return;

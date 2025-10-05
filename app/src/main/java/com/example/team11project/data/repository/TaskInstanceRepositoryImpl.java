@@ -5,9 +5,11 @@ import android.content.Context;
 import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.TaskInstance;
+import com.example.team11project.domain.model.TaskStatus;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -115,6 +117,57 @@ public class TaskInstanceRepositoryImpl implements TaskInstanceRepository {
             });
         });
     }
+    @Override
+    public void hasUncompletedTaskInstanceInPeriod(String userId, Date startDate, Date endDate, RepositoryCallback<Boolean> callback) {
+        if (userId == null || userId.trim().isEmpty()) {
+            callback.onFailure(new Exception("UserID is null or empty"));
+            return;
+        }
 
+        remoteDataSource.getTaskInstancesInPeriod(userId, startDate, endDate, new RemoteDataSource.DataSourceCallback<List<TaskInstance>>() {
+            @Override
+            public void onSuccess(List<TaskInstance> remoteInstances) {
+                databaseExecutor.execute(() -> {
+                    // Ažuriraj lokalnu bazu
+                    for (TaskInstance instance : remoteInstances) {
+                        localDataSource.updateTaskInstance(instance);
+                    }
 
+                    // Proveri da li postoji bar jedna koja nije completed
+                    boolean exists = false;
+                    for (TaskInstance instance : remoteInstances) {
+                        if (instance.getNewStatus() != TaskStatus.COMPLETED && instance.getNewStatus() != TaskStatus.DELETED) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    callback.onSuccess(exists);
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Ako remote fail-uje, koristi lokalne podatke
+                databaseExecutor.execute(() -> {
+                    List<TaskInstance> localInstances = localDataSource.getAllTaskInstancesInPeriod(userId, startDate, endDate);
+
+                    boolean exists = false;
+                    for (TaskInstance instance : localInstances) {
+                        if (instance.getNewStatus() != TaskStatus.COMPLETED || instance.getNewStatus() != TaskStatus.DELETED) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    callback.onSuccess(exists);
+                });
+            }
+        });
     }
+
+
+
+
+
+}

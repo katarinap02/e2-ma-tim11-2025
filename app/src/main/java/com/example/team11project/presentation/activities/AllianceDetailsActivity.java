@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,11 +16,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
+import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
+import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.presentation.adapters.FriendsAdapter;
@@ -41,11 +46,13 @@ public class AllianceDetailsActivity extends BaseActivity {
     private FriendsAdapter adapter;
 
     private Button btnStartMission;
+    private Button btnDisband;
+    private Button btnChat;
+    private ProgressBar progressBar;
 
     private final List<User> members = new ArrayList<>();
     private final Set<String> loadedMemberIds = new HashSet<>();
     private String leaderId;
-
     private String userId;
 
     @Override
@@ -54,100 +61,48 @@ public class AllianceDetailsActivity extends BaseActivity {
         setContentView(R.layout.activity_alliance_details);
 
         setupNavbar();
-
-        tvAllianceName = findViewById(R.id.tvAllianceName);
-        tvLeaderName = findViewById(R.id.tvLeaderName);
-        rvMembers = findViewById(R.id.rvMembers);
-        btnStartMission = findViewById(R.id.btnStartMission);
-
-        userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
-                .getString("userId", null);
-
-        AllianceRepository allianceRepository = new AllianceRepositoryImpl(getApplicationContext());
-        UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
-        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl((getApplicationContext()));
-
-        allianceViewModel = new ViewModelProvider(this,
-                new AllianceDetailsViewModel.Factory(allianceRepository, userRepository, allianceMissionRepository))
-                .get(AllianceDetailsViewModel.class);
-
-        userViewModel = new ViewModelProvider(this,
-                new UserViewModel.Factory(userRepository))
-                .get(UserViewModel.class);
-
+        initializeViews();
+        initializeRepositories();
         setupRecyclerView();
         setupObservers();
+        setupClickListeners();
 
-
-
-        Button btnDisband = findViewById(R.id.btnDisbandAlliance);
-
-        btnDisband.setOnClickListener(v -> {
-            Alliance currentAlliance = userViewModel.getUser().getValue() != null
-                    ? userViewModel.getUser().getValue().getCurrentAlliance()
-                    : null;
-
-            if (currentAlliance == null) {
-                Toast.makeText(this, "You are not part of any alliance", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            if (!currentAlliance.getLeader().equals(userId)) {
-                Toast.makeText(this, "Only the leader can disband the alliance", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            new androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Disband Alliance")
-                    .setMessage("Are you sure you want to disband this alliance? All members will lose their membership.")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        allianceViewModel.disbandAlliance(currentAlliance);
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        });
-
-
+        // Učitaj trenutnog korisnika
         if (userId != null) {
             userViewModel.loadUser(userId);
         } else {
             tvLeaderName.setText("Trenutno niste prijavljeni");
         }
+    }
 
-        Button btnChat = findViewById(R.id.btnChat);
-        btnChat.setOnClickListener(v -> {
-            Alliance currentAlliance = userViewModel.getUser().getValue() != null
-                    ? userViewModel.getUser().getValue().getCurrentAlliance()
-                    : null;
+    private void initializeViews() {
+        tvAllianceName = findViewById(R.id.tvAllianceName);
+        tvLeaderName = findViewById(R.id.tvLeaderName);
+        rvMembers = findViewById(R.id.rvMembers);
+        btnStartMission = findViewById(R.id.btnStartMission);
+        btnDisband = findViewById(R.id.btnDisbandAlliance);
+        btnChat = findViewById(R.id.btnChat);
+        progressBar = findViewById(R.id.progressBar);
 
-            if (currentAlliance == null) {
-                Toast.makeText(this, "Niste član nijednog saveza", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                .getString("userId", null);
+    }
 
-            Intent intent = new Intent(this, AllianceChatActivity.class);
-            intent.putExtra("allianceId", currentAlliance.getId());
-            intent.putExtra("allianceLeaderId", currentAlliance.getLeader());
-            startActivity(intent);
-        });
+    private void initializeRepositories() {
+        AllianceRepository allianceRepository = new AllianceRepositoryImpl(getApplicationContext());
+        UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
+        TaskRepository taskRepository = new TaskRepositoryImpl(getApplicationContext());
+        TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(getApplicationContext());
 
-        btnStartMission.setOnClickListener(v -> {
-            Alliance currentAlliance = userViewModel.getUser().getValue() != null
-                    ? userViewModel.getUser().getValue().getCurrentAlliance()
-                    : null;
+        allianceViewModel = new ViewModelProvider(this,
+                new AllianceDetailsViewModel.Factory(allianceRepository, userRepository,
+                        allianceMissionRepository, taskRepository, taskInstanceRepository))
+                .get(AllianceDetailsViewModel.class);
 
-            if (currentAlliance == null) {
-                Toast.makeText(this, "Niste član nijednog saveza", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            allianceViewModel.startSpecialMission(currentAlliance, userId);
-        });
-
-
-
-
-
+        userViewModel = new ViewModelProvider(this,
+                new UserViewModel.Factory(userRepository))
+                .get(UserViewModel.class);
     }
 
     private void setupRecyclerView() {
@@ -156,54 +111,116 @@ public class AllianceDetailsActivity extends BaseActivity {
         rvMembers.setAdapter(adapter);
     }
 
+    private void setupClickListeners() {
+        btnDisband.setOnClickListener(v -> handleDisbandAlliance());
+        btnChat.setOnClickListener(v -> handleOpenChat());
+        btnStartMission.setOnClickListener(v -> handleStartMission());
+    }
+
+    private void handleDisbandAlliance() {
+        Alliance currentAlliance = getCurrentAlliance();
+        if (currentAlliance == null) {
+            Toast.makeText(this, "Niste član nijednog saveza", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!currentAlliance.getLeader().equals(userId)) {
+            Toast.makeText(this, "Samo lider može da ukine savez", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Ukini savez")
+                .setMessage("Da li ste sigurni da želite da ukinete ovaj savez? Svi članovi će izgubiti članstvo.")
+                .setPositiveButton("Da", (dialog, which) -> {
+                    allianceViewModel.disbandAlliance(currentAlliance);
+                })
+                .setNegativeButton("Otkaži", null)
+                .show();
+    }
+
+    private void handleOpenChat() {
+        Alliance currentAlliance = getCurrentAlliance();
+        if (currentAlliance == null) {
+            Toast.makeText(this, "Niste član nijednog saveza", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(this, AllianceChatActivity.class);
+        intent.putExtra("allianceId", currentAlliance.getId());
+        intent.putExtra("allianceLeaderId", currentAlliance.getLeader());
+        startActivity(intent);
+    }
+
+    private void handleStartMission() {
+        Alliance currentAlliance = getCurrentAlliance();
+        if (currentAlliance == null) {
+            Toast.makeText(this, "Niste član nijednog saveza", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+            allianceViewModel.startSpecialMission(currentAlliance, userId);
+            Intent intent = new Intent(this, AllianceMissionActivity.class);
+            intent.putExtra("allianceId", currentAlliance.getId());
+            startActivity(intent);
+    }
+
     private void setupObservers() {
+        // Observer za trenutnog korisnika
         userViewModel.getUser().observe(this, user -> {
             if (user == null) return;
 
             Alliance alliance = user.getCurrentAlliance();
             if (alliance != null) {
-                tvAllianceName.setText(alliance.getName());
-                members.clear();
-                loadedMemberIds.clear();
-
-                leaderId = alliance.getLeader();
-
-                if (leaderId != null) {
-                    loadUserAndAddToMembers(leaderId);
-                }
-
-                if (alliance.getMembers() != null) {
-                    for (String memberId : alliance.getMembers()) {
-                        loadUserAndAddToMembers(memberId);
-                    }
-                }
-                allianceViewModel.checkActiveMission(alliance.getId(), user.getId(), leaderId);
-
+                displayAllianceInfo(alliance);
+                // Automatski proveri da li ima istekla misija
+                allianceViewModel.checkAndFinalizeExpiredMission(alliance, userId);
             } else {
-                tvLeaderName.setText("Trenutno niste član nijednog saveza");
-                members.clear();
-                adapter.notifyDataSetChanged();
+                displayNoAlliance();
             }
         });
 
+        // Observer za promene u savezu
         allianceViewModel.getAlliance().observe(this, alliance -> {
             if (alliance == null) {
-                tvAllianceName.setText("");
-                tvLeaderName.setText("No alliance");
-                members.clear();
-                adapter.notifyDataSetChanged();
-                Toast.makeText(this, "Alliance has been disbanded", Toast.LENGTH_SHORT).show();
-            }
-        });
-        allianceViewModel.getMissionButtonText().observe(this, text -> {
-            if (text == null || text.isEmpty()) {
-                btnStartMission.setVisibility(Button.GONE); // sakrij za članove
-            } else {
-                btnStartMission.setVisibility(Button.VISIBLE);
-                btnStartMission.setText(text);
+                displayNoAlliance();
+                Toast.makeText(this, "Savez je ukinut", Toast.LENGTH_SHORT).show();
             }
         });
 
+        // Ukloni duplikate i ostavi samo jedan observer
+        allianceViewModel.getIsLoading().observe(this, isLoading -> {
+            if (isLoading != null) {
+                // Prikaži/sakrij progress bar
+                progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+
+                // Onemogući/omogući dugmad
+                btnStartMission.setEnabled(!isLoading);
+                btnDisband.setEnabled(!isLoading);
+                btnChat.setEnabled(!isLoading);
+
+                // Promeni tekst dugmeta ako je vidljivo
+                if (isLoading && btnStartMission.getVisibility() == View.VISIBLE) {
+                    btnStartMission.setText("Učitavanje...");
+                }
+            }
+        });
+
+// Observer za tekst dugmeta misije
+        allianceViewModel.getMissionButtonText().observe(this, text -> {
+            if (text == null || text.isEmpty()) {
+                btnStartMission.setVisibility(View.GONE);
+            } else {
+                btnStartMission.setVisibility(View.VISIBLE);
+                // Postavi tekst samo ako nije loading
+                Boolean isLoading = allianceViewModel.getIsLoading().getValue();
+                if (isLoading == null || !isLoading) {
+                    btnStartMission.setText(text);
+                }
+            }
+        });
+
+        // Observer za pokretanje misije
         allianceViewModel.getMissionStarted().observe(this, allianceId -> {
             if (allianceId != null) {
                 Intent intent = new Intent(this, AllianceMissionActivity.class);
@@ -212,16 +229,59 @@ public class AllianceDetailsActivity extends BaseActivity {
             }
         });
 
-
-        allianceViewModel.getErrorMessage().observe(this, error -> {
-            if (error != null) {
-                Toast.makeText(this, "Error: " + error, Toast.LENGTH_SHORT).show();
+        // Observer za success poruke
+        allianceViewModel.getSuccessMessage().observe(this, message -> {
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                // Osveži prikaz nakon završetka misije
+                User currentUser = userViewModel.getUser().getValue();
+                if (currentUser != null) {
+                    userViewModel.loadUser(currentUser.getId());
+                }
             }
         });
 
-        userViewModel.getError().observe(this, message ->
-                Toast.makeText(this, "Greška: " + message, Toast.LENGTH_SHORT).show()
-        );
+        // Observer za greške
+        allianceViewModel.getErrorMessage().observe(this, error -> {
+            if (error != null) {
+                Toast.makeText(this, "Greška: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        userViewModel.getError().observe(this, message -> {
+            if (message != null) {
+                Toast.makeText(this, "Greška: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void displayAllianceInfo(Alliance alliance) {
+        tvAllianceName.setText(alliance.getName());
+        members.clear();
+        loadedMemberIds.clear();
+
+        leaderId = alliance.getLeader();
+
+        if (leaderId != null) {
+            loadUserAndAddToMembers(leaderId);
+        }
+
+        if (alliance.getMembers() != null) {
+            for (String memberId : alliance.getMembers()) {
+                loadUserAndAddToMembers(memberId);
+            }
+        }
+
+        // Proveri status misije i ažuriraj dugme
+        allianceViewModel.checkActiveMission(alliance.getId(), userId, leaderId);
+    }
+
+    private void displayNoAlliance() {
+        tvAllianceName.setText("");
+        tvLeaderName.setText("Trenutno niste član nijednog saveza");
+        members.clear();
+        adapter.notifyDataSetChanged();
+        btnStartMission.setVisibility(View.GONE);
     }
 
     private void loadUserAndAddToMembers(String id) {
@@ -233,7 +293,7 @@ public class AllianceDetailsActivity extends BaseActivity {
             public void onSuccess(User user) {
                 runOnUiThread(() -> {
                     if (user.getId().equals(leaderId)) {
-                        tvLeaderName.setText("Leader: " + user.getUsername());
+                        tvLeaderName.setText("Lider: " + user.getUsername());
                     }
 
                     if (!members.contains(user)) {
@@ -252,6 +312,11 @@ public class AllianceDetailsActivity extends BaseActivity {
         });
     }
 
+    private Alliance getCurrentAlliance() {
+        User currentUser = userViewModel.getUser().getValue();
+        return currentUser != null ? currentUser.getCurrentAlliance() : null;
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -260,6 +325,9 @@ public class AllianceDetailsActivity extends BaseActivity {
         User currentUser = userViewModel.getUser().getValue();
         if (currentUser != null && currentUser.getCurrentAlliance() != null) {
             Alliance alliance = currentUser.getCurrentAlliance();
+            // Proveri da li ima istekla misija
+            allianceViewModel.checkAndFinalizeExpiredMission(alliance, userId);
+            // Osveži status misije
             allianceViewModel.refreshAllianceState(
                     alliance.getId(),
                     userId,
@@ -267,5 +335,4 @@ public class AllianceDetailsActivity extends BaseActivity {
             );
         }
     }
-
 }

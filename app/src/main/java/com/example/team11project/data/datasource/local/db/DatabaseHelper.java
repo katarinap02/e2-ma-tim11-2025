@@ -113,6 +113,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS + " TEXT NOT NULL," +
                     AppContract.AllianceMissionEntry.COLUMN_NAME_START_DATE + " INTEGER NOT NULL," +
                     AppContract.AllianceMissionEntry.COLUMN_NAME_END_DATE + " INTEGER NOT NULL," +
+                    AppContract.AllianceMissionEntry.COLUMN_NAME_IS_ACTIVE + " INTEGER NOT NULL DEFAULT 1," +
                     "FOREIGN KEY(" + AppContract.AllianceMissionEntry.COLUMN_NAME_BOSS + ") REFERENCES " +
                     AppContract.AllianceBossEntry.TABLE_NAME + "(" + AppContract.AllianceBossEntry._ID + ")," +
                     "FOREIGN KEY(" + AppContract.AllianceMissionEntry.COLUMN_NAME_ALLIANCE_ID + ") REFERENCES " +

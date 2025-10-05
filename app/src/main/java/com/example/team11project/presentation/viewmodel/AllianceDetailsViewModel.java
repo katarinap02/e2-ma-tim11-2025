@@ -9,9 +9,12 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.AllianceMission;
+import com.example.team11project.domain.model.MissionFinalizationResult;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
+import com.example.team11project.domain.repository.TaskInstanceRepository;
+import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.AllianceMissionUseCase;
 
@@ -25,6 +28,10 @@ public class AllianceDetailsViewModel extends ViewModel {
 
     private final AllianceMissionRepository allianceMissionRepository;
 
+    private final TaskRepository taskRepository;
+
+    private final TaskInstanceRepository taskInstanceRepository;
+
     private final MutableLiveData<Alliance> allianceLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
 
@@ -32,11 +39,17 @@ public class AllianceDetailsViewModel extends ViewModel {
 
     private final MutableLiveData<String> missionStarted = new MutableLiveData<>();
 
+    private MutableLiveData<String> successMessage = new MutableLiveData<>();
 
-    public AllianceDetailsViewModel(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository) {
+    private MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
+
+
+    public AllianceDetailsViewModel(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository) {
         this.allianceRepository = allianceRepository;
         this.userRepository = userRepository;
         this.allianceMissionRepository = allianceMissionRepository;
+        this.taskRepository = taskRepository;
+        this.taskInstanceRepository = taskInstanceRepository;
     }
 
     public LiveData<Alliance> getAlliance() { return allianceLiveData; }
@@ -44,6 +57,13 @@ public class AllianceDetailsViewModel extends ViewModel {
     public LiveData<String> getMissionButtonText() { return missionButtonText; }
     public LiveData<String> getMissionStarted() {
         return missionStarted;
+    }
+    public LiveData<String> getSuccessMessage() {
+        return successMessage;
+    }
+
+    public LiveData<Boolean> getIsLoading() {
+        return isLoading;
     }
 
     public void loadAlliance(String userId, String allianceId) {
@@ -134,9 +154,11 @@ public class AllianceDetailsViewModel extends ViewModel {
 
     //------------------DEO SA MISIJOM--------------------//
     public void checkActiveMission(String allianceId, String currentUserId, String leaderId) {
+        isLoading.postValue(true);
         allianceMissionRepository.getActiveMissionByAllianceId(allianceId, new RepositoryCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission mission) {
+                isLoading.postValue(false);
                 if (mission != null) {
                     // postoji aktivna misija
                     missionButtonText.postValue("Napredak misije");
@@ -152,7 +174,44 @@ public class AllianceDetailsViewModel extends ViewModel {
 
             @Override
             public void onFailure(Exception e) {
+                isLoading.postValue(false);
                 errorMessage.postValue("Neuspešno učitavanje misije: " + e.getMessage());
+            }
+        });
+    }
+
+    public void checkAndFinalizeExpiredMission(Alliance alliance, String userId) {
+        if (alliance == null) {
+            errorMessage.postValue("Alliance is null");
+            return;
+        }
+        isLoading.postValue(true);
+
+        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(
+                allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository
+        );
+
+        allianceMissionUseCase.checkAndFinalizeMission(alliance, new RepositoryCallback<MissionFinalizationResult>() {
+            @Override
+            public void onSuccess(MissionFinalizationResult result) {
+                isLoading.postValue(false);
+                if (result.isWasFinalized()) {
+                    alliance.setMissionActive(false);
+                    allianceLiveData.postValue(alliance);
+
+                    if (result.isBossDefeated()) {
+                        successMessage.postValue("Prethodna misija je završena. Pobedili ste bosa. Preuzmite svoje nagrade.");
+                    } else {
+                        successMessage.postValue("Prethodna misija je završena. Boss nije poražen.");
+                    }
+                }
+            }
+
+
+            @Override
+            public void onFailure(Exception e) {
+                isLoading.postValue(false);
+                errorMessage.postValue("Greška pri proveri misije: " + e.getMessage());
             }
         });
     }
@@ -162,22 +221,27 @@ public class AllianceDetailsViewModel extends ViewModel {
             errorMessage.postValue("Alliance is null");
             return;
         }
+        isLoading.postValue(true);
 
-        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository);
+        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(
+                allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository
+        );
 
         allianceMissionUseCase.startSpecialMission(alliance, userId, new RepositoryCallback<AllianceMission>() {
             @Override
             public void onSuccess(AllianceMission mission) {
-                // ažuriraj alliance da označiš da je misija aktivna
-                alliance.setMissionActive(true);
-                allianceLiveData.postValue(alliance);
-                missionStarted.postValue(alliance.getId());
-
-                Log.d("AllianceDetailsVM", "Mission started successfully: " + mission);
+                isLoading.postValue(false);
+                if (mission != null) {
+                    alliance.setMissionActive(true);
+                    allianceLiveData.postValue(alliance);
+                    missionStarted.postValue(alliance.getId());
+                    Log.d("AllianceDetailsVM", "Mission started successfully: " + mission);
+                }
             }
 
             @Override
             public void onFailure(Exception e) {
+                isLoading.postValue(false);
                 errorMessage.postValue("Failed to start mission: " + e.getMessage());
             }
         });
@@ -208,17 +272,23 @@ public class AllianceDetailsViewModel extends ViewModel {
 
         private final AllianceMissionRepository allianceMissionRepository;
 
-        public Factory(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository) {
+        private final TaskRepository taskRepository;
+
+        private final TaskInstanceRepository taskInstanceRepository;
+
+        public Factory(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository) {
             this.allianceRepository = allianceRepository;
             this.userRepository = userRepository;
             this.allianceMissionRepository = allianceMissionRepository;
+            this.taskRepository = taskRepository;
+            this.taskInstanceRepository = taskInstanceRepository;
 
         }
 
         @Override
         public <T extends ViewModel> T create(Class<T> modelClass) {
             if (modelClass.isAssignableFrom(AllianceDetailsViewModel.class)) {
-                return (T) new AllianceDetailsViewModel(allianceRepository, userRepository, allianceMissionRepository);
+                return (T) new AllianceDetailsViewModel(allianceRepository, userRepository, allianceMissionRepository, taskRepository, taskInstanceRepository);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

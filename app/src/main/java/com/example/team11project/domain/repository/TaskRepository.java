@@ -26,4 +26,6 @@ public interface TaskRepository {
 
     void countCompletedTasksByDifficulty(String userId, TaskDifficulty difficulty, Date startDate, Date endDate, RepositoryCallback<Integer> callback);
     void countCompletedTasksByImportance(String userId, TaskImportance importance, Date startDate, Date endDate, RepositoryCallback<Integer> callback);
+
+    public void IsTaskNotCompleted(String userId, Date startDate, Date endDate, RepositoryCallback<Boolean> callback);
 }

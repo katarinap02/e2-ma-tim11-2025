@@ -186,6 +186,7 @@ public final class AppContract {
         public static final String COLUMN_NAME_BOSS = "boss";
         public static final String COLUMN_NAME_START_DATE = "start_date";
         public static final String COLUMN_NAME_END_DATE = "end_date";
+        public static final String COLUMN_NAME_IS_ACTIVE = "is_active";
     }
 
     public static class AllianceMissionRewardEntry implements BaseColumns {
