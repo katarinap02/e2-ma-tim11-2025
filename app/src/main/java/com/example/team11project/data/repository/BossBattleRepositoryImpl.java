@@ -1,6 +1,7 @@
 package com.example.team11project.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.example.team11project.data.datasource.local.LocalDataSource;
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
@@ -26,29 +27,42 @@ public class BossBattleRepositoryImpl implements BossBattleRepository {
 
     @Override
     public void addBattle(BossBattle battle, RepositoryCallback<Void> callback) {
+        Log.d("BossBattle", "Pokrenuto kreiranje BossBattle: " + battle);
+
         if (battle.getAttacksUsed() < 0) {
+            Log.e("BossBattle", "Neuspešno: broj napada je negativan (" + battle.getAttacksUsed() + ")");
             callback.onFailure(new Exception("Broj napada ne može biti negativan."));
             return;
         }
 
         databaseExecutor.execute(() -> {
+            Log.d("BossBattle", "Poziva se remoteDataSource.addBossBattle()...");
+
             remoteDataSource.addBossBattle(battle, new RemoteDataSource.DataSourceCallback<String>() {
                 @Override
                 public void onSuccess(String newId) {
+                    Log.d("BossBattle", "Uspešno kreiran dokument u Firestore, ID: " + newId);
+
                     battle.setId(newId);
+                    Log.d("BossBattle", "Setovan ID u battle objektu: " + battle.getId());
+
                     databaseExecutor.execute(() -> {
+                        Log.d("BossBattle", "Dodavanje battle-a u lokalnu bazu...");
                         localDataSource.addBossBattle(battle);
+                        Log.d("BossBattle", "Uspešno dodat battle u lokalnu bazu.");
                         callback.onSuccess(null);
                     });
                 }
 
                 @Override
                 public void onFailure(Exception e) {
+                    Log.e("BossBattle", "Greška prilikom kreiranja u Firestore: " + e.getMessage(), e);
                     callback.onFailure(e);
                 }
             });
         });
     }
+
 
     @Override
     public void getBattles(String userId, RepositoryCallback<List<BossBattle>> callback) {

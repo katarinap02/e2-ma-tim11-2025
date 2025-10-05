@@ -2,6 +2,7 @@ package com.example.team11project.presentation.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -147,6 +148,7 @@ public class BossActivity extends BaseActivity {
             }
         });
 
+        userViewModel.loadUser(userId);
         userViewModel.getUser().observe(this, user -> {
             if (user != null) {
                 viewModel.loadBattleWithBoss(userId, bossId, level, user);

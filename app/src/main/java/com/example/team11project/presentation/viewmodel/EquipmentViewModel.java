@@ -1,6 +1,7 @@
 package com.example.team11project.presentation.viewmodel;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;

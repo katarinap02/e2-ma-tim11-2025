@@ -1,5 +1,7 @@
 package com.example.team11project.domain.usecase;
 
+import android.util.Log;
+
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.Boss;
 import com.example.team11project.domain.model.BossBattle;
@@ -169,35 +171,38 @@ public class BossUseCase {
     }
 
     public void getOrCreateBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages, double successRate, RepositoryCallback<BossBattle> callback) {
-        // Proveravamo da li već postoji aktivna bitka protiv ovog boss-a
-        bossBattleRepository.getBattleByUserAndBossAndLevel(user.getId(), boss.getId(), user.getLevelInfo().getLevel(), new RepositoryCallback<BossBattle>() {
-            @Override
-            public void onSuccess(BossBattle existingBattle) {
-                if (existingBattle != null && !existingBattle.isBossDefeated()) {
-                    // Već postoji aktivna bitka
-                    callback.onSuccess(existingBattle);
-                } else {
-                    BossBattle newBattle = createNewBossBattle(user, boss, activeEquipmentImages, successRate);
-                    bossBattleRepository.addBattle(newBattle, new RepositoryCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void unused) {
-                            callback.onSuccess(newBattle);
-                        }
+       bossBattleRepository.getBattleByUserAndBossAndLevel(
+                user.getId(),
+                boss.getId(),
+                user.getLevelInfo().getLevel(),
+                new RepositoryCallback<BossBattle>() {
+                    @Override
+                    public void onSuccess(BossBattle existingBattle) {
+                        if (existingBattle != null && !existingBattle.isBossDefeated()) {
+                            callback.onSuccess(existingBattle);
+                        } else {
+                            BossBattle newBattle = createNewBossBattle(user, boss, activeEquipmentImages, successRate);
+                            bossBattleRepository.addBattle(newBattle, new RepositoryCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void unused) {
+                                    callback.onSuccess(newBattle);
+                                }
 
-                        @Override
-                        public void onFailure(Exception e) {
-                            callback.onFailure(e);
+                                @Override
+                                public void onFailure(Exception e) {
+                                    callback.onFailure(e);
+                                }
+                            });
                         }
-                    });
-                }
-            }
+                    }
 
-            @Override
-            public void onFailure(Exception e) {
-                callback.onFailure(e);
-            }
-        });
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onFailure(e);
+                    }
+                });
     }
+
 
     private BossBattle createNewBossBattle(User user, Boss boss, ArrayList<String> activeEquipmentImages, double successRate) {
         BossBattle battle = new BossBattle();

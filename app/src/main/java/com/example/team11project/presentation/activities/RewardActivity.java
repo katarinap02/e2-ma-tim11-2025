@@ -111,6 +111,7 @@ public class RewardActivity extends BaseActivity{
             }
         });
 
+
         // Observer za greške
         rewardViewModel.error.observe(this, errorMsg -> {
             if (errorMsg != null) {

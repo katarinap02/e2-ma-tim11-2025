@@ -153,32 +153,58 @@ public class RewardViewModel extends ViewModel{
                             userRepository.getUserById(userId, new RepositoryCallback<User>() {
                                 @Override
                                 public void onSuccess(User user) {
-                                    // Dodaj novac
+                                    // Dodaj osnovne coins
                                     int newCoins = user.getCoins() + currentReward.getCoinsEarned();
                                     user.setCoins(newCoins);
 
-                                    // Dodaj opremu ako postoji
+                                    // Prvo izračunaj bonus coins asinhrono, a zatim updateUser unutar callback-a
+                                    getPreviousLevelCoins(user, new RepositoryCallback<Integer>() {
+                                        @Override
+                                        public void onSuccess(Integer previousCoins) {
+                                            int bonusCoins = (int)(previousCoins * 0.6);
+                                            user.setCoins(user.getCoins() + bonusCoins);
+
+                                            // Nakon što su svi coins dodati, update korisnika
+                                            userRepository.updateUser(user, new RepositoryCallback<Void>() {
+                                                @Override
+                                                public void onSuccess(Void data) {
+                                                    // Označi reward kao preuzetu
+                                                    markRewardAsClaimed(userId, bossId, level);
+                                                }
+
+                                                @Override
+                                                public void onFailure(Exception e) {
+                                                    _error.postValue("Greška pri ažuriranju korisnika: " + e.getMessage());
+                                                    _isLoading.postValue(false);
+                                                }
+                                            });
+                                        }
+
+                                        @Override
+                                        public void onFailure(Exception e) {
+                                            // Ako ne možemo da dobijemo prethodni nivo, samo update user sa osnovnim coins
+                                            userRepository.updateUser(user, new RepositoryCallback<Void>() {
+                                                @Override
+                                                public void onSuccess(Void data) {
+                                                    markRewardAsClaimed(userId, bossId, level);
+                                                }
+
+                                                @Override
+                                                public void onFailure(Exception ex) {
+                                                    _error.postValue("Greška pri ažuriranju korisnika: " + ex.getMessage());
+                                                    _isLoading.postValue(false);
+                                                }
+                                            });
+                                        }
+                                    });
+
+                                    // Dodavanje opreme ostaje kao što je (ne diramo)
                                     if (currentReward.getEquipmentId() != null && !currentReward.getEquipmentId().isEmpty()) {
                                         Equipment currentEquipment = _equipment.getValue();
                                         if (currentEquipment != null) {
                                             addEquipmentToUser(user, currentEquipment);
                                         }
                                     }
-
-                                    // Ažuriraj korisnika
-                                    userRepository.updateUser(user, new RepositoryCallback<Void>() {
-                                        @Override
-                                        public void onSuccess(Void data) {
-                                            // Označi nagradu kao preuzetu
-                                            markRewardAsClaimed(userId, bossId, level);
-                                        }
-
-                                        @Override
-                                        public void onFailure(Exception e) {
-                                            _error.postValue("Greška pri ažuriranju korisnika: " + e.getMessage());
-                                            _isLoading.postValue(false);
-                                        }
-                                    });
                                 }
 
                                 @Override
@@ -187,6 +213,7 @@ public class RewardViewModel extends ViewModel{
                                     _isLoading.postValue(false);
                                 }
                             });
+
                         }
 
                         @Override
@@ -236,20 +263,20 @@ public class RewardViewModel extends ViewModel{
             existing.setQuantity(existing.getQuantity() + 1);
             existing.setUpgradeChance(existing.getUpgradeChance() + 0.02);
 
-            final Weapon existingWeapon = existing;
-            getPreviousLevelCoins(user, new RepositoryCallback<Integer>() {
-                @Override
-                public void onSuccess(Integer previousCoins) {
-                    int bonusCoins = (int)(previousCoins * 0.6);
-                    user.setCoins(user.getCoins() + bonusCoins);
-                    existingWeapon.setUpgradeChance(existingWeapon.getUpgradeChance() + 0.0001);
-                }
-
-                @Override
-                public void onFailure(Exception e) {
-                    Log.e("RewardViewModel", "Greška pri dobijanju novčića prethodnog levela: " + e.getMessage(), e);
-                }
-            });
+//            final Weapon existingWeapon = existing;
+//            getPreviousLevelCoins(user, new RepositoryCallback<Integer>() {
+//                @Override
+//                public void onSuccess(Integer previousCoins) {
+//                    int bonusCoins = (int)(previousCoins * 0.6);
+//                    user.setCoins(user.getCoins() + bonusCoins);
+//                    existingWeapon.setUpgradeChance(existingWeapon.getUpgradeChance() + 0.0001);
+//                }
+//
+//                @Override
+//                public void onFailure(Exception e) {
+//                    Log.e("RewardViewModel", "Greška pri dobijanju novčića prethodnog levela: " + e.getMessage(), e);
+//                }
+//            });
 
         } else {
             Weapon copy = new Weapon(

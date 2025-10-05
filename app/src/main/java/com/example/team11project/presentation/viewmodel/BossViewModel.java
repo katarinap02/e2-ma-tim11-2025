@@ -91,6 +91,12 @@ public class BossViewModel extends ViewModel {
         bossBattleRepository.getBattleByUserAndBossAndLevel(userId, bossId, level, new RepositoryCallback<BossBattle>() {
             @Override
             public void onSuccess(BossBattle battle) {
+                if (battle == null) {
+                    _error.setValue("Trenutno nema aktivne borbe");
+                    _isLoading.postValue(false);
+                    return;
+                }
+
                 if (currentUser != null) {
                     List<String> activeIds = battle.getActiveEquipment();
                     int temporaryPP = 0;
