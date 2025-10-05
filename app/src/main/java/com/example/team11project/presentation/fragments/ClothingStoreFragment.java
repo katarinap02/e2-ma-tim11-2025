@@ -46,7 +46,7 @@ public class ClothingStoreFragment extends Fragment {
         storeViewModel = new ViewModelProvider(requireActivity()).get(StoreViewModel.class);
         storeViewModel.getClothing().observe(getViewLifecycleOwner(), adapter::updateData);
 
-        storeViewModel.loadEquipment();
+        storeViewModel.loadEquipment(userId);
 
         return view;
     }

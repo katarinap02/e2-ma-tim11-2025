@@ -44,6 +44,13 @@ public class PotionActivateAdapter extends RecyclerView.Adapter<PotionActivateAd
         put("clothing_gloves", R.drawable.clothing_gloves);
         put("clothing_shield", R.drawable.clothing_shield);
         put("potion_10", R.drawable.potion_10);
+        put("potion_20", R.drawable.potion_20);
+        put("potion_40", R.drawable.potion_40);
+        put("potion_5", R.drawable.potion_5);
+        put("weapon_bow", R.drawable.weapon_bow);
+        put("weapon_sword", R.drawable.weapon_sword);
+
+
     }};
 
     @Override
@@ -80,7 +87,7 @@ public class PotionActivateAdapter extends RecyclerView.Adapter<PotionActivateAd
             super(itemView);
             checkBox = itemView.findViewById(R.id.cbEquipment);
             imgEquipment = itemView.findViewById(R.id.imgEquipment);
-            
+
         }
     }
 }

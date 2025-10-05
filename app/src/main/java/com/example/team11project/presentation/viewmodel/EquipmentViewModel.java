@@ -1,6 +1,7 @@
 package com.example.team11project.presentation.viewmodel;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
@@ -164,7 +165,7 @@ public class EquipmentViewModel extends ViewModel {
                     TaskRepository taskRepo = new TaskRepositoryImpl(application);
                     TaskInstanceRepository instanceRepo = new TaskInstanceRepositoryImpl(application);
                     LevelInfoRepository levelInfoRepository = new LevelInfoRepositoryImpl(application);
-                    BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository, equipmentRepository);
+                    BossUseCase bossUseCase = new BossUseCase(bossRepository, battleRepository, rewardRepository, equipmentRepository, userRepo);
                     TaskUseCase completeUC = new TaskUseCase(taskRepo, userRepo, instanceRepo, levelInfoRepository, bossUseCase);
 
                     @SuppressWarnings("unchecked")
@@ -229,7 +230,6 @@ public class EquipmentViewModel extends ViewModel {
                 if (w.getQuantity() <= 0) continue;
                 w.setActive(true);
                 currentUser.getLevelInfo().setPp(w.getPermanentBoostPercent() + currentUser.getLevelInfo().getPp());
-                w.setQuantity(w.getQuantity() - 1);
             }
         }
 
@@ -239,9 +239,6 @@ public class EquipmentViewModel extends ViewModel {
                 p.setActive(true);
                 if (p.isPermanent()) {
                     currentUser.getLevelInfo().setPp(p.getPowerBoostPercent() + currentUser.getLevelInfo().getPp());
-                } else {
-                    //TODO: dodaj logiku za privremeno povecanje
-                    p.setQuantity(p.getQuantity() - 1);
                 }
             }
         }
@@ -252,12 +249,7 @@ public class EquipmentViewModel extends ViewModel {
                 c.setActive(true);
                 if(c.getEffectType() == ChlothingEffectType.STRENGTH)
                     currentUser.getLevelInfo().setPp(c.getEffectPercent() + currentUser.getLevelInfo().getPp());
-                else if(c.getEffectType() == ChlothingEffectType.SUCCESS_RATE) continue;
-                    //TODO: dodaj logiku
-                else continue;
-                    //TODO: dodaj logiku
                 c.setRemainingBattles(2);
-                c.setQuantity(c.getQuantity() - 1);
             }
         }
 

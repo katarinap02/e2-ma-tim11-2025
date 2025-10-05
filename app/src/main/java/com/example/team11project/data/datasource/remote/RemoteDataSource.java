@@ -344,14 +344,30 @@ public class RemoteDataSource {
             return;
         }
 
-        if (user.getClothing() == null) user.setClothing(new ArrayList<>());
-        if (user.getWeapons() == null) user.setWeapons(new ArrayList<>());
-        if (user.getPotions() == null) user.setPotions(new ArrayList<>());
-
         Map<String, Object> userMap = new HashMap<>();
-        userMap.put("clothing", user.getClothing());
-        userMap.put("weapons", user.getWeapons());
-        userMap.put("potions", user.getPotions());
+
+        userMap.put("username", user.getUsername());
+        userMap.put("email", user.getEmail());
+        userMap.put("password", user.getPassword());
+        userMap.put("avatar", user.getAvatar());
+        userMap.put("isVerified", user.getVerified());
+
+        userMap.put("coins", user.getCoins());
+        userMap.put("activeDays", user.getActiveDays());
+
+        if (user.getLevelInfo() != null) {
+            Map<String, Object> levelInfoMap = new HashMap<>();
+            levelInfoMap.put("level", user.getLevelInfo().getLevel());
+            levelInfoMap.put("xp", user.getLevelInfo().getXp());
+            userMap.put("levelInfo", levelInfoMap);
+        }
+
+        userMap.put("weapons", user.getWeapons() != null ? user.getWeapons() : new ArrayList<>());
+        userMap.put("potions", user.getPotions() != null ? user.getPotions() : new ArrayList<>());
+        userMap.put("clothing", user.getClothing() != null ? user.getClothing() : new ArrayList<>());
+
+        userMap.put("friends", user.getFriends() != null ? user.getFriends() : new ArrayList<>());
+
         userMap.put("currentAlliance", convertAllianceToMap(user.getCurrentAlliance()));
 
         db.collection(USERS_COLLECTION)
@@ -361,7 +377,7 @@ public class RemoteDataSource {
                 .addOnFailureListener(callback::onFailure);
     }
 
-    // Pomoćna metoda koja konvertuje Alliance u mapu
+
     private Map<String, Object> convertAllianceToMap(Alliance alliance) {
         if (alliance == null) return null;
         Map<String, Object> map = new HashMap<>();
@@ -402,17 +418,6 @@ public class RemoteDataSource {
                         user.getLevelInfo().setTitle(titleEnum);
                     } else {
                         user.setLevelInfo(new LevelInfo(0, 200, 0, 0, 0, UserTitle.POČETNIK, 0, new Date(), null)); // default LevelInfo
-                    }
-
-                    Map<String, Long> xpMap = (Map<String, Long>) documentSnapshot.get("xpLast7Days");
-                    if (xpMap != null) {
-                        Map<String, Integer> xpLast7Days = new TreeMap<>();
-                        for (Map.Entry<String, Long> entry : xpMap.entrySet()) {
-                            xpLast7Days.put(entry.getKey(), entry.getValue().intValue());
-                        }
-                       // user.getLevelInfo().setXpHistoryLast7Days(xpLast7Days); // dodaj getter/setter u LevelInfo
-                    } else {
-                      //  user.getLevelInfo().setXpHistoryLast7Days(new TreeMap<>());
                     }
 
                     callback.onSuccess(user);
