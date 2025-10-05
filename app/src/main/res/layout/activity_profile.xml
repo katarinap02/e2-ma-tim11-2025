@@ -263,6 +263,24 @@
                 android:paddingTop="12dp"
                 android:paddingBottom="6dp" />
 
+            <TextView
+                android:id="@+id/txtXp7Days"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/osvojeni_xp_u_poslednjih_7_dana"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp" />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/xpLineChart"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginHorizontal="16dp"
+                />
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

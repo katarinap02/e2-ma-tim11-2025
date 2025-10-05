@@ -32,6 +32,7 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
@@ -351,5 +352,56 @@ public class ProfileActivity extends BaseActivity {
                 txtFinishedSpecialMissions.setText("Broj završenih specijalnih misija: " + finished);
             }
         });
+
+
+
+        LineChart xpLineChart = findViewById(R.id.xpLineChart);
+
+        List<Entry> entries = new ArrayList<>();
+        entries.add(new Entry(0, 120));
+        entries.add(new Entry(1, 40));
+        entries.add(new Entry(2, 40));
+        entries.add(new Entry(3, 30));
+        entries.add(new Entry(4, 0));
+        entries.add(new Entry(5, 0));
+        entries.add(new Entry(6, 80));
+
+        LineDataSet dataSet = new LineDataSet(entries, "XP u poslednjih 7 dana");
+        dataSet.setColor(Color.parseColor("#4CAF50"));
+        dataSet.setCircleColor(Color.parseColor("#388E3C"));
+        dataSet.setLineWidth(2f);
+        dataSet.setCircleRadius(4f);
+        dataSet.setValueTextSize(10f);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        dataSet.setDrawFilled(true);
+        dataSet.setFillColor(Color.parseColor("#A5D6A7"));
+
+        LineData lineData = new LineData(dataSet);
+        xpLineChart.setData(lineData);
+
+        String[] days = new String[]{"03-10", "04-10", "05-10", "06-10", "07-10", "08-10", "09-10"};
+        XAxis xAxis = xpLineChart.getXAxis();
+        xAxis.setValueFormatter(new com.github.mikephil.charting.formatter.ValueFormatter() {
+            public String getFormattedValue(float value) {
+                int index = (int) value;
+                if (index >= 0 && index < days.length) {
+                    return days[index];
+                } else {
+                    return "";
+                }
+            }
+        });
+        xAxis.setGranularity(1f);
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setTextColor(Color.DKGRAY);
+
+        YAxis leftAxis = xpLineChart.getAxisLeft();
+        leftAxis.setTextColor(Color.DKGRAY);
+        xpLineChart.getAxisRight().setEnabled(false);
+
+        xpLineChart.getDescription().setEnabled(false);
+        xpLineChart.animateY(1200);
+        xpLineChart.invalidate();
+
     }
 }

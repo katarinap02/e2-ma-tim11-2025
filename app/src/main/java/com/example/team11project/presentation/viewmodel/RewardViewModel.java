@@ -156,6 +156,8 @@ public class RewardViewModel extends ViewModel{
                                     // Dodaj osnovne coins
                                     int newCoins = user.getCoins() + currentReward.getCoinsEarned();
                                     user.setCoins(newCoins);
+                                    Log.d("RewardDebug", "User loaded: " + user.getUsername() + ", old coins: " + user.getCoins());
+
 
                                     // Prvo izračunaj bonus coins asinhrono, a zatim updateUser unutar callback-a
                                     getPreviousLevelCoins(user, new RepositoryCallback<Integer>() {
@@ -164,21 +166,34 @@ public class RewardViewModel extends ViewModel{
                                             int bonusCoins = (int)(previousCoins * 0.6);
                                             user.setCoins(user.getCoins() + bonusCoins);
 
+                                            // Dodavanje opreme pre update-a
+                                            if (currentReward.getEquipmentId() != null && !currentReward.getEquipmentId().isEmpty()) {
+                                                Equipment currentEquipment = _equipment.getValue();
+                                                if (currentEquipment != null) {
+                                                    addEquipmentToUser(user, currentEquipment);
+                                                }
+                                            }
+
                                             // Nakon što su svi coins dodati, update korisnika
                                             userRepository.updateUser(user, new RepositoryCallback<Void>() {
                                                 @Override
                                                 public void onSuccess(Void data) {
                                                     // Označi reward kao preuzetu
+                                                    Log.d("RewardDebug", "User successfully updated. New coins: " + user.getCoins());
+
                                                     markRewardAsClaimed(userId, bossId, level);
                                                 }
 
                                                 @Override
                                                 public void onFailure(Exception e) {
+                                                    Log.e("RewardDebug", "Error updating user: " + e.getMessage());
+
                                                     _error.postValue("Greška pri ažuriranju korisnika: " + e.getMessage());
                                                     _isLoading.postValue(false);
                                                 }
                                             });
                                         }
+
 
                                         @Override
                                         public void onFailure(Exception e) {
@@ -198,13 +213,7 @@ public class RewardViewModel extends ViewModel{
                                         }
                                     });
 
-                                    // Dodavanje opreme ostaje kao što je (ne diramo)
-                                    if (currentReward.getEquipmentId() != null && !currentReward.getEquipmentId().isEmpty()) {
-                                        Equipment currentEquipment = _equipment.getValue();
-                                        if (currentEquipment != null) {
-                                            addEquipmentToUser(user, currentEquipment);
-                                        }
-                                    }
+
                                 }
 
                                 @Override
