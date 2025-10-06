@@ -42,9 +42,9 @@ The app allows users to build healthy routines and stay motivated by gamifying p
 
 ## 📷 Screenshots  
 
-| Home Screen | Tasks & Habits | Profile | Boss Battle |
+| Profile | Tasks & Calendar | Rewards | Boss Battle |
 |-------------|----------------|---------|-------------|
-| ![Home](screenshots/home.png) | ![Tasks](screenshots/tasks.png) | ![Profile](screenshots/profile.png) | ![Boss](screenshots/boss.png) |
+| ![Profile](screenshots/profile.jpg) | ![Tasks](screenshots/calendar.jpeg) | ![Rewards](screenshots/rewards.jpg) | ![Boss](screenshots/boss.jpg) |
  
 
 ---
