@@ -17,6 +17,9 @@
         android:theme="@style/Theme.Team11Project"
         tools:targetApi="31">
         <activity
+            android:name=".presentation.activities.AllianceRewardsActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.activities.AllianceMissionActivity"
             android:exported="false" />
         <activity

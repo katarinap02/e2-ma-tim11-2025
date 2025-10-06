@@ -15,7 +15,9 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.presentation.viewmodel.UserViewModel;
 
@@ -40,8 +42,8 @@ public class ChangePasswordActivity extends BaseActivity {
 
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
-
-        UserViewModel.Factory factory = new UserViewModel.Factory(userRepository);
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
+        UserViewModel.Factory factory = new UserViewModel.Factory(userRepository,allianceMissionRepository);
         viewModel = new ViewModelProvider(this, factory).get(UserViewModel.class);
 
         String userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)

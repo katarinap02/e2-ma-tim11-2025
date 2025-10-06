@@ -421,10 +421,11 @@ public class StoreViewModel extends ViewModel {
                 AllianceRepository allianceRepository = new AllianceRepositoryImpl(application);
                 TaskRepository taskRepository = new TaskRepositoryImpl(application);
                 TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(application);
-                AllianceMissionUseCase allianceUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, repository, taskRepository, taskInstanceRepository);
-                BossRepository bossRepository1 = new BossRepositoryImpl(application);
+                EquipmentRepository equipmentRepository1 = new EquipmentRepositoryImpl(application);
+                BossRepository bossRepository = new BossRepositoryImpl(application);
+                AllianceMissionUseCase allianceUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, repository, taskRepository, taskInstanceRepository, equipmentRepository1, bossRepository);
 
-                return (T) new StoreViewModel(repository, eRepository, allianceUseCase, bossRepository1);
+                return (T) new StoreViewModel(repository, eRepository, allianceUseCase, bossRepository);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

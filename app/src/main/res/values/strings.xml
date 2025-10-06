@@ -107,6 +107,19 @@
     <string name="broj_zavr_enih_specijalnih_misija_0">Broj završenih specijalnih misija: 0</string>
     <string name="xp_poslednjih_7_dana">XP poslednjih 7 dana:</string>
     <string name="osvojeni_xp_u_poslednjih_7_dana">Osvojeni XP u poslednjih 7 dana:</string>
+    <string name="sve_nagrade">Sve nagrade</string>
+    <string name="nagrade_iz_specijalnih_misija">Nagrade iz specijalnih misija</string>
+    <string name="ukupno_bed_eva_0">Ukupno bedževa: 0</string>
+    <string name="nemate_osvojenih_nagrada_iz_specijalnih_misija">Nemate osvojenih nagrada iz specijalnih misija</string>
+    <string name="badge">Badge</string>
+    <string name="badge1">Badge</string>
+    <string name="nagrada_1">Nagrada #1</string>
+    <string name="coin">Coin</string>
+    <string name="novcici">Novčići: 0</string>
+    <string name="potion1">Potion</string>
+    <string name="napitak">Napitak</string>
+    <string name="clothing1">Clothing</string>
+    <string name="odeca">Odeća</string>
     <string name="aktivna_oprema1">Aktivna oprema</string>
     <string name="izaberite_opremu">Izaberite opremu</string>
 </resources>

@@ -10,6 +10,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.AllianceInvite;
@@ -49,7 +50,7 @@ public class HomeScreenActivity extends BaseActivity {
                 .getString("userId", null);
 
         userViewModel = new ViewModelProvider(this,
-                new UserViewModel.Factory(new UserRepositoryImpl(getApplicationContext())))
+                new UserViewModel.Factory(new UserRepositoryImpl(getApplicationContext()), new AllianceMissionRepositoryImpl(getApplicationContext())))
                 .get(UserViewModel.class);
 
 

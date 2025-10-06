@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
+import com.example.team11project.data.repository.BossRepositoryImpl;
+import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
@@ -23,6 +25,8 @@ import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.BossRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
 import com.example.team11project.domain.repository.UserRepository;
@@ -48,6 +52,8 @@ public class AllianceDetailsActivity extends BaseActivity {
     private Button btnStartMission;
     private Button btnDisband;
     private Button btnChat;
+
+    private Button bntRewards;
     private ProgressBar progressBar;
 
     private final List<User> members = new ArrayList<>();
@@ -59,6 +65,8 @@ public class AllianceDetailsActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alliance_details);
+
+
 
         setupNavbar();
         initializeViews();
@@ -82,6 +90,7 @@ public class AllianceDetailsActivity extends BaseActivity {
         btnStartMission = findViewById(R.id.btnStartMission);
         btnDisband = findViewById(R.id.btnDisbandAlliance);
         btnChat = findViewById(R.id.btnChat);
+        bntRewards = findViewById(R.id.btnRewards);
         progressBar = findViewById(R.id.progressBar);
 
         userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
@@ -94,14 +103,16 @@ public class AllianceDetailsActivity extends BaseActivity {
         AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
         TaskRepository taskRepository = new TaskRepositoryImpl(getApplicationContext());
         TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(getApplicationContext());
+        EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(getApplicationContext());
+        BossRepository bossRepository = new BossRepositoryImpl(getApplicationContext());
 
         allianceViewModel = new ViewModelProvider(this,
                 new AllianceDetailsViewModel.Factory(allianceRepository, userRepository,
-                        allianceMissionRepository, taskRepository, taskInstanceRepository))
+                        allianceMissionRepository, taskRepository, taskInstanceRepository, equipmentRepository, bossRepository))
                 .get(AllianceDetailsViewModel.class);
 
         userViewModel = new ViewModelProvider(this,
-                new UserViewModel.Factory(userRepository))
+                new UserViewModel.Factory(userRepository, allianceMissionRepository))
                 .get(UserViewModel.class);
     }
 
@@ -115,6 +126,7 @@ public class AllianceDetailsActivity extends BaseActivity {
         btnDisband.setOnClickListener(v -> handleDisbandAlliance());
         btnChat.setOnClickListener(v -> handleOpenChat());
         btnStartMission.setOnClickListener(v -> handleStartMission());
+        bntRewards.setOnClickListener(v-> handleRewardsOpen());
     }
 
     private void handleDisbandAlliance() {
@@ -149,6 +161,12 @@ public class AllianceDetailsActivity extends BaseActivity {
         Intent intent = new Intent(this, AllianceChatActivity.class);
         intent.putExtra("allianceId", currentAlliance.getId());
         intent.putExtra("allianceLeaderId", currentAlliance.getLeader());
+        startActivity(intent);
+    }
+
+    private void handleRewardsOpen() {
+
+        Intent intent = new Intent(this, AllianceRewardsActivity.class);
         startActivity(intent);
     }
 
@@ -197,7 +215,6 @@ public class AllianceDetailsActivity extends BaseActivity {
                 // Onemogući/omogući dugmad
                 btnStartMission.setEnabled(!isLoading);
                 btnDisband.setEnabled(!isLoading);
-                btnChat.setEnabled(!isLoading);
 
                 // Promeni tekst dugmeta ako je vidljivo
                 if (isLoading && btnStartMission.getVisibility() == View.VISIBLE) {

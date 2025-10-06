@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.User;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.LevelInfoRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.UserRepository;
@@ -21,10 +22,12 @@ public class UserViewModel extends ViewModel {
 
     private UserRepository repository;
     private FriendsUseCase friendsUseCase;
+    private AllianceMissionRepository allianceMissionRepository;
     private MutableLiveData<User> user = new MutableLiveData<>();
     private MutableLiveData<List<User>> allUsers = new MutableLiveData<>();
     private MutableLiveData<String> error = new MutableLiveData<>();
     private MutableLiveData<Boolean> updateSuccess = new MutableLiveData<>();
+    private MutableLiveData<Integer> badgeCount = new MutableLiveData<>();
 
     // LiveData za listu prijatelja
     private MutableLiveData<List<User>> friends = new MutableLiveData<>();
@@ -39,9 +42,10 @@ public class UserViewModel extends ViewModel {
 
     public LiveData<String> getError() { return error; }
 
-    public UserViewModel(UserRepository repository){
+    public UserViewModel(UserRepository repository, AllianceMissionRepository allianceMissionRepository){
         this.repository = repository;
         this.friendsUseCase = friendsUseCase = new FriendsUseCase(repository);
+        this.allianceMissionRepository = allianceMissionRepository;
     }
 
     public LiveData<User> getUser() {
@@ -55,6 +59,8 @@ public class UserViewModel extends ViewModel {
     public LiveData<Boolean> getUpdateSuccess() {
         return updateSuccess;
     }
+
+    public LiveData<Integer> getBadgeCount() {return  badgeCount; }
 
 
     public void loadUser(String userId) {
@@ -92,6 +98,20 @@ public class UserViewModel extends ViewModel {
         });
     }
 
+    public void getBadgeCount(String userId) {
+        allianceMissionRepository.getTotalBadgeCount(userId, new RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer count) {
+                badgeCount.postValue(count);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                error.postValue(e.getMessage());
+            }
+        });
+    }
+
 
     public void updatePassword(String userId, String newPassword) {
         repository.updatePassword(userId, newPassword, new RepositoryCallback<Void>() {
@@ -114,16 +134,18 @@ public class UserViewModel extends ViewModel {
 
     public static class Factory implements ViewModelProvider.Factory {
         private final UserRepository userRepository;
+        private final AllianceMissionRepository allianceMissionRepository;
 
-        public Factory(UserRepository userRepository) {
+        public Factory(UserRepository userRepository, AllianceMissionRepository allianceMissionRepository) {
             this.userRepository = userRepository;
+            this.allianceMissionRepository = allianceMissionRepository;
         }
 
         @NonNull
         @Override
         public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
             if (modelClass.isAssignableFrom(UserViewModel.class)) {
-                return (T) new UserViewModel(userRepository);
+                return (T) new UserViewModel(userRepository, allianceMissionRepository);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

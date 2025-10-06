@@ -15,6 +15,8 @@ import com.example.team11project.R;
 import com.example.team11project.data.repository.AllianceMessageRepositoryImpl;
 import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.AllianceRepositoryImpl;
+import com.example.team11project.data.repository.BossRepositoryImpl;
+import com.example.team11project.data.repository.EquipmentRepositoryImpl;
 import com.example.team11project.data.repository.TaskInstanceRepositoryImpl;
 import com.example.team11project.data.repository.TaskRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
@@ -23,6 +25,8 @@ import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMessageRepository;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.BossRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
@@ -58,8 +62,9 @@ public class AllianceChatActivity extends BaseActivity {
         Button btnSend = findViewById(R.id.btnSend);
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
         userViewModel = new ViewModelProvider(this,
-                new UserViewModel.Factory(userRepository))
+                new UserViewModel.Factory(userRepository,allianceMissionRepository))
                 .get(UserViewModel.class);
 
         allianceId = getIntent().getStringExtra("allianceId");
@@ -73,12 +78,13 @@ public class AllianceChatActivity extends BaseActivity {
 
         Executor executor = Executors.newSingleThreadExecutor();
         AllianceMessageRepository allianceMessageRepository = new AllianceMessageRepositoryImpl(getApplicationContext(), executor);
-        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
         AllianceRepository allianceRepository = new AllianceRepositoryImpl(getApplicationContext());
         UserRepository userRepository1 = new UserRepositoryImpl(getApplicationContext());
         TaskRepository taskRepository = new TaskRepositoryImpl(getApplicationContext());
         TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(getApplicationContext());
-        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository1, taskRepository, taskInstanceRepository);
+        EquipmentRepository equipmentRepository = new EquipmentRepositoryImpl(getApplicationContext());
+        BossRepository bossRepository = new BossRepositoryImpl(getApplicationContext());
+        AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository1, taskRepository, taskInstanceRepository, equipmentRepository, bossRepository);
 
         viewModel = new ViewModelProvider(this,
                 new AllianceChatViewModel.Factory(

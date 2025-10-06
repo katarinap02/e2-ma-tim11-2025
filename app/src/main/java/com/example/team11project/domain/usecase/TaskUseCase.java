@@ -295,10 +295,10 @@ public class TaskUseCase {
         }
 
         // Simuliraj računanje XP kao u completeTask metodi
-        calculateXpForDifficulty(task, userId, task.getExecutionTime(), new RepositoryCallback<Integer>() {
+        calculateXpForDifficulty(task, userId, task.getCompletionDate(), new RepositoryCallback<Integer>() {
             @Override
             public void onSuccess(Integer difficultyXp) {
-                calculateXpForImportance(task, userId, task.getExecutionTime(),new RepositoryCallback<Integer>() {
+                calculateXpForImportance(task, userId, task.getCompletionDate(),new RepositoryCallback<Integer>() {
                     @Override
                     public void onSuccess(Integer importanceXp) {
                         boolean earnedXp = (difficultyXp + importanceXp) > 0;

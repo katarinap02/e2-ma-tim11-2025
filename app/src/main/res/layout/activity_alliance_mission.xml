@@ -10,17 +10,33 @@
         android:padding="16dp">
 
         <!-- Naslov misije -->
-        <TextView
-            android:id="@+id/tvSpecialMissionTitle"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Specijalna misija"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="@color/white"
-            android:gravity="center"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="16dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <!-- Ikonica back -->
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_back"
+                android:padding="4dp" />
+
+            <!-- Naslov misije -->
+            <TextView
+                android:id="@+id/tvSpecialMissionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Specijalna misija"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:layout_marginStart="12dp"/>
+        </LinearLayout>
+
 
         <!-- Boss informacije -->
         <LinearLayout

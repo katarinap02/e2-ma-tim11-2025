@@ -12,6 +12,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.example.team11project.R;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.auth.FirebaseAuth;
 
 public abstract class BaseActivity extends AppCompatActivity {
 
@@ -49,6 +50,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     public void logout(Context context) {
+        FirebaseAuth.getInstance().signOut();
         SharedPreferences prefs = context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         prefs.edit()
                 .remove("sessionToken")

@@ -307,32 +307,42 @@ public class RemoteDataSource {
                             return;
                         }
 
-                        // 2. Sada proveri da li je email verifikovan
-                        if (firebaseUser.isEmailVerified()) {
-                            // 3. Ako jeste, dohvati ostatak podataka o korisniku iz Firestore baze
-                            db.collection(USERS_COLLECTION)
-                                    .document(firebaseUser.getUid()) // Koristi jedinstveni UID korisnika
-                                    .get()
-                                    .addOnCompleteListener(firestoreTask -> {
-                                        if (firestoreTask.isSuccessful() && firestoreTask.getResult() != null) {
-                                            User user = firestoreTask.getResult().toObject(User.class);
-                                            if (user != null) {
-                                                user.setId(firebaseUser.getUid()); // Osiguraj da je ID postavljen
-                                                callback.onSuccess(user);
-                                            } else {
-                                                callback.onFailure(new Exception("Korisnički podaci nisu pronađeni."));
-                                            }
+                        // Force refresh token da bi dobili najnovije stanje
+                        firebaseUser.getIdToken(true)
+                                .addOnCompleteListener(tokenTask -> {
+                                    if (tokenTask.isSuccessful()) {
+                                        // Token uspešno osvežen, nastavi sa verifikacijom
+                                        if (firebaseUser.isEmailVerified()) {
+                                            // Dohvati podatke iz Firestore
+                                            db.collection(USERS_COLLECTION)
+                                                    .document(firebaseUser.getUid())
+                                                    .get()
+                                                    .addOnCompleteListener(firestoreTask -> {
+                                                        if (firestoreTask.isSuccessful() && firestoreTask.getResult() != null) {
+                                                            User user = firestoreTask.getResult().toObject(User.class);
+                                                            if (user != null) {
+                                                                user.setId(firebaseUser.getUid());
+                                                                callback.onSuccess(user);
+                                                            } else {
+                                                                callback.onFailure(new Exception("Korisnički podaci nisu pronađeni."));
+                                                            }
+                                                        } else {
+                                                            callback.onFailure(firestoreTask.getException());
+                                                        }
+                                                    });
                                         } else {
-                                            callback.onFailure(firestoreTask.getException());
+                                            // Email nije verifikovan
+                                            auth.signOut();
+                                            callback.onFailure(new Exception("Morate prvo da aktivirate nalog putem linka u mejlu"));
                                         }
-                                    });
-                        } else {
-                            // 4. Ako email NIJE verifikovan, vrati tačnu poruku o grešci
-                            auth.signOut(); // Izloguj korisnika jer nije verifikovan
-                            callback.onFailure(new Exception("Morate prvo da aktivirate nalog putem linka u mejlu"));
-                        }
+                                    } else {
+                                        // Token refresh nije uspeo - verovatno je lozinka promenjena
+                                        auth.signOut();
+                                        callback.onFailure(new Exception("Sesija je nevažeća. Molimo prijavite se ponovo."));
+                                    }
+                                });
                     } else {
-                        // Ako prijava ne uspe (npr. pogrešna lozinka), Firebase će vratiti odgovarajuću grešku
+                        // Prijava neuspešna (pogrešna lozinka ili email)
                         callback.onFailure(authTask.getException());
                     }
                 });
@@ -359,6 +369,13 @@ public class RemoteDataSource {
             Map<String, Object> levelInfoMap = new HashMap<>();
             levelInfoMap.put("level", user.getLevelInfo().getLevel());
             levelInfoMap.put("xp", user.getLevelInfo().getXp());
+            levelInfoMap.put("xpForNextLevel", user.getLevelInfo().getXpForNextLevel());
+            levelInfoMap.put("xpTaskImportance", user.getLevelInfo().getXpTaskImportance());
+            levelInfoMap.put("xpTaskDifficulty", user.getLevelInfo().getXpTaskDifficulty());
+            levelInfoMap.put("title", user.getLevelInfo().getTitle() != null ? user.getLevelInfo().getTitle().name() : null);
+            levelInfoMap.put("pp", user.getLevelInfo().getPp());
+            levelInfoMap.put("currentLevelStartDate", user.getLevelInfo().getCurrentLevelStartDate());
+            levelInfoMap.put("previousLevelStartDate", user.getLevelInfo().getPreviousLevelStartDate());
             userMap.put("levelInfo", levelInfoMap);
         }
 

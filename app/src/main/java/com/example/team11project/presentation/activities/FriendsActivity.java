@@ -11,7 +11,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.team11project.R;
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.domain.usecase.FriendsUseCase;
 import com.example.team11project.presentation.adapters.FriendsAdapter;
@@ -49,7 +51,8 @@ public class FriendsActivity extends BaseActivity {
         recyclerView.setAdapter(adapter);
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
-        UserViewModel.Factory factory = new UserViewModel.Factory(userRepository);
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
+        UserViewModel.Factory factory = new UserViewModel.Factory(userRepository, allianceMissionRepository);
         viewModel = new ViewModelProvider(this, factory).get(UserViewModel.class);
 
         viewModel.getFriendsLiveData().observe(this, friends -> {

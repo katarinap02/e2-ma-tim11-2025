@@ -327,7 +327,7 @@ public class BossViewModel extends ViewModel {
                     UserRepository userRepository = new UserRepositoryImpl(application);
                     TaskRepository taskRepository = new TaskRepositoryImpl(application);
                     TaskInstanceRepository taskInstanceRepository = new TaskInstanceRepositoryImpl(application);
-                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository);
+                    AllianceMissionUseCase allianceMissionUseCase1 = new AllianceMissionUseCase(allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository, equipmentRepo, bossRepo);
 
 
                     @SuppressWarnings("unchecked")
