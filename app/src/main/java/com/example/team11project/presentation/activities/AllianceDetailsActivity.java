@@ -52,6 +52,8 @@ public class AllianceDetailsActivity extends BaseActivity {
     private Button btnStartMission;
     private Button btnDisband;
     private Button btnChat;
+
+    private Button bntRewards;
     private ProgressBar progressBar;
 
     private final List<User> members = new ArrayList<>();
@@ -88,6 +90,7 @@ public class AllianceDetailsActivity extends BaseActivity {
         btnStartMission = findViewById(R.id.btnStartMission);
         btnDisband = findViewById(R.id.btnDisbandAlliance);
         btnChat = findViewById(R.id.btnChat);
+        bntRewards = findViewById(R.id.btnRewards);
         progressBar = findViewById(R.id.progressBar);
 
         userId = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
@@ -109,7 +112,7 @@ public class AllianceDetailsActivity extends BaseActivity {
                 .get(AllianceDetailsViewModel.class);
 
         userViewModel = new ViewModelProvider(this,
-                new UserViewModel.Factory(userRepository))
+                new UserViewModel.Factory(userRepository, allianceMissionRepository))
                 .get(UserViewModel.class);
     }
 
@@ -123,6 +126,7 @@ public class AllianceDetailsActivity extends BaseActivity {
         btnDisband.setOnClickListener(v -> handleDisbandAlliance());
         btnChat.setOnClickListener(v -> handleOpenChat());
         btnStartMission.setOnClickListener(v -> handleStartMission());
+        bntRewards.setOnClickListener(v-> handleRewardsOpen());
     }
 
     private void handleDisbandAlliance() {
@@ -157,6 +161,12 @@ public class AllianceDetailsActivity extends BaseActivity {
         Intent intent = new Intent(this, AllianceChatActivity.class);
         intent.putExtra("allianceId", currentAlliance.getId());
         intent.putExtra("allianceLeaderId", currentAlliance.getLeader());
+        startActivity(intent);
+    }
+
+    private void handleRewardsOpen() {
+
+        Intent intent = new Intent(this, AllianceRewardsActivity.class);
         startActivity(intent);
     }
 

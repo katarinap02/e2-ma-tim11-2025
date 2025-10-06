@@ -18,8 +18,10 @@ import androidx.lifecycle.ViewModelProvider;
 import android.widget.ProgressBar;
 
 import com.example.team11project.R;
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.presentation.viewmodel.BossViewModel;
 import com.example.team11project.domain.model.BossBattle;
@@ -92,7 +94,8 @@ public class BossActivity extends BaseActivity {
         viewModel = new ViewModelProvider(this, factory).get(BossViewModel.class);
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
-        userViewModel = new ViewModelProvider(this, new UserViewModel.Factory(userRepository)).get(UserViewModel.class);
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
+        userViewModel = new ViewModelProvider(this, new UserViewModel.Factory(userRepository,allianceMissionRepository)).get(UserViewModel.class);
 
         viewModel.bossBattle.observe(this, bossBattle -> {
             if (bossBattle != null) {

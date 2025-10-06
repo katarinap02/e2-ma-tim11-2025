@@ -62,8 +62,9 @@ public class AllianceChatActivity extends BaseActivity {
         Button btnSend = findViewById(R.id.btnSend);
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
         userViewModel = new ViewModelProvider(this,
-                new UserViewModel.Factory(userRepository))
+                new UserViewModel.Factory(userRepository,allianceMissionRepository))
                 .get(UserViewModel.class);
 
         allianceId = getIntent().getStringExtra("allianceId");
@@ -77,7 +78,6 @@ public class AllianceChatActivity extends BaseActivity {
 
         Executor executor = Executors.newSingleThreadExecutor();
         AllianceMessageRepository allianceMessageRepository = new AllianceMessageRepositoryImpl(getApplicationContext(), executor);
-        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
         AllianceRepository allianceRepository = new AllianceRepositoryImpl(getApplicationContext());
         UserRepository userRepository1 = new UserRepositoryImpl(getApplicationContext());
         TaskRepository taskRepository = new TaskRepositoryImpl(getApplicationContext());

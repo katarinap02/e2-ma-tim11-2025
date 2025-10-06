@@ -17,12 +17,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.team11project.R;
+import com.example.team11project.data.repository.AllianceMissionRepositoryImpl;
 import com.example.team11project.data.repository.StatisticRepositoryImpl;
 import com.example.team11project.data.repository.UserRepositoryImpl;
 import com.example.team11project.domain.model.Clothing;
 import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.model.Weapon;
+import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.StatisticRepository;
 import com.example.team11project.domain.repository.UserRepository;
 import com.example.team11project.presentation.viewmodel.StatisticViewModel;
@@ -62,7 +64,6 @@ public class ProfileActivity extends BaseActivity {
     private StatisticViewModel statisticViewModel;
     private TextView textUsername, textTitle, textLevel, textPp, textXp, textCoins;
     private TextView textBadgesCount, txtActiveDays, txtStartedSpecialMissions, txtFinishedSpecialMissions;
-    ;
     private PieChart pieChartTasks;
     private LinearLayout layoutBadges, layoutEquipment;
     private ImageView imgAvatar, imgQr;
@@ -101,7 +102,8 @@ public class ProfileActivity extends BaseActivity {
 
 
         UserRepository userRepository = new UserRepositoryImpl(getApplicationContext());
-        UserViewModel.Factory factory = new UserViewModel.Factory(userRepository);
+        AllianceMissionRepository allianceMissionRepository = new AllianceMissionRepositoryImpl(getApplicationContext());
+        UserViewModel.Factory factory = new UserViewModel.Factory(userRepository, allianceMissionRepository);
         viewModel = new ViewModelProvider(this, factory).get(UserViewModel.class);
 
         StatisticRepository statisticRepository = new StatisticRepositoryImpl(getApplicationContext());
@@ -197,7 +199,11 @@ public class ProfileActivity extends BaseActivity {
             }
 
             // Bedzevi
-            textBadgesCount.setText("Broj bedzeva: " + 12);
+            viewModel.getBadgeCount().observe(this, count -> {
+                if (count != null) {
+                    textBadgesCount.setText("Broj bedževa: " + count);
+                }
+            });
 
             if (!isOwner) {
                 textCoins.setVisibility(View.GONE);
@@ -210,6 +216,7 @@ public class ProfileActivity extends BaseActivity {
                 Toast.makeText(this, "Greska: " + message, Toast.LENGTH_SHORT).show());
 
         viewModel.loadUser(userId);
+        viewModel.getBadgeCount(userId);
 
         btnChangePassword.setOnClickListener(v -> {
             Intent intent = new Intent(this, ChangePasswordActivity.class);
