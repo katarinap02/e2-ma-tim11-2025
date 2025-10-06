@@ -30,6 +30,25 @@ The app allows users to build healthy routines and stay motivated by gamifying p
 
 ---
 
+## 📖 How to Use  
+1. **Register & Activate** your account via email.  
+2. Start completing **daily or weekly tasks** to improve your habits and earn XP.  
+3. Collect enough XP to **level up** and unlock **boss battles** with rewards.  
+4. For extra motivation, **find and connect with other users**.  
+   - Make friends through the built-in **chat system**.  
+   - Play **mini-games together** to win additional prizes.  
+
+---
+
+## 📷 Screenshots  
+
+| Home Screen | Tasks & Habits | Profile | Boss Battle |
+|-------------|----------------|---------|-------------|
+| ![Home](screenshots/home.png) | ![Tasks](screenshots/tasks.png) | ![Profile](screenshots/profile.png) | ![Boss](screenshots/boss.png) |
+ 
+
+---
+
 ## 🚀 Goals of the Project  
 - Combine **habit tracking** with **game mechanics** to increase motivation.  
 - Provide a **fun and engaging** way to achieve personal goals.  
