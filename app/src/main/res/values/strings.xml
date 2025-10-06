@@ -120,4 +120,6 @@
     <string name="napitak">Napitak</string>
     <string name="clothing1">Clothing</string>
     <string name="odeca">Odeća</string>
+    <string name="aktivna_oprema1">Aktivna oprema</string>
+    <string name="izaberite_opremu">Izaberite opremu</string>
 </resources>

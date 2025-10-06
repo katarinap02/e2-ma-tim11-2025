@@ -13,11 +13,26 @@
             layout="@layout/navbar"/>
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/aktivna_oprema1"
+            android:layout_marginLeft="10dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvActiveEquipment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false" />
+
+        <TextView
             android:id="@+id/tvSelectEquipment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Izaberite opremu"
-            android:layout_marginTop="16dp"
+            android:text="@string/izaberite_opremu"
+            android:layout_marginTop="25dp"
             android:textSize="24sp"
             android:textStyle="bold"
             android:textAlignment="center"
@@ -79,6 +94,7 @@
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
             android:layout_marginTop="16dp" />
+
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
