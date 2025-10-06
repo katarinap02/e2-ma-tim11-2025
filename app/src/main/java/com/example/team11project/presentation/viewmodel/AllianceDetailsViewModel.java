@@ -12,6 +12,8 @@ import com.example.team11project.domain.model.AllianceMission;
 import com.example.team11project.domain.model.MissionFinalizationResult;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.BossRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
@@ -32,6 +34,10 @@ public class AllianceDetailsViewModel extends ViewModel {
 
     private final TaskInstanceRepository taskInstanceRepository;
 
+    private final EquipmentRepository equipmentRepository;
+
+    private final BossRepository bossRepository;
+
     private final MutableLiveData<Alliance> allianceLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
 
@@ -44,12 +50,14 @@ public class AllianceDetailsViewModel extends ViewModel {
     private MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
 
 
-    public AllianceDetailsViewModel(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository) {
+    public AllianceDetailsViewModel(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository, EquipmentRepository equipmentRepository, BossRepository bossRepository) {
         this.allianceRepository = allianceRepository;
         this.userRepository = userRepository;
         this.allianceMissionRepository = allianceMissionRepository;
         this.taskRepository = taskRepository;
         this.taskInstanceRepository = taskInstanceRepository;
+        this.equipmentRepository = equipmentRepository;
+        this.bossRepository = bossRepository;
     }
 
     public LiveData<Alliance> getAlliance() { return allianceLiveData; }
@@ -188,7 +196,7 @@ public class AllianceDetailsViewModel extends ViewModel {
         isLoading.postValue(true);
 
         AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(
-                allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository
+                allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository, equipmentRepository, bossRepository
         );
 
         allianceMissionUseCase.checkAndFinalizeMission(alliance, new RepositoryCallback<MissionFinalizationResult>() {
@@ -224,7 +232,7 @@ public class AllianceDetailsViewModel extends ViewModel {
         isLoading.postValue(true);
 
         AllianceMissionUseCase allianceMissionUseCase = new AllianceMissionUseCase(
-                allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository
+                allianceMissionRepository, allianceRepository, userRepository, taskRepository, taskInstanceRepository,equipmentRepository, bossRepository
         );
 
         allianceMissionUseCase.startSpecialMission(alliance, userId, new RepositoryCallback<AllianceMission>() {
@@ -275,20 +283,25 @@ public class AllianceDetailsViewModel extends ViewModel {
         private final TaskRepository taskRepository;
 
         private final TaskInstanceRepository taskInstanceRepository;
+        private final EquipmentRepository equipmentRepository;
 
-        public Factory(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository) {
+        private final BossRepository bossRepository;
+
+        public Factory(AllianceRepository allianceRepository, UserRepository userRepository, AllianceMissionRepository allianceMissionRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository, EquipmentRepository equipmentRepository, BossRepository bossRepository) {
             this.allianceRepository = allianceRepository;
             this.userRepository = userRepository;
             this.allianceMissionRepository = allianceMissionRepository;
             this.taskRepository = taskRepository;
             this.taskInstanceRepository = taskInstanceRepository;
+            this.equipmentRepository = equipmentRepository;
+            this.bossRepository = bossRepository;
 
         }
 
         @Override
         public <T extends ViewModel> T create(Class<T> modelClass) {
             if (modelClass.isAssignableFrom(AllianceDetailsViewModel.class)) {
-                return (T) new AllianceDetailsViewModel(allianceRepository, userRepository, allianceMissionRepository, taskRepository, taskInstanceRepository);
+                return (T) new AllianceDetailsViewModel(allianceRepository, userRepository, allianceMissionRepository, taskRepository, taskInstanceRepository, equipmentRepository, bossRepository);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

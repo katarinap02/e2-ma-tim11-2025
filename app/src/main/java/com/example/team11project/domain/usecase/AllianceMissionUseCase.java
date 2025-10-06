@@ -2,16 +2,23 @@ package com.example.team11project.domain.usecase;
 
 import android.util.Log;
 
+import com.example.team11project.data.datasource.remote.RemoteDataSource;
 import com.example.team11project.domain.model.Alliance;
 import com.example.team11project.domain.model.AllianceBoss;
 import com.example.team11project.domain.model.AllianceMission;
 import com.example.team11project.domain.model.AllianceMissionReward;
+import com.example.team11project.domain.model.Boss;
+import com.example.team11project.domain.model.Clothing;
+import com.example.team11project.domain.model.Equipment;
 import com.example.team11project.domain.model.MemberProgress;
 import com.example.team11project.domain.model.MissionFinalizationResult;
+import com.example.team11project.domain.model.Potion;
 import com.example.team11project.domain.model.SpecialTaskType;
 import com.example.team11project.domain.model.User;
 import com.example.team11project.domain.repository.AllianceMissionRepository;
 import com.example.team11project.domain.repository.AllianceRepository;
+import com.example.team11project.domain.repository.BossRepository;
+import com.example.team11project.domain.repository.EquipmentRepository;
 import com.example.team11project.domain.repository.RepositoryCallback;
 import com.example.team11project.domain.repository.TaskInstanceRepository;
 import com.example.team11project.domain.repository.TaskRepository;
@@ -34,13 +41,19 @@ public class AllianceMissionUseCase {
 
     private final TaskInstanceRepository taskInstanceRepository;
 
-    public AllianceMissionUseCase(AllianceMissionRepository allianceMissionRepository, AllianceRepository allianceRepository, UserRepository userRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository)
+    private final EquipmentRepository equipmentRepository;
+
+    private final BossRepository bossRepository;
+
+    public AllianceMissionUseCase(AllianceMissionRepository allianceMissionRepository, AllianceRepository allianceRepository, UserRepository userRepository, TaskRepository taskRepository, TaskInstanceRepository taskInstanceRepository, EquipmentRepository equipmentRepository, BossRepository bossRepository)
     {
         this.allianceMissionRepository = allianceMissionRepository;
         this.allianceRepository = allianceRepository;
         this.userRepository = userRepository;
         this.taskRepository = taskRepository;
         this.taskInstanceRepository = taskInstanceRepository;
+        this.equipmentRepository = equipmentRepository;
+        this.bossRepository = bossRepository;
     }
 
 
@@ -448,19 +461,18 @@ public class AllianceMissionUseCase {
                 // 2. Nakon bonusa, proveri da li je boss pobedjen
                 if (mission.getBoss().getCurrentHp() == 0) {
                     // Boss pobedjen - dodeli nagrade
-                   // distributeRewards(mission, new RepositoryCallback<Void>() {
-                      //  @Override
-                      //  public void onSuccess(Void result2) {
-                            // 3. Zatvori misiju nakon nagrada
+                    distributeRewards(mission, new RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result2) {
                             closeMission(mission, alliance, callback);
-                       // }
+                        }
 
-                      //  @Override
-                      //  public void onFailure(Exception e) {
-                      //      Log.e("AllianceMission", "Greška pri dodeli nagrada: " + e.getMessage());
-                        //    closeMission(mission, alliance, callback);
-                       // }
-                  //  });
+                        @Override
+                        public void onFailure(Exception e) {
+                           Log.e("AllianceMission", "Greška pri dodeli nagrada: " + e.getMessage());
+                            closeMission(mission, alliance, callback);
+                        }
+                    });
                 } else {
                     // Boss nije pobedjen - samo zatvori misiju bez nagrada
                     closeMission(mission, alliance, callback);
@@ -581,53 +593,6 @@ public class AllianceMissionUseCase {
         });
     }
 
-    private void distributeRewards(AllianceMission mission, RepositoryCallback<Void> callback) {
-        List<MemberProgress> progressList = mission.getMemberProgress();
-
-        // Obradi nagrade za sve članove
-        distributeRewardsForMembers(mission, progressList, 0, callback);
-    }
-
-    private void distributeRewardsForMembers(AllianceMission mission, List<MemberProgress> progressList, int index, RepositoryCallback<Void> callback) {
-      /*  // Bazni slučaj: sve nagrade dodeljene
-        if (index >= progressList.size()) {
-            callback.onSuccess(null);
-            return;
-        }
-
-        MemberProgress progress = progressList.get(index);
-
-        AllianceMissionReward reward = new AllianceMissionReward();
-        reward.setUserId(progress.getUserId());
-
-        // TODO: Implementiraj generisanje random potiona i clothing-a
-        // reward.setPotion(generateRandomPotion());
-        // reward.setClothing(generateRandomClothing());
-
-        // TODO: Implementiraj računanje 50% nagrade od sledećeg bossa
-        // reward.setCoins(calculateNextBossReward() / 2);
-        reward.setCoins(100); // Placeholder
-
-        // Badge count - broj uspešno rešenih specijalnih zadataka
-        reward.setBadgeCount(1);
-
-        allianceMissionRepository.createAllianceMissionReward(reward, new RepositoryCallback<String>() {
-            @Override
-            public void onSuccess(String rewardId) {
-                Log.d("AllianceMission", "Nagrada kreirana za korisnika: " + progress.getUserId());
-                // Nastavi sa sledećim članom
-                distributeRewardsForMembers(mission, progressList, index + 1, callback);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                Log.e("AllianceMission", "Greška pri kreiranju nagrade: " + e.getMessage());
-                // Nastavi sa sledećim uprkos grešci
-                distributeRewardsForMembers(mission, progressList, index + 1, callback);
-            }
-        });*/
-    }
-
     private void closeMission(AllianceMission mission, Alliance alliance, RepositoryCallback<AllianceMission> callback) {
         // 1. Postavi misiju na neaktivnu
         mission.setActive(false);
@@ -657,6 +622,267 @@ public class AllianceMissionUseCase {
                 if (callback != null) callback.onFailure(e);
             }
         });
+    }
+
+    private void distributeRewards(AllianceMission mission, RepositoryCallback<Void> callback) {
+        List<MemberProgress> progressList = mission.getMemberProgress();
+
+        // Obradi nagrade za sve članove
+        distributeRewardsForMembers(mission, progressList, 0, callback);
+    }
+
+    private void distributeRewardsForMembers(AllianceMission mission, List<MemberProgress> progressList, int index, RepositoryCallback<Void> callback) {
+        // Bazni slučaj: sve nagrade dodeljene
+        if (index >= progressList.size()) {
+            callback.onSuccess(null);
+            return;
+        }
+
+        MemberProgress progress = progressList.get(index);
+
+        // 1. Generiši random clothing
+        generateRandomClothing(new EquipmentCallback<Clothing>() {
+            @Override
+            public void onSuccess(Clothing clothing) {
+                // 2. Generiši random potion
+                generateRandomPotion(new EquipmentCallback<Potion>() {
+                    @Override
+                    public void onSuccess(Potion potion) {
+                        // 3. Izračunaj 50% nagrade od sledećeg bossa
+                        calculateNextBossReward(progress.getUserId(), new RepositoryCallback<Integer>() {
+                            @Override
+                            public void onSuccess(Integer nextBossReward) {
+                                int coinsReward = nextBossReward / 2;
+
+                                // 4. Kreiraj reward objekat
+                                AllianceMissionReward reward = new AllianceMissionReward();
+                                reward.setUserId(progress.getUserId());
+                                reward.setPotion(potion);
+                                reward.setClothing(clothing);
+                                reward.setCoins(coinsReward);
+                                reward.setBadgeCount(1);
+
+                                // 5. Sačuvaj reward u bazu
+                                allianceMissionRepository.createAllianceMissionReward(reward, new RepositoryCallback<String>() {
+                                    @Override
+                                    public void onSuccess(String rewardId) {
+                                        // 6. Dodaj nagradu korisniku
+                                        addRewardToUser(progress.getUserId(), reward, new RepositoryCallback<Void>() {
+                                            @Override
+                                            public void onSuccess(Void result) {
+                                                Log.d("AllianceMission", "Nagrada dodeljena korisniku: " + progress.getUserId());
+                                                // Nastavi sa sledećim članom
+                                                distributeRewardsForMembers(mission, progressList, index + 1, callback);
+                                            }
+
+                                            @Override
+                                            public void onFailure(Exception e) {
+                                                Log.e("AllianceMission", "Greška pri dodavanju nagrade korisniku: " + e.getMessage());
+                                                // Nastavi sa sledećim uprkos grešci
+                                                distributeRewardsForMembers(mission, progressList, index + 1, callback);
+                                            }
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onFailure(Exception e) {
+                                        Log.e("AllianceMission", "Greška pri kreiranju reward zapisa: " + e.getMessage());
+                                        distributeRewardsForMembers(mission, progressList, index + 1, callback);
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onFailure(Exception e) {
+                                Log.e("AllianceMission", "Greška pri računanju nagrade: " + e.getMessage());
+                                distributeRewardsForMembers(mission, progressList, index + 1, callback);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e("AllianceMission", "Greška pri generisanju potiona: " + e.getMessage());
+                        distributeRewardsForMembers(mission, progressList, index + 1, callback);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e("AllianceMission", "Greška pri generisanju odeće: " + e.getMessage());
+                distributeRewardsForMembers(mission, progressList, index + 1, callback);
+            }
+        });
+    }
+
+    private void generateRandomClothing(EquipmentCallback<Clothing> callback) {
+        equipmentRepository.getAllEquipment(new RemoteDataSource.DataSourceCallback<List<Equipment>>() {
+            @Override
+            public void onSuccess(List<Equipment> allEquipment) {
+                List<Clothing> clothingList = new ArrayList<>();
+
+                for (Equipment equipment : allEquipment) {
+                    if (equipment instanceof Clothing) {
+                        clothingList.add((Clothing) equipment);
+                    }
+                }
+
+                if (clothingList.isEmpty()) {
+                    callback.onFailure(new Exception("Nema dostupne odeće"));
+                    return;
+                }
+
+                Clothing randomClothing = clothingList.get((int) (Math.random() * clothingList.size()));
+                callback.onSuccess(randomClothing);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    private void generateRandomPotion(EquipmentCallback<Potion> callback) {
+        equipmentRepository.getAllEquipment(new RemoteDataSource.DataSourceCallback<List<Equipment>>() {
+            @Override
+            public void onSuccess(List<Equipment> allEquipment) {
+                List<Potion> potionList = new ArrayList<>();
+
+                for (Equipment equipment : allEquipment) {
+                    if (equipment instanceof Potion) {
+                        potionList.add((Potion) equipment);
+                    }
+                }
+
+                if (potionList.isEmpty()) {
+                    callback.onFailure(new Exception("Nema dostupnih napitaka"));
+                    return;
+                }
+
+                Potion randomPotion = potionList.get((int) (Math.random() * potionList.size()));
+                callback.onSuccess(randomPotion);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+
+
+    private void calculateNextBossReward(String userId, RepositoryCallback<Integer> callback) {
+        // Prvo dohvati trenutni nivo korisnika
+        userRepository.getUserById(userId, new RepositoryCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                int currentLevel = user.getLevelInfo().getLevel();
+                        bossRepository.getBossByUserIdAndLevel(userId, currentLevel, new RepositoryCallback<Boss>() {
+                            @Override
+                            public void onSuccess(Boss currentBoss) {
+                                int estimatedNextBossReward = (int) (currentBoss.getCoinsReward() * 1.2);
+                                callback.onSuccess(estimatedNextBossReward);
+                            }
+
+                            @Override
+                            public void onFailure(Exception e2) {
+                                // Fallback vrednost
+                                callback.onSuccess(200);
+                            }
+                        });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    private void addRewardToUser(String userId, AllianceMissionReward reward, RepositoryCallback<Void> callback) {
+        userRepository.getUserById(userId, new RepositoryCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                // Dodaj potion sa pravilnom logikom
+                if (user.getPotions() == null) {
+                    user.setPotions(new ArrayList<>());
+                }
+
+                Potion existingPotion = null;
+                for (Potion p : user.getPotions()) {
+                    if (p.getName().equals(reward.getPotion().getName())) {
+                        existingPotion = p;
+                        break;
+                    }
+                }
+
+                if (existingPotion != null) {
+                    existingPotion.setQuantity(existingPotion.getQuantity() + 1);
+                } else {
+                    Potion potionCopy = new Potion(
+                            UUID.randomUUID().toString(),
+                            reward.getPotion().getName(),
+                            reward.getPotion().getPrice(),
+                            reward.getPotion().getPowerBoostPercent(),
+                            reward.getPotion().isPermanent(),
+                            reward.getPotion().isActive(),
+                            1,
+                            reward.getPotion().getImage()
+                    );
+                    user.getPotions().add(potionCopy);
+                }
+
+                // Dodaj clothing sa pravilnom logikom
+                if (user.getClothing() == null) {
+                    user.setClothing(new ArrayList<>());
+                }
+
+                Clothing existingClothing = null;
+                for (Clothing c : user.getClothing()) {
+                    if (c.getName().equals(reward.getClothing().getName())) {
+                        existingClothing = c;
+                        break;
+                    }
+                }
+
+                if (existingClothing != null) {
+                    existingClothing.setQuantity(existingClothing.getQuantity() + 1);
+                } else {
+                    Clothing clothingCopy = new Clothing(
+                            UUID.randomUUID().toString(),
+                            reward.getClothing().getName(),
+                            reward.getClothing().getPrice(),
+                            reward.getClothing().getEffectPercent(),
+                            reward.getClothing().isActive(),
+                            1,
+                            reward.getClothing().getEffectType(),
+                            reward.getClothing().getImage()
+                    );
+                    user.getClothing().add(clothingCopy);
+                }
+
+                // Dodaj coins
+                int newCoins = user.getCoins() + reward.getCoins();
+                user.setCoins(newCoins);
+                Log.d("AllianceMission", "Setting new coins: " + user.getCoins());
+
+                // Ažuriraj korisnika
+                userRepository.updateUser(user, callback);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    interface EquipmentCallback<T> {
+        void onSuccess(T item);
+        void onFailure(Exception e);
     }
 
 
