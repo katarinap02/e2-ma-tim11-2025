@@ -1,5 +1,6 @@
 package com.example.team11project.presentation.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import android.widget.ImageView;
@@ -24,6 +25,7 @@ public class AllianceMissionActivity extends AppCompatActivity {
     private ProgressBar pbAllianceProgress, pbBossHP;
     private TextView tvAllianceProgress, tvBossHP, tvSpecialMissionTitle, tvBossName;
     private ImageView ivBoss;
+    private ImageView btnBack;
 
     private String allianceId;
 
@@ -65,8 +67,15 @@ public class AllianceMissionActivity extends AppCompatActivity {
         tvSpecialMissionTitle = findViewById(R.id.tvSpecialMissionTitle);
         tvBossName = findViewById(R.id.tvBossName);
         ivBoss = findViewById(R.id.ivBoss);
+        btnBack = findViewById(R.id.btnBack);
 
         rvMembers = findViewById(R.id.rvMembersProgress);
+
+        btnBack.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AllianceDetailsActivity.class);
+            startActivity(intent);
+            finish(); // ako hoćeš da zatvori trenutnu aktivnost
+        });
     }
 
     private void initializeViewModel() {
